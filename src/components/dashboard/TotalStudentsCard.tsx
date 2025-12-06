@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSchool } from '@/contexts/SchoolContext';
-import { Users, Download, ChevronDown } from 'lucide-react';
+import { Users, Download, ChevronDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -37,39 +37,49 @@ export function TotalStudentsCard() {
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-xl border-2 p-6 transition-all duration-300',
-        'bg-card shadow-md',
-        isHovered
-          ? 'border-destructive shadow-xl shadow-destructive/10'
-          : 'border-border/50'
+        'group relative overflow-hidden rounded-2xl p-6 transition-all duration-500',
+        'bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700 shadow-lg',
+        isHovered && 'scale-[1.03] -translate-y-1 shadow-2xl shadow-purple-500/40'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Background decoration */}
-      <div
-        className={cn(
-          'absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary to-secondary opacity-10 transition-transform duration-500',
-          isHovered && 'scale-150'
-        )}
-      />
+      {/* Animated background patterns */}
+      <div className="absolute inset-0 opacity-30">
+        <div className={cn(
+          'absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/20 blur-2xl transition-all duration-700',
+          isHovered && 'scale-150 opacity-40'
+        )} />
+        <div className={cn(
+          'absolute -left-4 -bottom-4 h-32 w-32 rounded-full bg-white/10 blur-xl transition-all duration-700 delay-100',
+          isHovered && 'scale-150 opacity-30'
+        )} />
+      </div>
+
+      {/* Trending icon */}
+      <div className={cn(
+        'absolute top-4 right-4 transition-all duration-500',
+        isHovered ? 'opacity-100 rotate-12' : 'opacity-0 rotate-0'
+      )}>
+        <TrendingUp className="h-5 w-5 text-white/60" />
+      </div>
 
       {/* Content */}
       <div className="relative z-10">
-        <div className="mb-4 inline-flex items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 p-3">
-          <Users className="h-6 w-6 text-primary" />
+        <div className="mb-5 inline-flex items-center justify-center rounded-xl bg-white/20 p-3.5 backdrop-blur-sm ring-1 ring-purple-400/30">
+          <Users className="h-7 w-7 text-white" />
         </div>
 
-        <h3 className="mb-2 text-xl font-semibold text-foreground">Total Students</h3>
-        <p className="text-3xl font-bold text-primary">{totalStudents}</p>
+        <h3 className="mb-1 text-lg font-semibold text-white/90">Total Students</h3>
+        <p className="text-4xl font-bold text-white tracking-tight">{totalStudents}</p>
 
         {isAdmin && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
-                className="mt-4 gap-2"
+                className="mt-4 gap-2 bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
               >
                 <Download className="h-4 w-4" />
                 Export List
