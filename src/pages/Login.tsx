@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const { login } = useSchool();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -21,21 +23,81 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate loading
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      if (isSignUp) {
+        // Sign up flow
+        const redirectUrl = `${window.location.origin}/`;
+        
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl
+          }
+        });
 
-    const success = login(email, password);
-    
-    if (success) {
+        if (error) {
+          if (error.message.includes('User already registered')) {
+            toast({
+              title: 'Account Exists',
+              description: 'This email is already registered. Please login instead.',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: 'Sign Up Failed',
+              description: error.message,
+              variant: 'destructive',
+            });
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        if (data.user) {
+          // Add admin role for the new user
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: data.user.id,
+              role: 'admin'
+            });
+
+          if (roleError) {
+            console.error('Error adding admin role:', roleError);
+          }
+
+          toast({
+            title: 'Account Created!',
+            description: 'You can now login with your credentials.',
+          });
+          
+          setIsSignUp(false);
+          setPassword('');
+        }
+      } else {
+        // Login flow
+        const success = await login(email, password);
+        
+        if (success) {
+          toast({
+            title: 'Welcome, Admin!',
+            description: 'You have successfully logged in.',
+          });
+          navigate('/');
+        } else {
+          toast({
+            title: 'Login Failed',
+            description: 'Invalid credentials or you do not have admin access.',
+            variant: 'destructive',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
       toast({
-        title: 'Welcome, Admin!',
-        description: 'You have successfully logged in.',
-      });
-      navigate('/');
-    } else {
-      toast({
-        title: 'Login Failed',
-        description: 'Invalid email or password.',
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
     }
@@ -51,11 +113,19 @@ export default function Login() {
             {/* Header */}
             <div className="mb-8 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full gradient-primary shadow-lg">
-                <Lock className="h-8 w-8 text-primary-foreground" />
+                {isSignUp ? (
+                  <UserPlus className="h-8 w-8 text-primary-foreground" />
+                ) : (
+                  <Lock className="h-8 w-8 text-primary-foreground" />
+                )}
               </div>
-              <h1 className="text-2xl font-bold text-foreground">Admin Login</h1>
+              <h1 className="text-2xl font-bold text-foreground">
+                {isSignUp ? 'Create Admin Account' : 'Admin Login'}
+              </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Enter your credentials to access admin features
+                {isSignUp 
+                  ? 'Set up your admin account to manage the school'
+                  : 'Enter your credentials to access admin features'}
               </p>
             </div>
 
@@ -88,10 +158,11 @@ export default function Login() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter password"
+                    placeholder={isSignUp ? 'Create a password (min 6 chars)' : 'Enter password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="pl-10 pr-10"
+                    minLength={6}
                     required
                   />
                   <button
@@ -113,12 +184,30 @@ export default function Login() {
                 className="w-full gradient-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all"
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading 
+                  ? (isSignUp ? 'Creating Account...' : 'Signing in...') 
+                  : (isSignUp ? 'Create Account' : 'Sign In')}
               </Button>
             </form>
 
+            {/* Toggle Sign Up / Login */}
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setPassword('');
+                }}
+                className="text-sm text-primary hover:underline"
+              >
+                {isSignUp 
+                  ? 'Already have an account? Sign in' 
+                  : "Don't have an account? Create one"}
+              </button>
+            </div>
+
             {/* Hint */}
-            <p className="mt-6 text-center text-xs text-muted-foreground">
+            <p className="mt-4 text-center text-xs text-muted-foreground">
               Teachers can access score entry without logging in
             </p>
           </div>
