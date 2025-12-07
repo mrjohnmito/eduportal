@@ -71,7 +71,6 @@ export default function Dashboard() {
               <ClassCard
                 classLevel={level.id}
                 name={level.name}
-                colorClass={level.color}
               />
             </div>
           ))}
