@@ -118,12 +118,28 @@ export default function BulkPDF() {
         doc.setFillColor(34, 139, 34); // Green header
         doc.rect(0, 0, pageWidth, 35, 'F');
 
-        // School Logo placeholder (left side)
-        doc.setFillColor(255, 255, 255);
-        doc.circle(25, 17, 10, 'F');
-        doc.setFontSize(6);
-        doc.setTextColor(34, 139, 34);
-        doc.text('LOGO', 25, 18, { align: 'center' });
+        // School Logo (left side)
+        if (settings.schoolLogo) {
+          try {
+            doc.addImage(settings.schoolLogo, 'PNG', 10, 5, 25, 25);
+          } catch {
+            // Fallback to placeholder
+            doc.setFillColor(255, 255, 255);
+            doc.circle(22, 17, 10, 'F');
+          }
+        } else {
+          doc.setFillColor(255, 255, 255);
+          doc.circle(22, 17, 10, 'F');
+        }
+
+        // Student Photo (right side)
+        if (student.photo) {
+          try {
+            doc.addImage(student.photo, 'PNG', pageWidth - 35, 5, 25, 25);
+          } catch {
+            // No fallback needed
+          }
+        }
 
         // School Name and Details (center)
         doc.setTextColor(255, 255, 255);
