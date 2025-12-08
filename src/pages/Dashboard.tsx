@@ -1,17 +1,53 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ClassCard } from '@/components/dashboard/ClassCard';
 import { TotalStudentsCard } from '@/components/dashboard/TotalStudentsCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useSchool } from '@/contexts/SchoolContext';
-import { CLASS_LEVELS } from '@/types/school';
+import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, BookOpen, Award, TrendingUp } from 'lucide-react';
 
+interface ClassItem {
+  id: string;
+  name: string;
+}
+
 export default function Dashboard() {
-  const { settings } = useSchool();
+  const navigate = useNavigate();
+  const { settings, isAdmin, user, loading } = useSchool();
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [classesLoading, setClassesLoading] = useState(true);
+
+  // Check authentication
+  useEffect(() => {
+    if (loading) return;
+    
+    const teacherId = sessionStorage.getItem('teacherId');
+    if (!user && !teacherId) {
+      navigate('/');
+    }
+  }, [user, loading, navigate]);
+
+  // Fetch classes from database
+  useEffect(() => {
+    const fetchClasses = async () => {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('*')
+        .order('name');
+      
+      if (!error && data) {
+        setClasses(data);
+      }
+      setClassesLoading(false);
+    };
+    fetchClasses();
+  }, []);
 
   const stats = [
     { icon: BookOpen, label: 'Subjects', value: '10', color: 'text-blue-500' },
-    { icon: GraduationCap, label: 'Classes', value: '3', color: 'text-emerald-500' },
+    { icon: GraduationCap, label: 'Classes', value: String(classes.length), color: 'text-emerald-500' },
     { icon: Award, label: 'Term', value: settings.term?.split(' ')[0] || '1st', color: 'text-amber-500' },
     { icon: TrendingUp, label: 'Year', value: settings.academicYear?.split('-')[0] || '2024', color: 'text-violet-500' },
   ];
@@ -62,24 +98,40 @@ export default function Dashboard() {
 
         {/* Class Cards Grid */}
         <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {CLASS_LEVELS.map((level, index) => (
-            <div
-              key={level.id}
-              className="animate-fade-in"
-              style={{ animationDelay: `${300 + index * 100}ms` }}
-            >
-              <ClassCard
-                classLevel={level.id}
-                name={level.name}
-              />
+          {classesLoading ? (
+            <div className="col-span-full text-center text-muted-foreground py-8">
+              Loading classes...
             </div>
-          ))}
-          <div
-            className="animate-fade-in"
-            style={{ animationDelay: '600ms' }}
-          >
-            <TotalStudentsCard />
-          </div>
+          ) : classes.length === 0 ? (
+            <div className="col-span-full text-center text-muted-foreground py-8">
+              No classes found. {isAdmin && 'Add classes from the Classes menu.'}
+            </div>
+          ) : (
+            <>
+              {classes.map((classItem, index) => {
+                // Convert "Basic 7" to "basic7"
+                const classId = classItem.name.toLowerCase().replace(/\s/g, '');
+                return (
+                  <div
+                    key={classItem.id}
+                    className="animate-fade-in"
+                    style={{ animationDelay: `${300 + index * 100}ms` }}
+                  >
+                    <ClassCard
+                      classLevel={classId as any}
+                      name={classItem.name}
+                    />
+                  </div>
+                );
+              })}
+              <div
+                className="animate-fade-in"
+                style={{ animationDelay: `${300 + classes.length * 100}ms` }}
+              >
+                <TotalStudentsCard />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Instructions for Teachers */}

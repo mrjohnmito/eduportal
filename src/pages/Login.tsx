@@ -1,218 +1,249 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Mail, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { GraduationCap, LogIn, User, Key, Shield } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { z } from 'zod';
+
+const emailSchema = z.string().email('Invalid email address');
+const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+const accessCodeSchema = z.string().min(4, 'Access code must be at least 4 characters');
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const { login } = useSchool();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { settings, login } = useSchool();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Admin login state
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
+
+  // Teacher login state
+  const [teacherAccessCode, setTeacherAccessCode] = useState('');
+  const [teacherLoading, setTeacherLoading] = useState(false);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
-      if (isSignUp) {
-        // Sign up flow
-        const redirectUrl = `${window.location.origin}/`;
-        
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl
-          }
-        });
-
-        if (error) {
-          if (error.message.includes('User already registered')) {
-            toast({
-              title: 'Account Exists',
-              description: 'This email is already registered. Please login instead.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Sign Up Failed',
-              description: error.message,
-              variant: 'destructive',
-            });
-          }
-          setIsLoading(false);
-          return;
-        }
-
-        if (data.user) {
-          // Add admin role for the new user
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: data.user.id,
-              role: 'admin'
-            });
-
-          if (roleError) {
-            console.error('Error adding admin role:', roleError);
-          }
-
-          toast({
-            title: 'Account Created!',
-            description: 'You can now login with your credentials.',
-          });
-          
-          setIsSignUp(false);
-          setPassword('');
-        }
-      } else {
-        // Login flow
-        const success = await login(email, password);
-        
-        if (success) {
-          toast({
-            title: 'Welcome, Admin!',
-            description: 'You have successfully logged in.',
-          });
-          navigate('/');
-        } else {
-          toast({
-            title: 'Login Failed',
-            description: 'Invalid credentials or you do not have admin access.',
-            variant: 'destructive',
-          });
-        }
-      }
+      emailSchema.parse(adminEmail);
+      passwordSchema.parse(adminPassword);
     } catch (error) {
-      console.error('Auth error:', error);
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    setAdminLoading(true);
+
+    try {
+      const success = await login(adminEmail, adminPassword);
+
+      if (success) {
+        toast({
+          title: 'Welcome, Admin!',
+          description: 'You have successfully logged in.',
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: 'Login Failed',
+          description: 'Invalid credentials or you do not have admin privileges.',
+          variant: 'destructive',
+        });
+      }
+    } catch {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        title: 'Login Failed',
+        description: 'An error occurred during login.',
         variant: 'destructive',
       });
+    } finally {
+      setAdminLoading(false);
     }
-    
-    setIsLoading(false);
+  };
+
+  const handleTeacherLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      accessCodeSchema.parse(teacherAccessCode);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    setTeacherLoading(true);
+
+    try {
+      const { data: teacher, error } = await supabase
+        .from('teachers')
+        .select('id, name')
+        .eq('access_code', teacherAccessCode)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (teacher) {
+        sessionStorage.setItem('teacherId', teacher.id);
+        sessionStorage.setItem('teacherName', teacher.name);
+
+        toast({
+          title: `Welcome, ${teacher.name}!`,
+          description: 'You can now enter student scores.',
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: 'Invalid Access Code',
+          description: 'The access code you entered is not valid.',
+          variant: 'destructive',
+        });
+      }
+    } catch {
+      toast({
+        title: 'Login Failed',
+        description: 'An error occurred while verifying your access code.',
+        variant: 'destructive',
+      });
+    } finally {
+      setTeacherLoading(false);
+    }
   };
 
   return (
-    <MainLayout>
-      <div className="container flex min-h-[calc(100vh-12rem)] items-center justify-center py-8">
-        <div className="w-full max-w-md animate-scale-in">
-          <div className="rounded-2xl border border-border/50 bg-card p-8 shadow-xl">
-            {/* Header */}
-            <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full gradient-primary shadow-lg">
-                {isSignUp ? (
-                  <UserPlus className="h-8 w-8 text-primary-foreground" />
-                ) : (
-                  <Lock className="h-8 w-8 text-primary-foreground" />
-                )}
-              </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                {isSignUp ? 'Create Admin Account' : 'Admin Login'}
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isSignUp 
-                  ? 'Set up your admin account to manage the school'
-                  : 'Enter your credentials to access admin features'}
-              </p>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+            <GraduationCap className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">{settings.schoolName}</h1>
+          <p className="text-muted-foreground mt-1">School Management System</p>
+        </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email Address
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="rounded-xl border border-border bg-card p-6 shadow-lg animate-fade-in [animation-delay:100ms]">
+          <Tabs defaultValue="teacher" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="teacher" className="gap-2">
+                <User className="h-4 w-4" />
+                Teacher
+              </TabsTrigger>
+              <TabsTrigger value="admin" className="gap-2">
+                <Shield className="h-4 w-4" />
+                Admin
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="teacher">
+              <form onSubmit={handleTeacherLogin} className="space-y-4">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Enter your access code provided by the admin
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="accessCode">Access Code</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="accessCode"
+                      type="password"
+                      placeholder="Enter access code"
+                      value={teacherAccessCode}
+                      onChange={(e) => setTeacherAccessCode(e.target.value)}
+                      className="pl-10"
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={teacherLoading}
+                  className="w-full gap-2 gradient-primary text-primary-foreground"
+                >
+                  {teacherLoading ? 'Verifying...' : (
+                    <>
+                      <LogIn className="h-4 w-4" />
+                      Enter Dashboard
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="admin">
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Login with your admin credentials
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="Enter admin email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
+                    placeholder="admin@school.com"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    autoComplete="email"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={isSignUp ? 'Create a password (min 6 chars)' : 'Enter password'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
-                    minLength={6}
-                    required
+                    type="password"
+                    placeholder="••••••••"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    autoComplete="current-password"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
                 </div>
-              </div>
 
-              <Button
-                type="submit"
-                className="w-full gradient-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all"
-                disabled={isLoading}
-              >
-                {isLoading 
-                  ? (isSignUp ? 'Creating Account...' : 'Signing in...') 
-                  : (isSignUp ? 'Create Account' : 'Sign In')}
-              </Button>
-            </form>
-
-            {/* Toggle Sign Up / Login */}
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setPassword('');
-                }}
-                className="text-sm text-primary hover:underline"
-              >
-                {isSignUp 
-                  ? 'Already have an account? Sign in' 
-                  : "Don't have an account? Create one"}
-              </button>
-            </div>
-
-            {/* Hint */}
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Teachers can access score entry without logging in
-            </p>
-          </div>
+                <Button
+                  type="submit"
+                  disabled={adminLoading}
+                  className="w-full gap-2 gradient-primary text-primary-foreground"
+                >
+                  {adminLoading ? 'Logging in...' : (
+                    <>
+                      <LogIn className="h-4 w-4" />
+                      Admin Login
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-6 animate-fade-in [animation-delay:200ms]">
+          "{settings.motto}"
+        </p>
       </div>
-    </MainLayout>
+    </div>
   );
 }

@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      classes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       school_settings: {
         Row: {
           academic_year: string | null
@@ -129,6 +147,30 @@ export type Database = {
           id?: string
           name?: string
           photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teachers: {
+        Row: {
+          access_code: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          access_code: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          access_code?: string
+          created_at?: string
+          id?: string
+          name?: string
           updated_at?: string
         }
         Relationships: []

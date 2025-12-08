@@ -1,24 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
-import { UserPlus, FileDown, Trash2, Settings, LogIn, Zap } from 'lucide-react';
+import { UserPlus, FileDown, Trash2, Settings, Zap, Users, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function QuickActions() {
   const { isAdmin } = useSchool();
 
   if (!isAdmin) {
-    return (
-      <Link to="/login">
-        <Button 
-          variant="outline" 
-          className="gap-2 border-2 border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300"
-        >
-          <LogIn className="h-4 w-4" />
-          Admin Login
-        </Button>
-      </Link>
-    );
+    return null;
   }
 
   const actions = [
@@ -28,6 +18,20 @@ export function QuickActions() {
       label: 'Manage Students',
       gradient: 'from-blue-500 to-indigo-600',
       shadow: 'hover:shadow-blue-500/30',
+    },
+    {
+      to: '/teachers',
+      icon: Users,
+      label: 'Manage Teachers',
+      gradient: 'from-cyan-500 to-blue-600',
+      shadow: 'hover:shadow-cyan-500/30',
+    },
+    {
+      to: '/classes',
+      icon: GraduationCap,
+      label: 'Manage Classes',
+      gradient: 'from-amber-500 to-orange-600',
+      shadow: 'hover:shadow-amber-500/30',
     },
     {
       to: '/bulk-pdf',
