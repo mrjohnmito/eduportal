@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
@@ -11,20 +11,35 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CLASS_LEVELS, ClassLevel, SUBJECTS } from '@/types/school';
+import { SUBJECTS } from '@/types/school';
 import { calculateScores, getPositionSuffix, getTotalScoreRemark, calculateAggregate, calculatePositions } from '@/lib/gradeUtils';
 import { ChevronLeft, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ClassItem {
+  id: string;
+  name: string;
+}
 
 export default function BulkPDF() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { students, scores, settings, isAdmin } = useSchool();
 
-  const [selectedClass, setSelectedClass] = useState<ClassLevel | ''>('');
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      const { data } = await supabase.from('classes').select('*').order('name');
+      if (data) setClasses(data);
+    };
+    fetchClasses();
+  }, []);
 
   const generateExcel = () => {
     if (!selectedClass) return;
@@ -58,7 +73,7 @@ export default function BulkPDF() {
     // Create workbook
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, CLASS_LEVELS.find(c => c.id === selectedClass)?.name || 'Scores');
+    XLSX.utils.book_append_sheet(wb, ws, classes.find(c => c.id === selectedClass)?.name || 'Scores');
 
     // Download
     XLSX.writeFile(wb, `${selectedClass}_scores_${settings.term}_${settings.academicYear}.xlsx`);
@@ -77,7 +92,7 @@ export default function BulkPDF() {
     try {
       const classStudents = students.filter(s => s.classLevel === selectedClass);
       const classScores = scores.filter(s => s.classLevel === selectedClass);
-      const className = CLASS_LEVELS.find(c => c.id === selectedClass)?.name || selectedClass;
+      const className = classes.find(c => c.id === selectedClass)?.name || selectedClass;
 
       if (classStudents.length === 0) {
         toast({
@@ -361,12 +376,12 @@ export default function BulkPDF() {
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm animate-fade-in space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Class</label>
-              <Select value={selectedClass} onValueChange={(v) => setSelectedClass(v as ClassLevel)}>
+              <Select value={selectedClass} onValueChange={(v) => setSelectedClass(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CLASS_LEVELS.map(level => (
+                  {classes.map(level => (
                     <SelectItem key={level.id} value={level.id}>
                       {level.name} ({students.filter(s => s.classLevel === level.id).length} students)
                     </SelectItem>
