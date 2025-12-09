@@ -74,7 +74,7 @@ export default function Settings() {
         <div className="mb-8 animate-fade-in">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
