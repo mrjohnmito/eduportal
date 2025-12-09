@@ -15,9 +15,9 @@ interface SchoolContextType {
   deleteStudent: (id: string) => Promise<void>;
   addScore: (score: Omit<SubjectScore, 'id'>) => Promise<void>;
   updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<void>;
-  getScoresByClassAndSubject: (classLevel: string, subject: string) => SubjectScore[];
-  getStudentsByClass: (classLevel: string) => Student[];
-  clearSubjectData: (classLevel: string, subject: string) => Promise<void>;
+  getScoresByClassAndSubject: (classLevel: ClassLevel, subject: string) => SubjectScore[];
+  getStudentsByClass: (classLevel: ClassLevel) => Student[];
+  clearSubjectData: (classLevel: ClassLevel, subject: string) => Promise<void>;
   updateSettings: (updates: Partial<SchoolSettings>) => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -281,15 +281,15 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const getScoresByClassAndSubject = (classLevel: string, subject: string) => {
+  const getScoresByClassAndSubject = (classLevel: ClassLevel, subject: string) => {
     return scores.filter(s => s.classLevel === classLevel && s.subject === subject);
   };
 
-  const getStudentsByClass = (classLevel: string) => {
+  const getStudentsByClass = (classLevel: ClassLevel) => {
     return students.filter(s => s.classLevel === classLevel);
   };
 
-  const clearSubjectData = async (classLevel: string, subject: string) => {
+  const clearSubjectData = async (classLevel: ClassLevel, subject: string) => {
     const { error } = await supabase
       .from('scores')
       .delete()

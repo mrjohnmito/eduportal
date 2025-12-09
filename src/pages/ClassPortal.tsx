@@ -1,12 +1,10 @@
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
-import { SUBJECTS } from '@/types/school';
+import { SUBJECTS, CLASS_LEVELS, ClassLevel } from '@/types/school';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, BookOpen, Loader2 } from 'lucide-react';
+import { ChevronLeft, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 
 const subjectIcons: Record<string, string> = {
   'Mathematics': '📐',
@@ -21,80 +19,47 @@ const subjectIcons: Record<string, string> = {
   'Creative Art': '🎨',
 };
 
-interface ClassItem {
-  id: string;
-  name: string;
-}
-
 export default function ClassPortal() {
-  const { classLevel } = useParams<{ classLevel: string }>();
+  const { classLevel } = useParams<{ classLevel: ClassLevel }>();
   const navigate = useNavigate();
   const { getStudentsByClass, getScoresByClassAndSubject } = useSchool();
-  const [classInfo, setClassInfo] = useState<ClassItem | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchClass = async () => {
-      if (!classLevel) {
-        navigate('/dashboard');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('id', classLevel)
-        .single();
-
-      if (error || !data) {
-        navigate('/dashboard');
-        return;
-      }
-
-      setClassInfo(data);
-      setLoading(false);
-    };
-
-    fetchClass();
-  }, [classLevel, navigate]);
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="container py-8 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (!classInfo) {
+  if (!classLevel || !CLASS_LEVELS.find(c => c.id === classLevel)) {
+    navigate('/');
     return null;
   }
 
-  const students = getStudentsByClass(classLevel!);
+  const classInfo = CLASS_LEVELS.find(c => c.id === classLevel)!;
+  const students = getStudentsByClass(classLevel);
 
   const getSubjectProgress = (subject: string) => {
-    const scores = getScoresByClassAndSubject(classLevel!, subject);
+    const scores = getScoresByClassAndSubject(classLevel, subject);
     if (students.length === 0) return 0;
     return Math.round((scores.length / students.length) * 100);
   };
 
-  // Generate dynamic color based on class name
-  const getClassColor = (name: string) => {
-    const colors = [
-      { gradient: 'from-basic7 to-basic7/80', border: 'border-basic7/30' },
-      { gradient: 'from-basic8 to-basic8/80', border: 'border-basic8/30' },
-      { gradient: 'from-basic9 to-basic9/80', border: 'border-basic9/30' },
-      { gradient: 'from-purple-500 to-purple-400', border: 'border-purple-500/30' },
-      { gradient: 'from-pink-500 to-pink-400', border: 'border-pink-500/30' },
-      { gradient: 'from-indigo-500 to-indigo-400', border: 'border-indigo-500/30' },
-    ];
-    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
+  const colorStyles = {
+    basic7: {
+      bg: 'bg-basic7-light',
+      border: 'border-basic7/30',
+      text: 'text-basic7',
+      gradient: 'from-basic7 to-basic7/80',
+    },
+    basic8: {
+      bg: 'bg-basic8-light',
+      border: 'border-basic8/30',
+      text: 'text-basic8',
+      gradient: 'from-basic8 to-basic8/80',
+    },
+    basic9: {
+      bg: 'bg-basic9-light',
+      border: 'border-basic9/30',
+      text: 'text-basic9',
+      gradient: 'from-basic9 to-basic9/80',
+    },
   };
 
-  const styles = getClassColor(classInfo.name);
+  const styles = colorStyles[classLevel];
 
   return (
     <MainLayout>
@@ -147,7 +112,7 @@ export default function ClassPortal() {
             return (
               <Link
                 key={subject}
-                to={`/class/${classInfo.id}/subject/${encodeURIComponent(subject)}`}
+                to={`/class/${classLevel}/subject/${encodeURIComponent(subject)}`}
                 className={cn(
                   'group relative overflow-hidden rounded-xl border-2 p-5 transition-all duration-300',
                   'bg-card shadow-sm hover:shadow-lg',
