@@ -58,8 +58,9 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       setStudents(studentsData?.map(s => ({
         id: s.id,
         name: s.name,
-        classLevel: s.class_level as ClassLevel,
+        classLevel: s.class_level,
         photo: s.photo_url || undefined,
+        attendanceDays: (s as any).attendance_days || 0,
       })) || []);
 
       // Fetch scores
@@ -98,6 +99,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           academicYear: settingsData.academic_year || '2024/2025',
           term: settingsData.term || 'First Term',
           contacts: [settingsData.phone1 || '', settingsData.phone2 || ''].filter(Boolean),
+          totalSchoolDays: (settingsData as any).total_school_days || 64,
         });
       }
     } catch (error) {
@@ -169,7 +171,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         name: student.name,
         class_level: student.classLevel,
         photo_url: student.photo || null,
-      })
+        attendance_days: student.attendanceDays || 0,
+      } as any)
       .select()
       .single();
 
@@ -182,20 +185,23 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       setStudents(prev => [...prev, {
         id: data.id,
         name: data.name,
-        classLevel: data.class_level as ClassLevel,
+        classLevel: data.class_level,
         photo: data.photo_url || undefined,
+        attendanceDays: (data as any).attendance_days || 0,
       }]);
     }
   };
 
   const updateStudent = async (id: string, updates: Partial<Student>) => {
+    const updateData: any = {};
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.classLevel !== undefined) updateData.class_level = updates.classLevel;
+    if (updates.photo !== undefined) updateData.photo_url = updates.photo;
+    if (updates.attendanceDays !== undefined) updateData.attendance_days = updates.attendanceDays;
+
     const { error } = await supabase
       .from('students')
-      .update({
-        name: updates.name,
-        class_level: updates.classLevel,
-        photo_url: updates.photo,
-      })
+      .update(updateData)
       .eq('id', id);
 
     if (error) {
@@ -312,7 +318,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       .select('id')
       .maybeSingle();
 
-    const updateData = {
+    const updateData: any = {
       school_name: updates.schoolName,
       logo_url: updates.schoolLogo,
       motto: updates.motto,
@@ -321,6 +327,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       term: updates.term,
       phone1: updates.contacts?.[0],
       phone2: updates.contacts?.[1],
+      total_school_days: updates.totalSchoolDays,
     };
 
     if (existing) {

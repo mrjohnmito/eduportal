@@ -44,6 +44,7 @@ export type Database = {
           phone2: string | null
           school_name: string
           term: string | null
+          total_school_days: number | null
           updated_at: string
         }
         Insert: {
@@ -57,6 +58,7 @@ export type Database = {
           phone2?: string | null
           school_name?: string
           term?: string | null
+          total_school_days?: number | null
           updated_at?: string
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           phone2?: string | null
           school_name?: string
           term?: string | null
+          total_school_days?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -126,6 +129,7 @@ export type Database = {
       }
       students: {
         Row: {
+          attendance_days: number | null
           class_level: string
           created_at: string
           id: string
@@ -134,6 +138,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attendance_days?: number | null
           class_level: string
           created_at?: string
           id?: string
@@ -142,6 +147,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attendance_days?: number | null
           class_level?: string
           created_at?: string
           id?: string
