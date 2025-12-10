@@ -3,9 +3,10 @@ export type ClassLevel = 'basic7' | 'basic8' | 'basic9';
 export interface Student {
   id: string;
   name: string;
-  classLevel: ClassLevel;
+  classLevel: string;
   photo?: string;
   indexNumber?: string;
+  attendanceDays?: number;
 }
 
 export interface SubjectScore {
@@ -39,6 +40,7 @@ export interface SchoolSettings {
   motto: string;
   email: string;
   contacts: string[];
+  totalSchoolDays?: number;
 }
 
 export interface AdminUser {

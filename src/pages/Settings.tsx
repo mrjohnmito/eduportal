@@ -20,6 +20,7 @@ export default function Settings() {
   const [term, setTerm] = useState(settings.term);
   const [contacts, setContacts] = useState(settings.contacts.join(', '));
   const [logo, setLogo] = useState(settings.schoolLogo || '');
+  const [totalSchoolDays, setTotalSchoolDays] = useState(settings.totalSchoolDays?.toString() || '64');
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,6 +42,7 @@ export default function Settings() {
       term,
       contacts: contacts.split(',').map(c => c.trim()).filter(Boolean),
       schoolLogo: logo || undefined,
+      totalSchoolDays: totalSchoolDays ? parseInt(totalSchoolDays) : 64,
     });
 
     toast({
@@ -74,7 +76,7 @@ export default function Settings() {
         <div className="mb-8 animate-fade-in">
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -169,6 +171,21 @@ export default function Settings() {
               </div>
             </div>
 
+            {/* Total School Days */}
+            <div className="space-y-2">
+              <Label htmlFor="totalSchoolDays">Total School Days for Term</Label>
+              <Input
+                id="totalSchoolDays"
+                type="number"
+                value={totalSchoolDays}
+                onChange={e => setTotalSchoolDays(e.target.value)}
+                placeholder="e.g., 64"
+              />
+              <p className="text-xs text-muted-foreground">
+                This is the total number of days students are expected to attend school for the term
+              </p>
+            </div>
+
             {/* Contact Numbers */}
             <div className="space-y-2">
               <Label htmlFor="contacts">Contact Numbers (comma separated)</Label>
@@ -179,8 +196,6 @@ export default function Settings() {
                 placeholder="e.g., 0557387992, 0545231646"
               />
             </div>
-
-            {/* Save Button */}
             <Button
               onClick={handleSave}
               className="w-full gap-2 gradient-primary text-primary-foreground"

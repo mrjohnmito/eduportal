@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
@@ -27,10 +27,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { CLASS_LEVELS, ClassLevel, Student } from '@/types/school';
+import { Student } from '@/types/school';
 import { UserPlus, Pencil, Trash2, Upload, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ClassItem {
+  id: string;
+  name: string;
+}
 
 export default function StudentManagement() {
   const navigate = useNavigate();
@@ -43,7 +49,8 @@ export default function StudentManagement() {
     isAdmin,
   } = useSchool();
 
-  const [selectedClass, setSelectedClass] = useState<ClassLevel>('basic7');
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
@@ -51,6 +58,25 @@ export default function StudentManagement() {
   const [newName, setNewName] = useState('');
   const [newIndexNumber, setNewIndexNumber] = useState('');
   const [newPhoto, setNewPhoto] = useState<string>('');
+  const [newAttendance, setNewAttendance] = useState<string>('');
+
+  // Fetch classes from database
+  useEffect(() => {
+    const fetchClasses = async () => {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name')
+        .order('name');
+      
+      if (!error && data) {
+        setClasses(data);
+        if (data.length > 0 && !selectedClass) {
+          setSelectedClass(data[0].name.toLowerCase().replace(' ', ''));
+        }
+      }
+    };
+    fetchClasses();
+  }, []);
 
   const filteredStudents = students.filter(s => s.classLevel === selectedClass);
 
@@ -63,6 +89,11 @@ export default function StudentManagement() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const getClassName = (classId: string) => {
+    const classItem = classes.find(c => c.name.toLowerCase().replace(' ', '') === classId);
+    return classItem?.name || classId;
   };
 
   const handleAddStudent = () => {
@@ -80,16 +111,18 @@ export default function StudentManagement() {
       classLevel: selectedClass,
       indexNumber: newIndexNumber.trim() || undefined,
       photo: newPhoto || undefined,
+      attendanceDays: newAttendance ? parseInt(newAttendance) : 0,
     });
 
     toast({
       title: 'Student Added',
-      description: `${newName} has been added to ${CLASS_LEVELS.find(c => c.id === selectedClass)?.name}.`,
+      description: `${newName} has been added to ${getClassName(selectedClass)}.`,
     });
 
     setNewName('');
     setNewIndexNumber('');
     setNewPhoto('');
+    setNewAttendance('');
     setIsAddDialogOpen(false);
   };
 
@@ -100,6 +133,7 @@ export default function StudentManagement() {
       name: newName.trim(),
       indexNumber: newIndexNumber.trim() || undefined,
       photo: newPhoto || editingStudent.photo,
+      attendanceDays: newAttendance ? parseInt(newAttendance) : editingStudent.attendanceDays,
     });
 
     toast({
@@ -110,6 +144,7 @@ export default function StudentManagement() {
     setNewName('');
     setNewIndexNumber('');
     setNewPhoto('');
+    setNewAttendance('');
     setEditingStudent(null);
   };
 
@@ -128,6 +163,7 @@ export default function StudentManagement() {
     setNewName(student.name);
     setNewIndexNumber(student.indexNumber || '');
     setNewPhoto(student.photo || '');
+    setNewAttendance(student.attendanceDays?.toString() || '0');
   };
 
   if (!isAdmin) {
@@ -155,7 +191,7 @@ export default function StudentManagement() {
         <div className="mb-6 animate-fade-in">
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -191,14 +227,14 @@ export default function StudentManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="class">Class</Label>
-                    <Select value={selectedClass} onValueChange={(v) => setSelectedClass(v as ClassLevel)}>
+                    <Select value={selectedClass} onValueChange={setSelectedClass}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select class" />
                       </SelectTrigger>
                       <SelectContent>
-                        {CLASS_LEVELS.map(level => (
-                          <SelectItem key={level.id} value={level.id}>
-                            {level.name}
+                        {classes.map(cls => (
+                          <SelectItem key={cls.id} value={cls.name.toLowerCase().replace(' ', '')}>
+                            {cls.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -211,6 +247,16 @@ export default function StudentManagement() {
                       placeholder="Enter index number"
                       value={newIndexNumber}
                       onChange={e => setNewIndexNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="attendance">Days Attended (Optional)</Label>
+                    <Input
+                      id="attendance"
+                      type="number"
+                      placeholder="Enter attendance days"
+                      value={newAttendance}
+                      onChange={e => setNewAttendance(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -245,22 +291,23 @@ export default function StudentManagement() {
         </div>
 
         {/* Class Filter */}
-        <div className="mb-6 flex gap-2 animate-fade-in">
-          {CLASS_LEVELS.map(level => (
-            <Button
-              key={level.id}
-              variant={selectedClass === level.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedClass(level.id)}
-              className={cn(
-                selectedClass === level.id && level.id === 'basic7' && 'bg-basic7 hover:bg-basic7/90',
-                selectedClass === level.id && level.id === 'basic8' && 'bg-basic8 hover:bg-basic8/90',
-                selectedClass === level.id && level.id === 'basic9' && 'bg-basic9 hover:bg-basic9/90'
-              )}
-            >
-              {level.name} ({students.filter(s => s.classLevel === level.id).length})
-            </Button>
-          ))}
+        <div className="mb-6 flex flex-wrap gap-2 animate-fade-in">
+          {classes.map(cls => {
+            const classKey = cls.name.toLowerCase().replace(' ', '');
+            return (
+              <Button
+                key={cls.id}
+                variant={selectedClass === classKey ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedClass(classKey)}
+                className={cn(
+                  selectedClass === classKey && 'bg-primary hover:bg-primary/90'
+                )}
+              >
+                {cls.name} ({students.filter(s => s.classLevel === classKey).length})
+              </Button>
+            );
+          })}
         </div>
 
         {/* Students Table */}
@@ -334,6 +381,15 @@ export default function StudentManagement() {
                                   id="edit-index"
                                   value={newIndexNumber}
                                   onChange={e => setNewIndexNumber(e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="edit-attendance">Days Attended</Label>
+                                <Input
+                                  id="edit-attendance"
+                                  type="number"
+                                  value={newAttendance}
+                                  onChange={e => setNewAttendance(e.target.value)}
                                 />
                               </div>
                               <div className="space-y-2">
