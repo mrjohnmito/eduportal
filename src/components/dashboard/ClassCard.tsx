@@ -1,12 +1,35 @@
 import { Link } from 'react-router-dom';
 import { useSchool } from '@/contexts/SchoolContext';
-import { ClassLevel } from '@/types/school';
 import { Users, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface ClassCardProps {
-  classLevel: ClassLevel;
+  classLevel: string;
   name: string;
+}
+
+// Generate a consistent color based on class name
+function getClassColor(className: string): string {
+  const colors = [
+    'bg-emerald-500 hover:bg-emerald-600',
+    'bg-blue-500 hover:bg-blue-600',
+    'bg-purple-500 hover:bg-purple-600',
+    'bg-amber-500 hover:bg-amber-600',
+    'bg-rose-500 hover:bg-rose-600',
+    'bg-cyan-500 hover:bg-cyan-600',
+    'bg-indigo-500 hover:bg-indigo-600',
+    'bg-teal-500 hover:bg-teal-600',
+    'bg-orange-500 hover:bg-orange-600',
+    'bg-pink-500 hover:bg-pink-600',
+  ];
+  
+  // Generate a hash from the class name
+  let hash = 0;
+  for (let i = 0; i < className.length; i++) {
+    hash = className.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  return colors[Math.abs(hash) % colors.length];
 }
 
 export function ClassCard({ classLevel, name }: ClassCardProps) {
@@ -14,15 +37,11 @@ export function ClassCard({ classLevel, name }: ClassCardProps) {
   const students = getStudentsByClass(classLevel);
   const studentCount = students.length;
 
-  const colorStyles = {
-    basic7: 'bg-basic7 hover:bg-basic7/90',
-    basic8: 'bg-basic8 hover:bg-basic8/90',
-    basic9: 'bg-basic9 hover:bg-basic9/90',
-  };
+  const colorClass = getClassColor(name);
 
   return (
     <Link to={`/class/${classLevel}`}>
-      <Card className={`${colorStyles[classLevel]} text-white border-0 transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
+      <Card className={`${colorClass} text-white border-0 transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

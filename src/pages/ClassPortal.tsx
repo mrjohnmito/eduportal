@@ -1,10 +1,12 @@
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
-import { SUBJECTS, CLASS_LEVELS, ClassLevel } from '@/types/school';
+import { SUBJECTS } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const subjectIcons: Record<string, string> = {
   'Mathematics': '📐',
@@ -19,47 +21,86 @@ const subjectIcons: Record<string, string> = {
   'Creative Art': '🎨',
 };
 
+// Generate consistent colors based on class name
+function getClassColors(className: string) {
+  const colorSets = [
+    { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-600', gradient: 'from-emerald-500 to-emerald-600' },
+    { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-600', gradient: 'from-blue-500 to-blue-600' },
+    { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-600', gradient: 'from-purple-500 to-purple-600' },
+    { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-600', gradient: 'from-amber-500 to-amber-600' },
+    { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-600', gradient: 'from-rose-500 to-rose-600' },
+    { bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-600', gradient: 'from-cyan-500 to-cyan-600' },
+    { bg: 'bg-indigo-50', border: 'border-indigo-300', text: 'text-indigo-600', gradient: 'from-indigo-500 to-indigo-600' },
+    { bg: 'bg-teal-50', border: 'border-teal-300', text: 'text-teal-600', gradient: 'from-teal-500 to-teal-600' },
+  ];
+  
+  let hash = 0;
+  for (let i = 0; i < className.length; i++) {
+    hash = className.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  return colorSets[Math.abs(hash) % colorSets.length];
+}
+
 export default function ClassPortal() {
-  const { classLevel } = useParams<{ classLevel: ClassLevel }>();
+  const { classLevel } = useParams<{ classLevel: string }>();
   const navigate = useNavigate();
   const { getStudentsByClass, getScoresByClassAndSubject } = useSchool();
+  const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!classLevel || !CLASS_LEVELS.find(c => c.id === classLevel)) {
-    navigate('/');
-    return null;
+  useEffect(() => {
+    const fetchClass = async () => {
+      if (!classLevel) {
+        navigate('/dashboard');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('classes')
+        .select('*')
+        .order('name');
+
+      if (error || !data) {
+        navigate('/dashboard');
+        return;
+      }
+
+      // Find class by matching the classLevel (e.g., "basic7" matches "Basic 7")
+      const foundClass = data.find(c => 
+        c.name.toLowerCase().replace(/\s/g, '') === classLevel
+      );
+
+      if (!foundClass) {
+        navigate('/dashboard');
+        return;
+      }
+
+      setClassInfo({ id: foundClass.id, name: foundClass.name });
+      setLoading(false);
+    };
+
+    fetchClass();
+  }, [classLevel, navigate]);
+
+  if (loading || !classInfo || !classLevel) {
+    return (
+      <MainLayout>
+        <div className="container py-8 text-center text-muted-foreground">
+          Loading...
+        </div>
+      </MainLayout>
+    );
   }
 
-  const classInfo = CLASS_LEVELS.find(c => c.id === classLevel)!;
   const students = getStudentsByClass(classLevel);
+  const styles = getClassColors(classInfo.name);
 
   const getSubjectProgress = (subject: string) => {
     const scores = getScoresByClassAndSubject(classLevel, subject);
     if (students.length === 0) return 0;
     return Math.round((scores.length / students.length) * 100);
   };
-
-  const colorStyles = {
-    basic7: {
-      bg: 'bg-basic7-light',
-      border: 'border-basic7/30',
-      text: 'text-basic7',
-      gradient: 'from-basic7 to-basic7/80',
-    },
-    basic8: {
-      bg: 'bg-basic8-light',
-      border: 'border-basic8/30',
-      text: 'text-basic8',
-      gradient: 'from-basic8 to-basic8/80',
-    },
-    basic9: {
-      bg: 'bg-basic9-light',
-      border: 'border-basic9/30',
-      text: 'text-basic9',
-      gradient: 'from-basic9 to-basic9/80',
-    },
-  };
-
-  const styles = colorStyles[classLevel];
 
   return (
     <MainLayout>
@@ -68,7 +109,7 @@ export default function ClassPortal() {
         <div className="mb-8 animate-fade-in">
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -80,7 +121,7 @@ export default function ClassPortal() {
               'flex h-14 w-14 items-center justify-center rounded-xl',
               `bg-gradient-to-br ${styles.gradient}`
             )}>
-              <BookOpen className="h-7 w-7 text-primary-foreground" />
+              <BookOpen className="h-7 w-7 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground sm:text-3xl">

@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
-import { CLASS_LEVELS, ClassLevel, SubjectScore, Student } from '@/types/school';
+import { SubjectScore, Student } from '@/types/school';
 import { calculateScores, validateScore } from '@/lib/gradeUtils';
 import { CalculatedScore } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft, Save, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ScoreRow {
   student: Student;
@@ -17,8 +18,29 @@ interface ScoreRow {
   errors: Record<string, boolean>;
 }
 
+// Generate consistent colors based on class name
+function getClassGradient(className: string): string {
+  const gradients = [
+    'from-emerald-500 to-emerald-600',
+    'from-blue-500 to-blue-600',
+    'from-purple-500 to-purple-600',
+    'from-amber-500 to-amber-600',
+    'from-rose-500 to-rose-600',
+    'from-cyan-500 to-cyan-600',
+    'from-indigo-500 to-indigo-600',
+    'from-teal-500 to-teal-600',
+  ];
+  
+  let hash = 0;
+  for (let i = 0; i < className.length; i++) {
+    hash = className.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  return gradients[Math.abs(hash) % gradients.length];
+}
+
 export default function ScoreEntry() {
-  const { classLevel, subject } = useParams<{ classLevel: ClassLevel; subject: string }>();
+  const { classLevel, subject } = useParams<{ classLevel: string; subject: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const {
@@ -26,32 +48,62 @@ export default function ScoreEntry() {
     getScoresByClassAndSubject,
     addScore,
     updateScore,
-    scores: allScores,
   } = useSchool();
+
+  const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [scoreRows, setScoreRows] = useState<ScoreRow[]>([]);
 
   const decodedSubject = decodeURIComponent(subject || '');
 
-  // Validate params
-  if (!classLevel || !CLASS_LEVELS.find(c => c.id === classLevel) || !subject) {
-    navigate('/');
-    return null;
-  }
+  // Fetch class info
+  useEffect(() => {
+    const fetchClass = async () => {
+      if (!classLevel || !subject) {
+        navigate('/dashboard');
+        return;
+      }
 
-  const classInfo = CLASS_LEVELS.find(c => c.id === classLevel)!;
-  const students = getStudentsByClass(classLevel);
-  const existingScores = getScoresByClassAndSubject(classLevel, decodedSubject);
+      const { data, error } = await supabase
+        .from('classes')
+        .select('*')
+        .order('name');
+
+      if (error || !data) {
+        navigate('/dashboard');
+        return;
+      }
+
+      const foundClass = data.find(c => 
+        c.name.toLowerCase().replace(/\s/g, '') === classLevel
+      );
+
+      if (!foundClass) {
+        navigate('/dashboard');
+        return;
+      }
+
+      setClassInfo({ id: foundClass.id, name: foundClass.name });
+      setLoading(false);
+    };
+
+    fetchClass();
+  }, [classLevel, subject, navigate]);
+
+  const students = classLevel ? getStudentsByClass(classLevel) : [];
+  const existingScores = classLevel ? getScoresByClassAndSubject(classLevel, decodedSubject) : [];
 
   // Initialize score rows
-  const [scoreRows, setScoreRows] = useState<ScoreRow[]>([]);
-
   useEffect(() => {
+    if (!classLevel) return;
+    
     const rows: ScoreRow[] = students.map(student => {
       const existing = existingScores.find(s => s.studentId === student.id);
       const score: SubjectScore = existing || {
         id: '',
         studentId: student.id,
         subject: decodedSubject,
-        classLevel,
+        classLevel: classLevel as any,
         test1: null,
         groupWork: null,
         test2: null,
@@ -67,7 +119,7 @@ export default function ScoreEntry() {
       };
     });
     setScoreRows(rows);
-  }, [students.length, existingScores.length]);
+  }, [students.length, existingScores.length, classLevel, decodedSubject]);
 
   const handleScoreChange = useCallback((
     studentId: string,
@@ -161,13 +213,17 @@ export default function ScoreEntry() {
     );
   };
 
-  const colorStyles = {
-    basic7: { gradient: 'from-basic7 to-basic7/80' },
-    basic8: { gradient: 'from-basic8 to-basic8/80' },
-    basic9: { gradient: 'from-basic9 to-basic9/80' },
-  };
+  if (loading || !classInfo || !classLevel) {
+    return (
+      <MainLayout>
+        <div className="container py-8 text-center text-muted-foreground">
+          Loading...
+        </div>
+      </MainLayout>
+    );
+  }
 
-  const styles = colorStyles[classLevel];
+  const gradient = getClassGradient(classInfo.name);
 
   return (
     <MainLayout>
@@ -207,7 +263,7 @@ export default function ScoreEntry() {
                 size="sm"
                 onClick={handleSave}
                 disabled={hasErrors}
-                className={cn('gap-2 text-primary-foreground', `bg-gradient-to-r ${styles.gradient}`)}
+                className={cn('gap-2 text-white', `bg-gradient-to-r ${gradient}`)}
               >
                 <Save className="h-4 w-4" />
                 Save Scores
