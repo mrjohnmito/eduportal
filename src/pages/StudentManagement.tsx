@@ -60,6 +60,9 @@ export default function StudentManagement() {
   const [newPhoto, setNewPhoto] = useState<string>('');
   const [newAttendance, setNewAttendance] = useState<string>('');
 
+  // Helper to convert class name to class_level format
+  const toClassLevel = (name: string) => name.toLowerCase().replace(/\s+/g, '');
+
   // Fetch classes from database
   useEffect(() => {
     const fetchClasses = async () => {
@@ -71,7 +74,7 @@ export default function StudentManagement() {
       if (!error && data) {
         setClasses(data);
         if (data.length > 0 && !selectedClass) {
-          setSelectedClass(data[0].name.toLowerCase().replace(' ', ''));
+          setSelectedClass(toClassLevel(data[0].name));
         }
       }
     };
@@ -92,7 +95,7 @@ export default function StudentManagement() {
   };
 
   const getClassName = (classId: string) => {
-    const classItem = classes.find(c => c.name.toLowerCase().replace(' ', '') === classId);
+    const classItem = classes.find(c => toClassLevel(c.name) === classId);
     return classItem?.name || classId;
   };
 
@@ -233,7 +236,7 @@ export default function StudentManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map(cls => (
-                          <SelectItem key={cls.id} value={cls.name.toLowerCase().replace(' ', '')}>
+                          <SelectItem key={cls.id} value={toClassLevel(cls.name)}>
                             {cls.name}
                           </SelectItem>
                         ))}
@@ -293,7 +296,7 @@ export default function StudentManagement() {
         {/* Class Filter */}
         <div className="mb-6 flex flex-wrap gap-2 animate-fade-in">
           {classes.map(cls => {
-            const classKey = cls.name.toLowerCase().replace(' ', '');
+            const classKey = toClassLevel(cls.name);
             return (
               <Button
                 key={cls.id}
