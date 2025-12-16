@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, Upload, Save, GraduationCap } from 'lucide-react';
+import { ChevronLeft, Upload, Save, GraduationCap, Plus, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -21,6 +22,16 @@ export default function Settings() {
   const [contacts, setContacts] = useState(settings.contacts.join(', '));
   const [logo, setLogo] = useState(settings.schoolLogo || '');
   const [totalSchoolDays, setTotalSchoolDays] = useState(settings.totalSchoolDays?.toString() || '64');
+  
+  // Interest and Conduct options
+  const [interestOptions, setInterestOptions] = useState<string[]>(
+    settings.interestOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']
+  );
+  const [conductOptions, setConductOptions] = useState<string[]>(
+    settings.conductOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']
+  );
+  const [newInterest, setNewInterest] = useState('');
+  const [newConduct, setNewConduct] = useState('');
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,6 +44,28 @@ export default function Settings() {
     }
   };
 
+  const addInterestOption = () => {
+    if (newInterest.trim() && !interestOptions.includes(newInterest.trim())) {
+      setInterestOptions([...interestOptions, newInterest.trim()]);
+      setNewInterest('');
+    }
+  };
+
+  const removeInterestOption = (option: string) => {
+    setInterestOptions(interestOptions.filter(o => o !== option));
+  };
+
+  const addConductOption = () => {
+    if (newConduct.trim() && !conductOptions.includes(newConduct.trim())) {
+      setConductOptions([...conductOptions, newConduct.trim()]);
+      setNewConduct('');
+    }
+  };
+
+  const removeConductOption = (option: string) => {
+    setConductOptions(conductOptions.filter(o => o !== option));
+  };
+
   const handleSave = () => {
     updateSettings({
       schoolName,
@@ -43,6 +76,8 @@ export default function Settings() {
       contacts: contacts.split(',').map(c => c.trim()).filter(Boolean),
       schoolLogo: logo || undefined,
       totalSchoolDays: totalSchoolDays ? parseInt(totalSchoolDays) : 64,
+      interestOptions,
+      conductOptions,
     });
 
     toast({
@@ -196,6 +231,67 @@ export default function Settings() {
                 placeholder="e.g., 0557387992, 0545231646"
               />
             </div>
+
+            {/* Interest Options */}
+            <div className="space-y-3">
+              <Label>Interest Options (for Class Teacher Reports)</Label>
+              <div className="flex flex-wrap gap-2">
+                {interestOptions.map((option) => (
+                  <Badge key={option} variant="secondary" className="gap-1 pr-1">
+                    {option}
+                    <button
+                      type="button"
+                      onClick={() => removeInterestOption(option)}
+                      className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newInterest}
+                  onChange={e => setNewInterest(e.target.value)}
+                  placeholder="Add new interest option"
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addInterestOption())}
+                />
+                <Button type="button" variant="outline" size="icon" onClick={addInterestOption}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Conduct Options */}
+            <div className="space-y-3">
+              <Label>Conduct Options (for Class Teacher Reports)</Label>
+              <div className="flex flex-wrap gap-2">
+                {conductOptions.map((option) => (
+                  <Badge key={option} variant="secondary" className="gap-1 pr-1">
+                    {option}
+                    <button
+                      type="button"
+                      onClick={() => removeConductOption(option)}
+                      className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newConduct}
+                  onChange={e => setNewConduct(e.target.value)}
+                  placeholder="Add new conduct option"
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addConductOption())}
+                />
+                <Button type="button" variant="outline" size="icon" onClick={addConductOption}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
             <Button
               onClick={handleSave}
               className="w-full gap-2 gradient-primary text-primary-foreground"

@@ -41,6 +41,8 @@ export interface SchoolSettings {
   email: string;
   contacts: string[];
   totalSchoolDays?: number;
+  interestOptions?: string[];
+  conductOptions?: string[];
 }
 
 export interface AdminUser {

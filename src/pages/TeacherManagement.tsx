@@ -5,6 +5,7 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -50,12 +51,24 @@ interface Teacher {
   created_at: string;
 }
 
+interface ClassItem {
+  id: string;
+  name: string;
+}
+
+interface TeacherAssignment {
+  teacher_id: string;
+  class_id: string;
+}
+
 export default function TeacherManagement() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin } = useSchool();
 
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [assignments, setAssignments] = useState<TeacherAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
@@ -65,24 +78,50 @@ export default function TeacherManagement() {
   // Form state
   const [name, setName] = useState('');
   const [accessCode, setAccessCode] = useState('');
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const fetchTeachers = async () => {
-    const { data, error } = await supabase
+  const fetchData = async () => {
+    // Fetch teachers
+    const { data: teachersData, error: teachersError } = await supabase
       .from('teachers')
       .select('*')
       .order('name');
 
-    if (error) {
-      console.error('Error fetching teachers:', error);
+    if (teachersError) {
+      console.error('Error fetching teachers:', teachersError);
     } else {
-      setTeachers(data || []);
+      setTeachers(teachersData || []);
     }
+
+    // Fetch classes
+    const { data: classesData, error: classesError } = await supabase
+      .from('classes')
+      .select('id, name')
+      .order('name');
+
+    if (classesError) {
+      console.error('Error fetching classes:', classesError);
+    } else {
+      setClasses(classesData || []);
+    }
+
+    // Fetch assignments
+    const { data: assignmentsData, error: assignmentsError } = await supabase
+      .from('teacher_class_assignments')
+      .select('teacher_id, class_id');
+
+    if (assignmentsError) {
+      console.error('Error fetching assignments:', assignmentsError);
+    } else {
+      setAssignments(assignmentsData || []);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchTeachers();
+    fetchData();
   }, []);
 
   const generateAccessCode = () => {
@@ -99,13 +138,27 @@ export default function TeacherManagement() {
       setEditingTeacher(teacher);
       setName(teacher.name);
       setAccessCode(teacher.access_code);
+      // Get assigned classes for this teacher
+      const teacherAssignments = assignments
+        .filter(a => a.teacher_id === teacher.id)
+        .map(a => a.class_id);
+      setSelectedClasses(teacherAssignments);
     } else {
       setEditingTeacher(null);
       setName('');
       setAccessCode('');
+      setSelectedClasses([]);
       generateAccessCode();
     }
     setDialogOpen(true);
+  };
+
+  const handleClassToggle = (classId: string) => {
+    setSelectedClasses(prev =>
+      prev.includes(classId)
+        ? prev.filter(id => id !== classId)
+        : [...prev, classId]
+    );
   };
 
   const handleSave = async () => {
@@ -130,6 +183,8 @@ export default function TeacherManagement() {
     setSaving(true);
 
     try {
+      let teacherId = editingTeacher?.id;
+
       if (editingTeacher) {
         // Update existing teacher
         const { error } = await supabase
@@ -138,16 +193,13 @@ export default function TeacherManagement() {
           .eq('id', editingTeacher.id);
 
         if (error) throw error;
-
-        toast({
-          title: 'Teacher Updated',
-          description: `${name} has been updated successfully.`,
-        });
       } else {
         // Create new teacher
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('teachers')
-          .insert({ name: name.trim(), access_code: accessCode.trim() });
+          .insert({ name: name.trim(), access_code: accessCode.trim() })
+          .select()
+          .single();
 
         if (error) {
           if (error.code === '23505') {
@@ -161,15 +213,43 @@ export default function TeacherManagement() {
           }
           throw error;
         }
-
-        toast({
-          title: 'Teacher Created',
-          description: `${name} has been added with access code: ${accessCode}`,
-        });
+        teacherId = data.id;
       }
 
+      // Update class assignments
+      if (teacherId) {
+        // Delete existing assignments
+        await supabase
+          .from('teacher_class_assignments')
+          .delete()
+          .eq('teacher_id', teacherId);
+
+        // Insert new assignments
+        if (selectedClasses.length > 0) {
+          const assignmentsToInsert = selectedClasses.map(classId => ({
+            teacher_id: teacherId,
+            class_id: classId,
+          }));
+
+          const { error: assignError } = await supabase
+            .from('teacher_class_assignments')
+            .insert(assignmentsToInsert);
+
+          if (assignError) {
+            console.error('Error saving assignments:', assignError);
+          }
+        }
+      }
+
+      toast({
+        title: editingTeacher ? 'Teacher Updated' : 'Teacher Created',
+        description: editingTeacher
+          ? `${name} has been updated successfully.`
+          : `${name} has been added with access code: ${accessCode}`,
+      });
+
       setDialogOpen(false);
-      fetchTeachers();
+      fetchData();
     } catch (error) {
       console.error('Error saving teacher:', error);
       toast({
@@ -199,7 +279,7 @@ export default function TeacherManagement() {
       });
 
       setDeleteTeacher(null);
-      fetchTeachers();
+      fetchData();
     } catch (error) {
       console.error('Error deleting teacher:', error);
       toast({
@@ -218,6 +298,13 @@ export default function TeacherManagement() {
       title: 'Copied!',
       description: `Access code for ${teacher.name} copied to clipboard.`,
     });
+  };
+
+  const getAssignedClasses = (teacherId: string) => {
+    const teacherAssignments = assignments.filter(a => a.teacher_id === teacherId);
+    return classes
+      .filter(c => teacherAssignments.some(a => a.class_id === c.id))
+      .map(c => c.name);
   };
 
   if (!isAdmin) {
@@ -255,7 +342,7 @@ export default function TeacherManagement() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Teacher Management</h1>
-              <p className="text-muted-foreground">Create and manage teacher access codes</p>
+              <p className="text-muted-foreground">Create and manage teacher access codes and class assignments</p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -264,7 +351,7 @@ export default function TeacherManagement() {
                   Add Teacher
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>
                     {editingTeacher ? 'Edit Teacher' : 'Add New Teacher'}
@@ -309,6 +396,36 @@ export default function TeacherManagement() {
                       Teacher will use this code to access the dashboard
                     </p>
                   </div>
+
+                  {/* Class Assignments */}
+                  <div className="space-y-3">
+                    <Label>Assign Classes</Label>
+                    <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto bg-background">
+                      {classes.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No classes available</p>
+                      ) : (
+                        classes.map((cls) => (
+                          <div key={cls.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`class-${cls.id}`}
+                              checked={selectedClasses.includes(cls.id)}
+                              onCheckedChange={() => handleClassToggle(cls.id)}
+                            />
+                            <label
+                              htmlFor={`class-${cls.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {cls.name}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Teacher can only access Class Teacher Reports for assigned classes
+                    </p>
+                  </div>
+
                   <Button
                     onClick={handleSave}
                     disabled={saving}
@@ -344,6 +461,7 @@ export default function TeacherManagement() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Access Code</TableHead>
+                  <TableHead>Assigned Classes</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -369,6 +487,22 @@ export default function TeacherManagement() {
                             <Copy className="h-4 w-4" />
                           )}
                         </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {getAssignedClasses(teacher.id).length > 0 ? (
+                          getAssignedClasses(teacher.id).map((className) => (
+                            <span
+                              key={className}
+                              className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                            >
+                              {className}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No classes</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
