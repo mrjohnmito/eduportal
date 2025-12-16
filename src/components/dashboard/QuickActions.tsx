@@ -1,17 +1,20 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
-import { UserPlus, FileDown, Trash2, Settings, Zap, Users, GraduationCap } from 'lucide-react';
+import { UserPlus, FileDown, Trash2, Settings, Zap, Users, GraduationCap, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function QuickActions() {
   const { isAdmin } = useSchool();
+  const [isTeacher, setIsTeacher] = useState(false);
 
-  if (!isAdmin) {
-    return null;
-  }
+  useEffect(() => {
+    const teacherData = sessionStorage.getItem('teacher');
+    setIsTeacher(!!teacherData);
+  }, []);
 
-  const actions = [
+  const adminActions = [
     {
       to: '/students',
       icon: UserPlus,
@@ -55,6 +58,22 @@ export function QuickActions() {
       shadow: 'hover:shadow-violet-500/30',
     },
   ];
+
+  const teacherActions = [
+    {
+      to: '/class-teacher-report',
+      icon: FileText,
+      label: 'Class Teacher Report',
+      gradient: 'from-teal-500 to-green-600',
+      shadow: 'hover:shadow-teal-500/30',
+    },
+  ];
+
+  const actions = isAdmin ? adminActions : isTeacher ? teacherActions : [];
+
+  if (actions.length === 0) {
+    return null;
+  }
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-3">

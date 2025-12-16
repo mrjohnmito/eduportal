@@ -14,6 +14,7 @@ import ClearData from "./pages/ClearData";
 import BulkPDF from "./pages/BulkPDF";
 import TeacherManagement from "./pages/TeacherManagement";
 import ClassManagement from "./pages/ClassManagement";
+import ClassTeacherReport from "./pages/ClassTeacherReport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/bulk-pdf" element={<BulkPDF />} />
             <Route path="/teachers" element={<TeacherManagement />} />
             <Route path="/classes" element={<ClassManagement />} />
+            <Route path="/class-teacher-report" element={<ClassTeacherReport />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

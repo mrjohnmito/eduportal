@@ -100,6 +100,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           term: settingsData.term || 'First Term',
           contacts: [settingsData.phone1 || '', settingsData.phone2 || ''].filter(Boolean),
           totalSchoolDays: (settingsData as any).total_school_days || 64,
+          interestOptions: (settingsData as any).interest_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
+          conductOptions: (settingsData as any).conduct_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
         });
       }
     } catch (error) {
@@ -328,6 +330,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       phone1: updates.contacts?.[0],
       phone2: updates.contacts?.[1],
       total_school_days: updates.totalSchoolDays,
+      interest_options: updates.interestOptions,
+      conduct_options: updates.conductOptions,
     };
 
     if (existing) {

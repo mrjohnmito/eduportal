@@ -24,6 +24,14 @@ interface ClassItem {
   name: string;
 }
 
+interface ClassTeacherReportData {
+  student_id: string;
+  attendance: number;
+  interest: string;
+  conduct: string;
+  class_teacher_remark: string;
+}
+
 // Helper to convert class name to class_level format
 const toClassLevel = (name: string) => name.toLowerCase().replace(/\s+/g, '');
 
@@ -56,7 +64,7 @@ export default function BulkPDF() {
     const classStudents = students.filter(s => s.classLevel === selectedClass);
     const classScores = scores.filter(s => s.classLevel === selectedClass);
 
-    // Prepare data for Excel
+    // Prepare data for Excel with simplified columns
     const data = classStudents.map(student => {
       const studentScores = classScores
         .filter(s => s.studentId === student.id)
@@ -69,9 +77,13 @@ export default function BulkPDF() {
         'Index Number': student.indexNumber || '',
       };
 
+      // Simplified columns: A (50%), B (50%), Overall, Grade, Remark
       studentScores.forEach(score => {
-        row[`${score.subject} (Total)`] = score.overallTotal.toFixed(1);
-        row[`${score.subject} (Grade)`] = score.grade;
+        row[`${score.subject} A(50%)`] = score.caScore.toFixed(1);
+        row[`${score.subject} B(50%)`] = score.examPercent.toFixed(1);
+        row[`${score.subject} Overall`] = score.overallTotal.toFixed(1);
+        row[`${score.subject} Grade`] = score.grade;
+        row[`${score.subject} Remark`] = score.remark;
       });
 
       row['Total Score'] = totalScore.toFixed(1);
@@ -113,6 +125,26 @@ export default function BulkPDF() {
         return;
       }
 
+      // Fetch class teacher reports for all students in this class
+      const studentIds = classStudents.map(s => s.id);
+      const { data: teacherReports } = await supabase
+        .from('class_teacher_reports')
+        .select('*')
+        .in('student_id', studentIds)
+        .eq('term', settings.term)
+        .eq('academic_year', settings.academicYear);
+
+      const reportsMap = new Map<string, ClassTeacherReportData>();
+      teacherReports?.forEach(report => {
+        reportsMap.set(report.student_id, {
+          student_id: report.student_id,
+          attendance: report.attendance || 0,
+          interest: report.interest || '',
+          conduct: report.conduct || '',
+          class_teacher_remark: report.class_teacher_remark || '',
+        });
+      });
+
       // Calculate positions for all students
       const studentTotals = classStudents.map(student => {
         const studentScores = classScores
@@ -137,6 +169,7 @@ export default function BulkPDF() {
         }
 
         let yPos = margin;
+        const teacherReport = reportsMap.get(student.id);
 
         // Header Section
         doc.setFillColor(34, 139, 34); // Green header
@@ -147,7 +180,6 @@ export default function BulkPDF() {
           try {
             doc.addImage(settings.schoolLogo, 'PNG', 10, 5, 25, 25);
           } catch {
-            // Fallback to placeholder
             doc.setFillColor(255, 255, 255);
             doc.circle(22, 17, 10, 'F');
           }
@@ -203,45 +235,41 @@ export default function BulkPDF() {
         doc.text(`Index No: ${student.indexNumber || 'N/A'}`, margin + 5, infoY + 16);
 
         const position = positions.get(student.id) || 0;
+        const attendance = teacherReport?.attendance || student.attendanceDays || 0;
         doc.text(`Academic Year: ${settings.academicYear}`, pageWidth / 2, infoY);
         doc.text(`Term: ${settings.term}`, pageWidth / 2, infoY + 8);
-        doc.text(`Position: ${position}${getPositionSuffix(position)} out of ${totalStudents}`, pageWidth / 2, infoY + 16);
+        doc.text(`Attendance: ${attendance} of ${settings.totalSchoolDays || 64} days`, pageWidth / 2, infoY + 16);
 
         yPos += 30;
 
-        // Scores Table
+        // Scores Table - Simplified with A(50%), B(50%), Overall, Grade, Remark
         const studentScores = classScores
           .filter(s => s.studentId === student.id)
           .map(s => calculateScores(s));
 
-        // Create table data with all subjects
         const tableData = SUBJECTS.map(subject => {
           const score = studentScores.find(s => s.subject === subject);
           if (score) {
             return [
               subject,
-              score.test1?.toString() || '-',
-              score.groupWork?.toString() || '-',
-              score.test2?.toString() || '-',
-              score.project?.toString() || '-',
-              score.subtotal.toFixed(0),
-              score.examScore?.toString() || '-',
+              score.caScore.toFixed(1),
+              score.examPercent.toFixed(1),
               score.overallTotal.toFixed(1),
               score.grade.toString(),
               score.remark
             ];
           }
-          return [subject, '-', '-', '-', '-', '-', '-', '-', '-', '-'];
+          return [subject, '-', '-', '-', '-', '-'];
         });
 
         autoTable(doc, {
           startY: yPos,
-          head: [['Subject', 'Test 1\n(30)', 'G.Work\n(20)', 'Test 2\n(30)', 'Project\n(20)', 'CA\nTotal', 'Exam\n(100)', 'Total\n(100)', 'Grade', 'Remark']],
+          head: [['Subject', 'A (50%)', 'B (50%)', 'Overall\n(100)', 'Grade', 'Remark']],
           body: tableData,
           theme: 'grid',
           styles: {
-            fontSize: 7,
-            cellPadding: 1.5,
+            fontSize: 8,
+            cellPadding: 2,
             valign: 'middle',
             halign: 'center',
           },
@@ -249,19 +277,15 @@ export default function BulkPDF() {
             fillColor: [34, 139, 34],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 7,
+            fontSize: 8,
           },
           columnStyles: {
-            0: { halign: 'left', cellWidth: 28 },
-            1: { cellWidth: 12 },
-            2: { cellWidth: 12 },
-            3: { cellWidth: 12 },
-            4: { cellWidth: 14 },
-            5: { cellWidth: 12 },
-            6: { cellWidth: 12 },
-            7: { cellWidth: 14 },
-            8: { cellWidth: 12 },
-            9: { halign: 'left', cellWidth: 22 },
+            0: { halign: 'left', cellWidth: 40 },
+            1: { cellWidth: 22 },
+            2: { cellWidth: 22 },
+            3: { cellWidth: 22 },
+            4: { cellWidth: 18 },
+            5: { halign: 'left', cellWidth: 36 },
           },
           margin: { left: margin, right: margin },
         });
@@ -291,12 +315,28 @@ export default function BulkPDF() {
 
         yPos += 25;
 
+        // Interest and Conduct (from Class Teacher Report)
+        if (teacherReport?.interest || teacherReport?.conduct) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Interest: `, margin, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text(teacherReport?.interest || 'N/A', margin + 18, yPos);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Conduct: `, pageWidth / 2, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text(teacherReport?.conduct || 'N/A', pageWidth / 2 + 18, yPos);
+          yPos += 8;
+        }
+
         // Remarks Section
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.text("Class Teacher's Remark:", margin, yPos);
         doc.setFont('helvetica', 'normal');
-        doc.text(overallRemark, margin + 42, yPos);
+        const classTeacherRemark = teacherReport?.class_teacher_remark || overallRemark;
+        doc.text(classTeacherRemark.substring(0, 60), margin + 42, yPos);
 
         yPos += 8;
 
@@ -435,11 +475,12 @@ export default function BulkPDF() {
             <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
               <p className="font-medium text-foreground mb-2">What's included:</p>
               <ul className="space-y-1">
-                <li>• All subject scores and grades</li>
-                <li>• Auto-calculated aggregates</li>
-                <li>• Class positions</li>
+                <li>• A (50%) - Continuous Assessment</li>
+                <li>• B (50%) - Exam Score</li>
+                <li>• Overall Total, Grade & Remark</li>
+                <li>• Attendance, Interest & Conduct</li>
+                <li>• Class positions & Aggregate</li>
                 <li>• Teacher & Headmaster remarks</li>
-                <li>• School logo and information</li>
               </ul>
             </div>
           </div>

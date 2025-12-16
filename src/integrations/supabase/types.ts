@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      class_teacher_reports: {
+        Row: {
+          academic_year: string
+          attendance: number | null
+          class_teacher_remark: string | null
+          conduct: string | null
+          created_at: string
+          id: string
+          interest: string | null
+          student_id: string
+          teacher_id: string
+          term: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year: string
+          attendance?: number | null
+          class_teacher_remark?: string | null
+          conduct?: string | null
+          created_at?: string
+          id?: string
+          interest?: string | null
+          student_id: string
+          teacher_id: string
+          term: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: string
+          attendance?: number | null
+          class_teacher_remark?: string | null
+          conduct?: string | null
+          created_at?: string
+          id?: string
+          interest?: string | null
+          student_id?: string
+          teacher_id?: string
+          term?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_teacher_reports_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_teacher_reports_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           created_at: string
@@ -35,9 +92,11 @@ export type Database = {
       school_settings: {
         Row: {
           academic_year: string | null
+          conduct_options: string[] | null
           created_at: string
           email: string | null
           id: string
+          interest_options: string[] | null
           logo_url: string | null
           motto: string | null
           phone1: string | null
@@ -49,9 +108,11 @@ export type Database = {
         }
         Insert: {
           academic_year?: string | null
+          conduct_options?: string[] | null
           created_at?: string
           email?: string | null
           id?: string
+          interest_options?: string[] | null
           logo_url?: string | null
           motto?: string | null
           phone1?: string | null
@@ -63,9 +124,11 @@ export type Database = {
         }
         Update: {
           academic_year?: string | null
+          conduct_options?: string[] | null
           created_at?: string
           email?: string | null
           id?: string
+          interest_options?: string[] | null
           logo_url?: string | null
           motto?: string | null
           phone1?: string | null
@@ -156,6 +219,42 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      teacher_class_assignments: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_class_assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_class_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teachers: {
         Row: {
