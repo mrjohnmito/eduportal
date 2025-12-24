@@ -1,5 +1,16 @@
 export type ClassLevel = 'basic7' | 'basic8' | 'basic9';
 
+export interface School {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  schoolCode: string;
+  subscriptionStatus: boolean;
+  subscriptionExpiry?: string;
+  themeColor?: string;
+  createdAt: string;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -7,6 +18,7 @@ export interface Student {
   photo?: string;
   indexNumber?: string;
   attendanceDays?: number;
+  schoolId?: string;
 }
 
 export interface SubjectScore {
@@ -19,6 +31,7 @@ export interface SubjectScore {
   test2: number | null;
   project: number | null;
   examScore: number | null;
+  schoolId?: string;
 }
 
 export interface CalculatedScore extends SubjectScore {
@@ -43,6 +56,7 @@ export interface SchoolSettings {
   totalSchoolDays?: number;
   interestOptions?: string[];
   conductOptions?: string[];
+  schoolId?: string;
 }
 
 export interface AdminUser {
