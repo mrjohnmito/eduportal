@@ -5,8 +5,9 @@ import { ClassCard } from '@/components/dashboard/ClassCard';
 import { TotalStudentsCard } from '@/components/dashboard/TotalStudentsCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
-import { GraduationCap, BookOpen, Award, TrendingUp } from 'lucide-react';
+import { GraduationCap, BookOpen, Award, TrendingUp, Calendar, AlertTriangle } from 'lucide-react';
 
 interface ClassItem {
   id: string;
@@ -15,26 +16,35 @@ interface ClassItem {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { settings, isAdmin, user, loading } = useSchool();
+  const { settings, isAdmin, user, loading, subscriptionExpiry, subscriptionDaysRemaining } = useSchool();
+  const { selectedSchool } = useSelectedSchool();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
 
-  // Check authentication
+  // Check authentication and school selection
   useEffect(() => {
     if (loading) return;
     
     const teacherId = sessionStorage.getItem('teacherId');
     if (!user && !teacherId) {
       navigate('/');
+      return;
     }
-  }, [user, loading, navigate]);
 
-  // Fetch classes from database
+    if (!selectedSchool) {
+      navigate('/');
+    }
+  }, [user, loading, navigate, selectedSchool]);
+
+  // Fetch classes from database filtered by school_id
   useEffect(() => {
     const fetchClasses = async () => {
+      if (!selectedSchool) return;
+
       const { data, error } = await supabase
         .from('classes')
         .select('*')
+        .eq('school_id', selectedSchool.id)
         .order('name');
       
       if (!error && data) {
@@ -43,7 +53,7 @@ export default function Dashboard() {
       setClassesLoading(false);
     };
     fetchClasses();
-  }, []);
+  }, [selectedSchool?.id]);
 
   const stats = [
     { icon: BookOpen, label: 'Subjects', value: '10', color: 'text-blue-500' },
@@ -55,6 +65,36 @@ export default function Dashboard() {
   return (
     <MainLayout>
       <div className="container py-8">
+        {/* Subscription Warning for Admins */}
+        {isAdmin && subscriptionDaysRemaining !== null && subscriptionDaysRemaining <= 30 && (
+          <div className={`mb-6 rounded-xl border p-4 animate-fade-in ${
+            subscriptionDaysRemaining <= 7 
+              ? 'border-destructive/50 bg-destructive/10' 
+              : 'border-amber-500/50 bg-amber-500/10'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {subscriptionDaysRemaining <= 7 ? (
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                ) : (
+                  <Calendar className="h-5 w-5 text-amber-600" />
+                )}
+                <div>
+                  <p className={`font-medium ${subscriptionDaysRemaining <= 7 ? 'text-destructive' : 'text-amber-600'}`}>
+                    Subscription {subscriptionDaysRemaining <= 0 ? 'Expired' : 'Expiring Soon'}
+                  </p>
+                  <p className={`text-sm ${subscriptionDaysRemaining <= 7 ? 'text-destructive/80' : 'text-amber-600/80'}`}>
+                    {subscriptionDaysRemaining <= 0 
+                      ? 'Please renew to continue using all features.'
+                      : `${subscriptionDaysRemaining} day${subscriptionDaysRemaining !== 1 ? 's' : ''} remaining until ${subscriptionExpiry}`
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Hero Section */}
         <div className="mb-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 animate-fade-in">

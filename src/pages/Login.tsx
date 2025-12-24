@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { GraduationCap, LogIn, User, Key, Shield } from 'lucide-react';
+import { GraduationCap, LogIn, User, Key, Shield, ArrowLeft, AlertTriangle, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { z } from 'zod';
 
@@ -18,6 +19,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { settings, login } = useSchool();
+  const { selectedSchool, clearSelectedSchool } = useSelectedSchool();
 
   // Admin login state
   const [adminEmail, setAdminEmail] = useState('');
@@ -28,8 +30,46 @@ export default function Login() {
   const [teacherAccessCode, setTeacherAccessCode] = useState('');
   const [teacherLoading, setTeacherLoading] = useState(false);
 
+  // Redirect if no school selected
+  useEffect(() => {
+    if (!selectedSchool) {
+      navigate('/');
+    }
+  }, [selectedSchool, navigate]);
+
+  if (!selectedSchool) {
+    return null;
+  }
+
+  // Check subscription status
+  const isSubscriptionActive = selectedSchool.subscriptionStatus;
+  const isSubscriptionExpired = selectedSchool.subscriptionExpiry 
+    ? new Date(selectedSchool.subscriptionExpiry) < new Date() 
+    : false;
+  const canLogin = isSubscriptionActive && !isSubscriptionExpired;
+
+  const getRemainingDays = () => {
+    if (!selectedSchool.subscriptionExpiry) return null;
+    const expiry = new Date(selectedSchool.subscriptionExpiry);
+    const today = new Date();
+    const diffTime = expiry.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const remainingDays = getRemainingDays();
+
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!canLogin) {
+      toast({
+        title: 'Subscription Issue',
+        description: 'This school\'s subscription is inactive or expired.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       emailSchema.parse(adminEmail);
@@ -77,6 +117,15 @@ export default function Login() {
   const handleTeacherLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!canLogin) {
+      toast({
+        title: 'Subscription Issue',
+        description: 'This school\'s subscription is inactive or expired.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       accessCodeSchema.parse(teacherAccessCode);
     } catch (error) {
@@ -97,6 +146,7 @@ export default function Login() {
         .from('teachers')
         .select('id, name')
         .eq('access_code', teacherAccessCode)
+        .eq('school_id', selectedSchool.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -113,7 +163,7 @@ export default function Login() {
       } else {
         toast({
           title: 'Invalid Access Code',
-          description: 'The access code you entered is not valid.',
+          description: 'The access code you entered is not valid for this school.',
           variant: 'destructive',
         });
       }
@@ -128,25 +178,66 @@ export default function Login() {
     }
   };
 
+  const handleBack = () => {
+    clearSelectedSchool();
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
-            <GraduationCap className="h-8 w-8 text-primary" />
+            {selectedSchool.logoUrl ? (
+              <img
+                src={selectedSchool.logoUrl}
+                alt={selectedSchool.name}
+                className="h-12 w-12 rounded-xl object-cover"
+              />
+            ) : (
+              <GraduationCap className="h-8 w-8 text-primary" />
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-foreground">{settings.schoolName}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{selectedSchool.name}</h1>
           <p className="text-muted-foreground mt-1">School Management System</p>
         </div>
+
+        {/* Subscription Warning */}
+        {!canLogin && (
+          <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 animate-fade-in">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-medium">
+                {!isSubscriptionActive ? 'Subscription Inactive' : 'Subscription Expired'}
+              </span>
+            </div>
+            <p className="text-sm text-destructive/80 mt-1">
+              Please contact your administrator to renew the subscription.
+            </p>
+          </div>
+        )}
+
+        {/* Subscription Info */}
+        {canLogin && remainingDays !== null && remainingDays <= 30 && (
+          <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 animate-fade-in">
+            <div className="flex items-center gap-2 text-amber-600">
+              <Calendar className="h-5 w-5" />
+              <span className="font-medium">Subscription Expiring Soon</span>
+            </div>
+            <p className="text-sm text-amber-600/80 mt-1">
+              {remainingDays} day{remainingDays !== 1 ? 's' : ''} remaining until expiry.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-xl border border-border bg-card p-6 shadow-lg animate-fade-in [animation-delay:100ms]">
           <Tabs defaultValue="teacher" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="teacher" className="gap-2">
+              <TabsTrigger value="teacher" className="gap-2" disabled={!canLogin}>
                 <User className="h-4 w-4" />
                 Teacher
               </TabsTrigger>
-              <TabsTrigger value="admin" className="gap-2">
+              <TabsTrigger value="admin" className="gap-2" disabled={!canLogin}>
                 <Shield className="h-4 w-4" />
                 Admin
               </TabsTrigger>
@@ -172,13 +263,14 @@ export default function Login() {
                       onChange={(e) => setTeacherAccessCode(e.target.value)}
                       className="pl-10"
                       autoComplete="off"
+                      disabled={!canLogin}
                     />
                   </div>
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={teacherLoading}
+                  disabled={teacherLoading || !canLogin}
                   className="w-full gap-2 gradient-primary text-primary-foreground"
                 >
                   {teacherLoading ? 'Verifying...' : (
@@ -208,6 +300,7 @@ export default function Login() {
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     autoComplete="email"
+                    disabled={!canLogin}
                   />
                 </div>
 
@@ -220,12 +313,13 @@ export default function Login() {
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     autoComplete="current-password"
+                    disabled={!canLogin}
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={adminLoading}
+                  disabled={adminLoading || !canLogin}
                   className="w-full gap-2 gradient-primary text-primary-foreground"
                 >
                   {adminLoading ? 'Logging in...' : (
@@ -238,6 +332,18 @@ export default function Login() {
               </form>
             </TabsContent>
           </Tabs>
+
+          <div className="mt-4 pt-4 border-t border-border">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleBack}
+              className="w-full gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Change School
+            </Button>
+          </div>
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6 animate-fade-in [animation-delay:200ms]">

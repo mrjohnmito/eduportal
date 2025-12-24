@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Student, SubjectScore, SchoolSettings, ClassLevel } from '@/types/school';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 
 interface SchoolContextType {
   students: Student[];
@@ -10,6 +11,8 @@ interface SchoolContextType {
   isAdmin: boolean;
   user: User | null;
   loading: boolean;
+  subscriptionExpiry: string | null;
+  subscriptionDaysRemaining: number | null;
   addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
@@ -36,6 +39,7 @@ const defaultSettings: SchoolSettings = {
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
 export function SchoolProvider({ children }: { children: ReactNode }) {
+  const { selectedSchool } = useSelectedSchool();
   const [students, setStudents] = useState<Student[]>([]);
   const [scores, setScores] = useState<SubjectScore[]>([]);
   const [settings, setSettings] = useState<SchoolSettings>(defaultSettings);
@@ -44,13 +48,25 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all data from database
+  // Calculate subscription days remaining
+  const subscriptionExpiry = selectedSchool?.subscriptionExpiry || null;
+  const subscriptionDaysRemaining = subscriptionExpiry 
+    ? Math.ceil((new Date(subscriptionExpiry).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  // Fetch all data from database filtered by school_id
   const fetchData = async () => {
+    if (!selectedSchool) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Fetch students
+      // Fetch students filtered by school_id
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
         .select('*')
+        .eq('school_id', selectedSchool.id)
         .order('name');
       
       if (studentsError) throw studentsError;
@@ -61,12 +77,14 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         classLevel: s.class_level,
         photo: s.photo_url || undefined,
         attendanceDays: (s as any).attendance_days || 0,
+        schoolId: s.school_id,
       })) || []);
 
-      // Fetch scores
+      // Fetch scores filtered by school_id
       const { data: scoresData, error: scoresError } = await supabase
         .from('scores')
-        .select('*');
+        .select('*')
+        .eq('school_id', selectedSchool.id);
       
       if (scoresError) throw scoresError;
       
@@ -80,20 +98,22 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         test2: Number(s.test2) || null,
         project: Number(s.project) || null,
         examScore: Number(s.exam) || null,
+        schoolId: s.school_id,
       })) || []);
 
-      // Fetch settings
+      // Fetch settings filtered by school_id
       const { data: settingsData, error: settingsError } = await supabase
         .from('school_settings')
         .select('*')
+        .eq('school_id', selectedSchool.id)
         .maybeSingle();
       
       if (settingsError) throw settingsError;
       
       if (settingsData) {
         setSettings({
-          schoolName: settingsData.school_name,
-          schoolLogo: settingsData.logo_url || undefined,
+          schoolName: settingsData.school_name || selectedSchool.name,
+          schoolLogo: settingsData.logo_url || selectedSchool.logoUrl || undefined,
           motto: settingsData.motto || 'Humble Beginners',
           email: settingsData.email || '',
           academicYear: settingsData.academic_year || '2024/2025',
@@ -102,6 +122,15 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           totalSchoolDays: (settingsData as any).total_school_days || 64,
           interestOptions: (settingsData as any).interest_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
           conductOptions: (settingsData as any).conduct_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
+          schoolId: selectedSchool.id,
+        });
+      } else {
+        // Use selected school info as defaults
+        setSettings({
+          ...defaultSettings,
+          schoolName: selectedSchool.name,
+          schoolLogo: selectedSchool.logoUrl || undefined,
+          schoolId: selectedSchool.id,
         });
       }
     } catch (error) {
@@ -156,17 +185,23 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Fetch initial data
-    fetchData();
-
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch data when selected school changes
+  useEffect(() => {
+    if (selectedSchool) {
+      fetchData();
+    }
+  }, [selectedSchool?.id]);
 
   const refreshData = async () => {
     await fetchData();
   };
 
   const addStudent = async (student: Omit<Student, 'id'>) => {
+    if (!selectedSchool) throw new Error('No school selected');
+
     const { data, error } = await supabase
       .from('students')
       .insert({
@@ -174,6 +209,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         class_level: student.classLevel,
         photo_url: student.photo || null,
         attendance_days: student.attendanceDays || 0,
+        school_id: selectedSchool.id,
       } as any)
       .select()
       .single();
@@ -190,6 +226,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         classLevel: data.class_level,
         photo: data.photo_url || undefined,
         attendanceDays: (data as any).attendance_days || 0,
+        schoolId: data.school_id,
       }]);
     }
   };
@@ -232,6 +269,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   };
 
   const addScore = async (score: Omit<SubjectScore, 'id'>) => {
+    if (!selectedSchool) throw new Error('No school selected');
+
     const { data, error } = await supabase
       .from('scores')
       .insert({
@@ -243,6 +282,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         test2: score.test2,
         project: score.project,
         exam: score.examScore,
+        school_id: selectedSchool.id,
       })
       .select()
       .single();
@@ -263,6 +303,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         test2: Number(data.test2) || null,
         project: Number(data.project) || null,
         examScore: Number(data.exam) || null,
+        schoolId: data.school_id,
       }]);
     }
   };
@@ -298,11 +339,14 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   };
 
   const clearSubjectData = async (classLevel: string, subject: string) => {
+    if (!selectedSchool) throw new Error('No school selected');
+
     const { error } = await supabase
       .from('scores')
       .delete()
       .eq('class_level', classLevel)
-      .eq('subject', subject);
+      .eq('subject', subject)
+      .eq('school_id', selectedSchool.id);
 
     if (error) {
       console.error('Error clearing subject data:', error);
@@ -315,9 +359,12 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   };
 
   const updateSettings = async (updates: Partial<SchoolSettings>) => {
+    if (!selectedSchool) throw new Error('No school selected');
+
     const { data: existing } = await supabase
       .from('school_settings')
       .select('id')
+      .eq('school_id', selectedSchool.id)
       .maybeSingle();
 
     const updateData: any = {
@@ -332,6 +379,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       total_school_days: updates.totalSchoolDays,
       interest_options: updates.interestOptions,
       conduct_options: updates.conductOptions,
+      school_id: selectedSchool.id,
     };
 
     if (existing) {
@@ -342,6 +390,15 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error updating settings:', error);
+        throw error;
+      }
+    } else {
+      const { error } = await supabase
+        .from('school_settings')
+        .insert(updateData);
+
+      if (error) {
+        console.error('Error inserting settings:', error);
         throw error;
       }
     }
@@ -385,6 +442,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         isAdmin,
         user,
         loading,
+        subscriptionExpiry,
+        subscriptionDaysRemaining,
         addStudent,
         updateStudent,
         deleteStudent,
