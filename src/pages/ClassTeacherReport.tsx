@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,6 +49,7 @@ export default function ClassTeacherReport() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { settings, students } = useSchool();
+  const { selectedSchool } = useSelectedSchool();
 
   const [loggedInTeacher, setLoggedInTeacher] = useState<{ id: string; name: string } | null>(null);
   const [assignedClasses, setAssignedClasses] = useState<ClassItem[]>([]);
@@ -165,7 +167,7 @@ export default function ClassTeacherReport() {
     setSaving(true);
 
     try {
-      const reportData: Omit<ClassTeacherReportData, 'id'> = {
+      const reportData: Omit<ClassTeacherReportData, 'id'> & { school_id?: string } = {
         student_id: selectedStudent.id,
         teacher_id: loggedInTeacher.id,
         term: settings.term,
@@ -174,6 +176,7 @@ export default function ClassTeacherReport() {
         interest: interest,
         conduct: conduct,
         class_teacher_remark: remark,
+        school_id: selectedSchool?.id,
       };
 
       if (existingReportId) {
