@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { SubjectScore, Student } from '@/types/school';
 import { calculateScores, validateScore } from '@/lib/gradeUtils';
 import { CalculatedScore } from '@/types/school';
@@ -49,6 +50,7 @@ export default function ScoreEntry() {
     addScore,
     updateScore,
   } = useSchool();
+  const { selectedSchool } = useSelectedSchool();
 
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,10 +58,10 @@ export default function ScoreEntry() {
 
   const decodedSubject = decodeURIComponent(subject || '');
 
-  // Fetch class info
+  // Fetch class info filtered by school_id
   useEffect(() => {
     const fetchClass = async () => {
-      if (!classLevel || !subject) {
+      if (!classLevel || !subject || !selectedSchool) {
         navigate('/dashboard');
         return;
       }
@@ -67,6 +69,7 @@ export default function ScoreEntry() {
       const { data, error } = await supabase
         .from('classes')
         .select('*')
+        .eq('school_id', selectedSchool.id)
         .order('name');
 
       if (error || !data) {

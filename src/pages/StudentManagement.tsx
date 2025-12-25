@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +50,8 @@ export default function StudentManagement() {
     isAdmin,
   } = useSchool();
 
+  const { selectedSchool } = useSelectedSchool();
+
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -63,12 +66,15 @@ export default function StudentManagement() {
   // Helper to convert class name to class_level format
   const toClassLevel = (name: string) => name.toLowerCase().replace(/\s+/g, '');
 
-  // Fetch classes from database
+  // Fetch classes from database filtered by school_id
   useEffect(() => {
     const fetchClasses = async () => {
+      if (!selectedSchool) return;
+
       const { data, error } = await supabase
         .from('classes')
         .select('id, name')
+        .eq('school_id', selectedSchool.id)
         .order('name');
       
       if (!error && data) {
@@ -79,7 +85,7 @@ export default function StudentManagement() {
       }
     };
     fetchClasses();
-  }, []);
+  }, [selectedSchool?.id]);
 
   const filteredStudents = students.filter(s => s.classLevel === selectedClass);
 

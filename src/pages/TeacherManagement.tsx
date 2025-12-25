@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,11 +82,19 @@ export default function TeacherManagement() {
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
+  const { selectedSchool } = useSelectedSchool();
+
   const fetchData = async () => {
-    // Fetch teachers
+    if (!selectedSchool) {
+      setLoading(false);
+      return;
+    }
+
+    // Fetch teachers filtered by school_id
     const { data: teachersData, error: teachersError } = await supabase
       .from('teachers')
       .select('*')
+      .eq('school_id', selectedSchool.id)
       .order('name');
 
     if (teachersError) {
@@ -94,10 +103,11 @@ export default function TeacherManagement() {
       setTeachers(teachersData || []);
     }
 
-    // Fetch classes
+    // Fetch classes filtered by school_id
     const { data: classesData, error: classesError } = await supabase
       .from('classes')
       .select('id, name')
+      .eq('school_id', selectedSchool.id)
       .order('name');
 
     if (classesError) {
@@ -106,10 +116,11 @@ export default function TeacherManagement() {
       setClasses(classesData || []);
     }
 
-    // Fetch assignments
+    // Fetch assignments filtered by school_id
     const { data: assignmentsData, error: assignmentsError } = await supabase
       .from('teacher_class_assignments')
-      .select('teacher_id, class_id');
+      .select('teacher_id, class_id')
+      .eq('school_id', selectedSchool.id);
 
     if (assignmentsError) {
       console.error('Error fetching assignments:', assignmentsError);
@@ -194,10 +205,20 @@ export default function TeacherManagement() {
 
         if (error) throw error;
       } else {
-        // Create new teacher
+        // Create new teacher with school_id
+        if (!selectedSchool) {
+          toast({
+            title: 'Error',
+            description: 'No school selected.',
+            variant: 'destructive',
+          });
+          setSaving(false);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('teachers')
-          .insert({ name: name.trim(), access_code: accessCode.trim() })
+          .insert({ name: name.trim(), access_code: accessCode.trim(), school_id: selectedSchool.id })
           .select()
           .single();
 
@@ -224,11 +245,12 @@ export default function TeacherManagement() {
           .delete()
           .eq('teacher_id', teacherId);
 
-        // Insert new assignments
-        if (selectedClasses.length > 0) {
+        // Insert new assignments with school_id
+        if (selectedClasses.length > 0 && selectedSchool) {
           const assignmentsToInsert = selectedClasses.map(classId => ({
             teacher_id: teacherId,
             class_id: classId,
+            school_id: selectedSchool.id,
           }));
 
           const { error: assignError } = await supabase

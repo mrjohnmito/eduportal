@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,10 +62,18 @@ export default function ClassManagement() {
   const [classNumber, setClassNumber] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const { selectedSchool } = useSelectedSchool();
+
   const fetchClasses = async () => {
+    if (!selectedSchool) {
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('classes')
       .select('*')
+      .eq('school_id', selectedSchool.id)
       .order('name');
 
     if (error) {
@@ -132,10 +141,20 @@ export default function ClassManagement() {
           description: `Class has been renamed to ${className}.`,
         });
       } else {
-        // Create new class
+        // Create new class with school_id
+        if (!selectedSchool) {
+          toast({
+            title: 'Error',
+            description: 'No school selected.',
+            variant: 'destructive',
+          });
+          setSaving(false);
+          return;
+        }
+
         const { error } = await supabase
           .from('classes')
-          .insert({ name: className });
+          .insert({ name: className, school_id: selectedSchool.id });
 
         if (error) {
           if (error.code === '23505') {
