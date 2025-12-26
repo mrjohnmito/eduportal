@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { GraduationCap, Key, ArrowRight, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { GraduationCap, Key, ArrowRight, ArrowLeft, AlertTriangle, Lock } from 'lucide-react';
 import { z } from 'zod';
 
 const codeSchema = z.string().min(1, 'School code is required');
@@ -21,6 +21,41 @@ export default function SchoolCodeVerification() {
   if (!selectedSchool) {
     navigate('/');
     return null;
+  }
+
+  // Check if school is locked
+  if (selectedSchool.isLocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-destructive/10 mb-4">
+              <Lock className="h-8 w-8 text-destructive" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">{selectedSchool.name}</h1>
+            <p className="text-destructive mt-1">This school has been locked</p>
+          </div>
+
+          <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center">
+            <p className="text-destructive">
+              Access to this school has been restricted by the administrator.
+              Please contact support for assistance.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                clearSelectedSchool();
+                navigate('/');
+              }}
+              className="mt-4 gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Schools
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -67,6 +102,12 @@ export default function SchoolCodeVerification() {
             return;
           }
         }
+
+        // Save verification to localStorage
+        localStorage.setItem(`school_verified_${selectedSchool.id}`, JSON.stringify({
+          timestamp: Date.now(),
+          schoolCode: selectedSchool.schoolCode,
+        }));
 
         toast({
           title: 'Verified!',

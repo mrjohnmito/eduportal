@@ -9,6 +9,9 @@ export interface School {
   subscriptionExpiry?: string;
   themeColor?: string;
   createdAt: string;
+  adminEmail?: string;
+  adminPasswordHash?: string;
+  isLocked?: boolean;
 }
 
 export interface Student {

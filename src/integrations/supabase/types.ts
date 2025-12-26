@@ -174,8 +174,11 @@ export type Database = {
       }
       schools: {
         Row: {
+          admin_email: string | null
+          admin_password_hash: string | null
           created_at: string
           id: string
+          is_locked: boolean
           logo_url: string | null
           name: string
           school_code: string
@@ -184,8 +187,11 @@ export type Database = {
           theme_color: string | null
         }
         Insert: {
+          admin_email?: string | null
+          admin_password_hash?: string | null
           created_at?: string
           id?: string
+          is_locked?: boolean
           logo_url?: string | null
           name: string
           school_code: string
@@ -194,8 +200,11 @@ export type Database = {
           theme_color?: string | null
         }
         Update: {
+          admin_email?: string | null
+          admin_password_hash?: string | null
           created_at?: string
           id?: string
+          is_locked?: boolean
           logo_url?: string | null
           name?: string
           school_code?: string
