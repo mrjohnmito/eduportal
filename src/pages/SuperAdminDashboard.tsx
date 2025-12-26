@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { School } from '@/types/school';
@@ -33,6 +33,10 @@ import {
   Copy,
   Check,
   AlertTriangle,
+  Upload,
+  Lock,
+  Unlock,
+  User,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -44,6 +48,8 @@ export default function SuperAdminDashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -52,6 +58,9 @@ export default function SuperAdminDashboard() {
   const [formSubscriptionStatus, setFormSubscriptionStatus] = useState(true);
   const [formSubscriptionExpiry, setFormSubscriptionExpiry] = useState('');
   const [formThemeColor, setFormThemeColor] = useState('#3B82F6');
+  const [formAdminEmail, setFormAdminEmail] = useState('');
+  const [formAdminPassword, setFormAdminPassword] = useState('');
+  const [formIsLocked, setFormIsLocked] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
   useEffect(() => {
@@ -98,6 +107,9 @@ export default function SuperAdminDashboard() {
           subscriptionExpiry: s.subscription_expiry || undefined,
           themeColor: s.theme_color || undefined,
           createdAt: s.created_at,
+          adminEmail: s.admin_email || undefined,
+          adminPasswordHash: s.admin_password_hash || undefined,
+          isLocked: s.is_locked || false,
         })) || []
       );
     } catch (error) {
@@ -119,12 +131,14 @@ export default function SuperAdminDashboard() {
     setFormSubscriptionStatus(true);
     setFormSubscriptionExpiry('');
     setFormThemeColor('#3B82F6');
+    setFormAdminEmail('');
+    setFormAdminPassword('');
+    setFormIsLocked(false);
     setEditingSchool(null);
   };
 
   const openAddDialog = () => {
     resetForm();
-    // Generate a random school code
     setFormSchoolCode(generateSchoolCode());
     setDialogOpen(true);
   };
@@ -137,6 +151,9 @@ export default function SuperAdminDashboard() {
     setFormSubscriptionStatus(school.subscriptionStatus);
     setFormSubscriptionExpiry(school.subscriptionExpiry || '');
     setFormThemeColor(school.themeColor || '#3B82F6');
+    setFormAdminEmail(school.adminEmail || '');
+    setFormAdminPassword('');
+    setFormIsLocked(school.isLocked || false);
     setDialogOpen(true);
   };
 
@@ -147,6 +164,64 @@ export default function SuperAdminDashboard() {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please select an image file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select an image smaller than 2MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingLogo(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('school-logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('school-logos')
+        .getPublicUrl(filePath);
+
+      setFormLogoUrl(publicUrl);
+      toast({
+        title: 'Logo Uploaded',
+        description: 'School logo has been uploaded successfully.',
+      });
+    } catch (error: any) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload logo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -161,6 +236,9 @@ export default function SuperAdminDashboard() {
         subscription_status: formSubscriptionStatus,
         subscription_expiry: formSubscriptionExpiry || null,
         theme_color: formThemeColor,
+        admin_email: formAdminEmail || null,
+        is_locked: formIsLocked,
+        admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : (editingSchool?.adminPasswordHash || null),
       };
 
       if (editingSchool) {
@@ -176,7 +254,7 @@ export default function SuperAdminDashboard() {
           description: `${formName} has been updated successfully.`,
         });
       } else {
-        const { error } = await supabase.from('schools').insert(schoolData);
+        const { error } = await supabase.from('schools').insert([schoolData]);
 
         if (error) throw error;
 
@@ -221,6 +299,31 @@ export default function SuperAdminDashboard() {
       toast({
         title: 'Error',
         description: 'Failed to update subscription status.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const toggleLock = async (school: School) => {
+    try {
+      const { error } = await supabase
+        .from('schools')
+        .update({ is_locked: !school.isLocked })
+        .eq('id', school.id);
+
+      if (error) throw error;
+
+      toast({
+        title: school.isLocked ? 'School Unlocked' : 'School Locked',
+        description: `${school.name} has been ${school.isLocked ? 'unlocked' : 'locked'}.`,
+      });
+
+      fetchSchools();
+    } catch (error) {
+      console.error('Error toggling lock:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update lock status.',
         variant: 'destructive',
       });
     }
@@ -312,7 +415,7 @@ export default function SuperAdminDashboard() {
                 Add School
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingSchool ? 'Edit School' : 'Add New School'}
@@ -335,14 +438,53 @@ export default function SuperAdminDashboard() {
                   />
                 </div>
 
+                {/* Logo Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="logoUrl">Logo URL</Label>
-                  <Input
-                    id="logoUrl"
-                    value={formLogoUrl}
-                    onChange={(e) => setFormLogoUrl(e.target.value)}
-                    placeholder="https://example.com/logo.png"
-                  />
+                  <Label>School Logo</Label>
+                  <div className="flex items-center gap-4">
+                    {formLogoUrl ? (
+                      <img
+                        src={formLogoUrl}
+                        alt="School logo"
+                        className="h-16 w-16 rounded-lg object-cover border border-border"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center border border-border">
+                        <Building2 className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingLogo}
+                        className="gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">Max 2MB, JPG/PNG</p>
+                    </div>
+                  </div>
+                  {formLogoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFormLogoUrl('')}
+                      className="text-destructive"
+                    >
+                      Remove Logo
+                    </Button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -363,6 +505,38 @@ export default function SuperAdminDashboard() {
                     >
                       Generate
                     </Button>
+                  </div>
+                </div>
+
+                {/* Admin Credentials Section */}
+                <div className="border-t border-border pt-4 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-base font-medium">Admin Credentials</Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="adminEmail">Admin Email</Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={formAdminEmail}
+                      onChange={(e) => setFormAdminEmail(e.target.value)}
+                      placeholder="admin@school.com"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="adminPassword">
+                      Admin Password {editingSchool && '(leave blank to keep current)'}
+                    </Label>
+                    <Input
+                      id="adminPassword"
+                      type="password"
+                      value={formAdminPassword}
+                      onChange={(e) => setFormAdminPassword(e.target.value)}
+                      placeholder={editingSchool ? '••••••••' : 'Enter password'}
+                    />
                   </div>
                 </div>
 
@@ -401,6 +575,18 @@ export default function SuperAdminDashboard() {
                     id="subscriptionStatus"
                     checked={formSubscriptionStatus}
                     onCheckedChange={setFormSubscriptionStatus}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="isLocked">Lock School</Label>
+                  </div>
+                  <Switch
+                    id="isLocked"
+                    checked={formIsLocked}
+                    onCheckedChange={setFormIsLocked}
                   />
                 </div>
 
@@ -444,15 +630,15 @@ export default function SuperAdminDashboard() {
                 <TableRow>
                   <TableHead>School</TableHead>
                   <TableHead>School Code</TableHead>
-                  <TableHead>Subscription</TableHead>
+                  <TableHead>Admin</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Expiry Date</TableHead>
-                  <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {schools.map((school) => (
-                  <TableRow key={school.id}>
+                  <TableRow key={school.id} className={school.isLocked ? 'opacity-60' : ''}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {school.logoUrl ? (
@@ -472,7 +658,15 @@ export default function SuperAdminDashboard() {
                             />
                           </div>
                         )}
-                        <span className="font-medium">{school.name}</span>
+                        <div>
+                          <span className="font-medium">{school.name}</span>
+                          {school.isLocked && (
+                            <div className="flex items-center gap-1 text-xs text-destructive">
+                              <Lock className="h-3 w-3" />
+                              Locked
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -493,6 +687,13 @@ export default function SuperAdminDashboard() {
                           )}
                         </Button>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {school.adminEmail ? (
+                        <span className="text-sm">{school.adminEmail}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Not set</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -531,11 +732,20 @@ export default function SuperAdminDashboard() {
                         <span className="text-muted-foreground">No expiry</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(school.createdAt), 'MMM d, yyyy')}
-                    </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleLock(school)}
+                          title={school.isLocked ? 'Unlock School' : 'Lock School'}
+                        >
+                          {school.isLocked ? (
+                            <Unlock className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Lock className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
