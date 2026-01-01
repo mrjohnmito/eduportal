@@ -8,36 +8,16 @@ import { calculateScores, validateScore } from '@/lib/gradeUtils';
 import { CalculatedScore } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, Save, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Save, Users, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ScoreRow {
   student: Student;
   score: SubjectScore;
   calculated: CalculatedScore;
   errors: Record<string, boolean>;
-}
-
-// Generate consistent colors based on class name
-function getClassGradient(className: string): string {
-  const gradients = [
-    'from-emerald-500 to-emerald-600',
-    'from-blue-500 to-blue-600',
-    'from-purple-500 to-purple-600',
-    'from-amber-500 to-amber-600',
-    'from-rose-500 to-rose-600',
-    'from-cyan-500 to-cyan-600',
-    'from-indigo-500 to-indigo-600',
-    'from-teal-500 to-teal-600',
-  ];
-  
-  let hash = 0;
-  for (let i = 0; i < className.length; i++) {
-    hash = className.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  return gradients[Math.abs(hash) % gradients.length];
 }
 
 export default function ScoreEntry() {
@@ -226,217 +206,247 @@ export default function ScoreEntry() {
     );
   }
 
-  const gradient = getClassGradient(classInfo.name);
-
   return (
     <MainLayout>
-      <div className="container py-6">
-        {/* Header */}
-        <div className="mb-6 animate-fade-in">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(`/class/${classLevel}`)}
-            className="mb-3 gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to {classInfo.name}
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-background to-purple-50/30">
+        <div className="container py-4">
+          {/* Header */}
+          <div className="mb-4 animate-fade-in">
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-card rounded-xl px-4 py-3 shadow-sm border border-border">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/class/${classLevel}`)}
+                  className="gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Back
+                </Button>
+                <div>
+                  <h1 className="text-lg font-bold text-foreground">
+                    {classInfo.name}
+                  </h1>
+                  <p className="text-xs text-muted-foreground">{decodedSubject}</p>
+                </div>
+              </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-                {decodedSubject}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {classInfo.name} • {students.length} students
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>{students.length} Students</span>
+                </div>
+                
+                <Select>
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue placeholder="Select student" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {students.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Print Report
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="mb-4">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={hasErrors}
+              className="gap-2 bg-green-500 hover:bg-green-600 text-white"
+            >
+              <Save className="h-4 w-4" />
+              Save All
+            </Button>
+          </div>
+
+          {/* No Students Warning */}
+          {students.length === 0 ? (
+            <div className="rounded-xl border border-warning/30 bg-warning/10 p-6">
+              <p className="text-warning font-medium">
+                No students in this class. Add students from the dashboard first.
               </p>
             </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={hasErrors}
-                className={cn('gap-2 text-white', `bg-gradient-to-r ${gradient}`)}
-              >
-                <Save className="h-4 w-4" />
-                Save Scores
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* No Students Warning */}
-        {students.length === 0 ? (
-          <div className="rounded-xl border border-warning/30 bg-warning/10 p-6">
-            <p className="text-warning font-medium">
-              No students in this class. Add students from the dashboard first.
-            </p>
-          </div>
-        ) : (
-          /* Excel-Style Table */
-          <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm animate-fade-in">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="excel-cell excel-header text-left px-3 min-w-[50px]">#</th>
-                  <th className="excel-cell excel-header text-left px-3 min-w-[180px]">Student Name</th>
-                  <th className="excel-cell excel-header min-w-[70px]">Test 1<br/><span className="text-xs font-normal text-muted-foreground">(30)</span></th>
-                  <th className="excel-cell excel-header min-w-[70px]">Group<br/><span className="text-xs font-normal text-muted-foreground">(20)</span></th>
-                  <th className="excel-cell excel-header min-w-[70px]">Test 2<br/><span className="text-xs font-normal text-muted-foreground">(30)</span></th>
-                  <th className="excel-cell excel-header min-w-[70px]">Project<br/><span className="text-xs font-normal text-muted-foreground">(20)</span></th>
-                  <th className="excel-cell excel-header min-w-[70px] bg-muted/80">Subtotal<br/><span className="text-xs font-normal text-muted-foreground">(100)</span></th>
-                  <th className="excel-cell excel-header min-w-[60px] bg-primary/10">A<br/><span className="text-xs font-normal text-muted-foreground">(50%)</span></th>
-                  <th className="excel-cell excel-header min-w-[70px]">Exam<br/><span className="text-xs font-normal text-muted-foreground">(100)</span></th>
-                  <th className="excel-cell excel-header min-w-[60px] bg-primary/10">B<br/><span className="text-xs font-normal text-muted-foreground">(50%)</span></th>
-                  <th className="excel-cell excel-header min-w-[70px] bg-accent/20">Total</th>
-                  <th className="excel-cell excel-header min-w-[60px]">Grade</th>
-                  <th className="excel-cell excel-header min-w-[100px] border-r-0">Remark</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scoreRows.map((row, index) => (
-                  <tr key={row.student.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="excel-cell px-3 text-center text-muted-foreground">
-                      {index + 1}
-                    </td>
-                    <td className="excel-cell px-3 font-medium">
-                      <div className="flex items-center gap-2">
+          ) : (
+            /* Score Entry Table */
+            <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm animate-fade-in">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="border-b border-r border-border px-2 py-2.5 text-left font-medium text-muted-foreground w-10">S/N</th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-left font-medium text-muted-foreground w-12">Photo</th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-left font-medium text-muted-foreground min-w-[140px]">Student Name</th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-muted-foreground w-16">
+                      Test 1<br/><span className="text-[10px] font-normal">(30)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-muted-foreground w-16">
+                      Group Work<br/><span className="text-[10px] font-normal">(20)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-muted-foreground w-16">
+                      Test 2<br/><span className="text-[10px] font-normal">(30)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-muted-foreground w-16">
+                      Project<br/><span className="text-[10px] font-normal">(20)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-blue-600 bg-blue-50/50 w-16">
+                      Subtotal<br/><span className="text-[10px] font-normal">(100)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-green-600 bg-green-50/50 w-16">
+                      Class Score<br/><span className="text-[10px] font-normal">(50%)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-muted-foreground w-16">
+                      Exam<br/><span className="text-[10px] font-normal">(100)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-orange-600 bg-orange-50/50 w-16">
+                      Exam Score<br/><span className="text-[10px] font-normal">(50%)</span>
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-purple-600 bg-purple-50/50 w-16">
+                      Overall<br/>Total
+                    </th>
+                    <th className="border-b border-r border-border px-2 py-2.5 text-center font-medium text-yellow-600 bg-yellow-50/50 w-14">
+                      Grade
+                    </th>
+                    <th className="border-b border-border px-2 py-2.5 text-center font-medium text-red-500 bg-red-50/50 w-14">
+                      Remark
+                    </th>
+                    <th className="border-b border-border px-2 py-2.5 text-center font-medium text-muted-foreground w-14">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scoreRows.map((row, index) => (
+                    <tr key={row.student.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="border-b border-r border-border px-2 py-2 text-center text-muted-foreground">
+                        {index + 1}
+                      </td>
+                      <td className="border-b border-r border-border px-2 py-2">
                         {row.student.photo ? (
                           <img
                             src={row.student.photo}
                             alt={row.student.name}
-                            className="h-6 w-6 rounded-full object-cover"
+                            className="h-7 w-7 rounded object-cover"
                           />
                         ) : (
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                            {row.student.name.charAt(0)}
+                          <div className="h-7 w-7 rounded bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-[10px] text-white font-medium">
+                            {row.student.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                           </div>
                         )}
-                        <span className="truncate">{row.student.name}</span>
-                      </div>
-                    </td>
-                    {/* Test 1 */}
-                    <td className={cn('excel-cell', row.errors.test1 && 'excel-cell-error')}>
-                      <input
-                        type="number"
-                        min="0"
-                        max="30"
-                        className="excel-input"
-                        value={row.score.test1 ?? ''}
-                        onChange={e => handleScoreChange(row.student.id, 'test1', e.target.value, 30)}
-                      />
-                    </td>
-                    {/* Group Work */}
-                    <td className={cn('excel-cell', row.errors.groupWork && 'excel-cell-error')}>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        className="excel-input"
-                        value={row.score.groupWork ?? ''}
-                        onChange={e => handleScoreChange(row.student.id, 'groupWork', e.target.value, 20)}
-                      />
-                    </td>
-                    {/* Test 2 */}
-                    <td className={cn('excel-cell', row.errors.test2 && 'excel-cell-error')}>
-                      <input
-                        type="number"
-                        min="0"
-                        max="30"
-                        className="excel-input"
-                        value={row.score.test2 ?? ''}
-                        onChange={e => handleScoreChange(row.student.id, 'test2', e.target.value, 30)}
-                      />
-                    </td>
-                    {/* Project */}
-                    <td className={cn('excel-cell', row.errors.project && 'excel-cell-error')}>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        className="excel-input"
-                        value={row.score.project ?? ''}
-                        onChange={e => handleScoreChange(row.student.id, 'project', e.target.value, 20)}
-                      />
-                    </td>
-                    {/* Subtotal */}
-                    <td className="excel-cell bg-muted/30 text-center font-medium">
-                      {row.calculated.subtotal}
-                    </td>
-                    {/* A (50%) */}
-                    <td className="excel-cell bg-primary/5 text-center font-medium text-primary">
-                      {row.calculated.caScore.toFixed(1)}
-                    </td>
-                    {/* Exam */}
-                    <td className={cn('excel-cell', row.errors.examScore && 'excel-cell-error')}>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        className="excel-input"
-                        value={row.score.examScore ?? ''}
-                        onChange={e => handleScoreChange(row.student.id, 'examScore', e.target.value, 100)}
-                      />
-                    </td>
-                    {/* B (50%) */}
-                    <td className="excel-cell bg-primary/5 text-center font-medium text-primary">
-                      {row.calculated.examPercent.toFixed(1)}
-                    </td>
-                    {/* Total */}
-                    <td className="excel-cell bg-accent/10 text-center font-bold text-accent">
-                      {row.calculated.overallTotal.toFixed(1)}
-                    </td>
-                    {/* Grade */}
-                    <td className="excel-cell text-center">
-                      <span className={cn(
-                        'inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold',
-                        row.calculated.grade <= 3 && 'bg-success/20 text-success',
-                        row.calculated.grade >= 4 && row.calculated.grade <= 6 && 'bg-warning/20 text-warning',
-                        row.calculated.grade >= 7 && 'bg-destructive/20 text-destructive'
-                      )}>
+                      </td>
+                      <td className="border-b border-r border-border px-2 py-2 font-medium text-foreground">
+                        {row.student.name.toUpperCase()}
+                      </td>
+                      {/* Test 1 */}
+                      <td className={cn('border-b border-r border-border p-0.5', row.errors.test1 && 'bg-destructive/10')}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="30"
+                          className="w-full h-7 text-center bg-transparent border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={row.score.test1 ?? ''}
+                          onChange={e => handleScoreChange(row.student.id, 'test1', e.target.value, 30)}
+                        />
+                      </td>
+                      {/* Group Work */}
+                      <td className={cn('border-b border-r border-border p-0.5', row.errors.groupWork && 'bg-destructive/10')}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          className="w-full h-7 text-center bg-transparent border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={row.score.groupWork ?? ''}
+                          onChange={e => handleScoreChange(row.student.id, 'groupWork', e.target.value, 20)}
+                        />
+                      </td>
+                      {/* Test 2 */}
+                      <td className={cn('border-b border-r border-border p-0.5', row.errors.test2 && 'bg-destructive/10')}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="30"
+                          className="w-full h-7 text-center bg-transparent border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={row.score.test2 ?? ''}
+                          onChange={e => handleScoreChange(row.student.id, 'test2', e.target.value, 30)}
+                        />
+                      </td>
+                      {/* Project */}
+                      <td className={cn('border-b border-r border-border p-0.5', row.errors.project && 'bg-destructive/10')}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          className="w-full h-7 text-center bg-transparent border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={row.score.project ?? ''}
+                          onChange={e => handleScoreChange(row.student.id, 'project', e.target.value, 20)}
+                        />
+                      </td>
+                      {/* Subtotal */}
+                      <td className="border-b border-r border-border px-2 py-2 text-center font-medium text-blue-600 bg-blue-50/30">
+                        {row.calculated.subtotal}
+                      </td>
+                      {/* Class Score (A - 50%) */}
+                      <td className="border-b border-r border-border px-2 py-2 text-center font-medium text-green-600 bg-green-50/30">
+                        {row.calculated.caScore.toFixed(1)}
+                      </td>
+                      {/* Exam */}
+                      <td className={cn('border-b border-r border-border p-0.5', row.errors.examScore && 'bg-destructive/10')}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          className="w-full h-7 text-center bg-transparent border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={row.score.examScore ?? ''}
+                          onChange={e => handleScoreChange(row.student.id, 'examScore', e.target.value, 100)}
+                        />
+                      </td>
+                      {/* Exam Score (B - 50%) */}
+                      <td className="border-b border-r border-border px-2 py-2 text-center font-medium text-orange-600 bg-orange-50/30">
+                        {row.calculated.examPercent.toFixed(1)}
+                      </td>
+                      {/* Overall Total */}
+                      <td className="border-b border-r border-border px-2 py-2 text-center font-bold text-purple-600 bg-purple-50/30">
+                        {row.calculated.overallTotal.toFixed(1)}
+                      </td>
+                      {/* Grade */}
+                      <td className="border-b border-r border-border px-2 py-2 text-center font-bold text-yellow-600 bg-yellow-50/30">
                         {row.calculated.grade}
-                      </span>
-                    </td>
-                    {/* Remark */}
-                    <td className="excel-cell border-r-0 px-3 text-xs">
-                      <span className={cn(
-                        row.calculated.grade <= 3 && 'text-success',
-                        row.calculated.grade >= 4 && row.calculated.grade <= 6 && 'text-warning',
-                        row.calculated.grade >= 7 && 'text-destructive'
-                      )}>
+                      </td>
+                      {/* Remark */}
+                      <td className="border-b border-r border-border px-1 py-2 text-center text-[10px] text-red-500 bg-red-50/30">
                         {row.calculated.remark}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </td>
+                      {/* Action */}
+                      <td className="border-b border-border px-2 py-2 text-center">
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <span className="text-muted-foreground">⋮</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {/* Legend */}
-        <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-success/20" />
-            Grade 1-3: Excellent to Good
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-warning/20" />
-            Grade 4-6: Average Range
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-destructive/20" />
-            Grade 7-9: Needs Improvement
+          {/* Legend */}
+          <div className="mt-4 p-3 bg-card rounded-lg border border-border text-xs text-muted-foreground">
+            <span className="font-medium">Subtotal:</span> Test 1 + Group Work + Test 2 + Project = 100 | 
+            <span className="font-medium text-green-600 ml-2">A 50%:</span> 50% of Subtotal | 
+            <span className="font-medium text-orange-600 ml-2">B 50%:</span> 50% of Exam | 
+            <span className="font-medium text-purple-600 ml-2">Overall:</span> A (50%) + B (50%)
           </div>
         </div>
       </div>
