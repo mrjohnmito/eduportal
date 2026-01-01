@@ -1,9 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSchool } from '@/contexts/SchoolContext';
-import { Button } from '@/components/ui/button';
-import { UserPlus, FileDown, Trash2, Settings, Zap, Users, GraduationCap, FileText } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { 
+  UserPlus, 
+  FileDown, 
+  Trash2, 
+  Settings, 
+  Users, 
+  GraduationCap, 
+  FileText,
+  FileSpreadsheet,
+  Lock
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface ActionItem {
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  description: string;
+  bgColor: string;
+  iconBg: string;
+}
 
 export function QuickActions() {
   const { isAdmin } = useSchool();
@@ -14,58 +33,73 @@ export function QuickActions() {
     setIsTeacher(!!teacherData);
   }, []);
 
-  const adminActions = [
-    {
-      to: '/students',
-      icon: UserPlus,
-      label: 'Manage Students',
-      gradient: 'from-blue-500 to-indigo-600',
-      shadow: 'hover:shadow-blue-500/30',
-    },
-    {
-      to: '/teachers',
-      icon: Users,
-      label: 'Manage Teachers',
-      gradient: 'from-cyan-500 to-blue-600',
-      shadow: 'hover:shadow-cyan-500/30',
-    },
-    {
-      to: '/classes',
-      icon: GraduationCap,
-      label: 'Manage Classes',
-      gradient: 'from-amber-500 to-orange-600',
-      shadow: 'hover:shadow-amber-500/30',
-    },
+  const adminActions: ActionItem[] = [
     {
       to: '/bulk-pdf',
       icon: FileDown,
-      label: 'Bulk PDF',
-      gradient: 'from-emerald-500 to-teal-600',
-      shadow: 'hover:shadow-emerald-500/30',
+      label: 'Bulk PDF Export',
+      description: 'Export all report cards',
+      bgColor: 'bg-blue-50 hover:bg-blue-100 border-blue-200',
+      iconBg: 'bg-blue-500',
     },
     {
       to: '/clear-data',
       icon: Trash2,
       label: 'Clear Data',
-      gradient: 'from-rose-500 to-red-600',
-      shadow: 'hover:shadow-rose-500/30',
+      description: 'Remove scores by class/subject',
+      bgColor: 'bg-rose-50 hover:bg-rose-100 border-rose-200',
+      iconBg: 'bg-rose-500',
     },
     {
       to: '/settings',
       icon: Settings,
-      label: 'Settings',
-      gradient: 'from-violet-500 to-purple-600',
-      shadow: 'hover:shadow-violet-500/30',
+      label: 'School Settings',
+      description: 'Update school info & logo',
+      bgColor: 'bg-violet-50 hover:bg-violet-100 border-violet-200',
+      iconBg: 'bg-violet-500',
     },
-  ];
-
-  const teacherActions = [
+    {
+      to: '/bulk-pdf',
+      icon: FileSpreadsheet,
+      label: 'Class Report',
+      description: 'Export class score sheet',
+      bgColor: 'bg-pink-50 hover:bg-pink-100 border-pink-200',
+      iconBg: 'bg-pink-500',
+    },
+    {
+      to: '/students',
+      icon: UserPlus,
+      label: 'Manage Students',
+      description: 'Add students to classes',
+      bgColor: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200',
+      iconBg: 'bg-emerald-500',
+    },
     {
       to: '/class-teacher-report',
       icon: FileText,
       label: 'Class Teacher Report',
-      gradient: 'from-teal-500 to-green-600',
-      shadow: 'hover:shadow-teal-500/30',
+      description: 'Add attendance & conduct',
+      bgColor: 'bg-teal-50 hover:bg-teal-100 border-teal-200',
+      iconBg: 'bg-teal-500',
+    },
+    {
+      to: '/clear-data',
+      icon: Trash2,
+      label: 'Reset Class Scores',
+      description: 'Clear all scores for a class',
+      bgColor: 'bg-orange-50 hover:bg-orange-100 border-orange-200',
+      iconBg: 'bg-orange-500',
+    },
+  ];
+
+  const teacherActions: ActionItem[] = [
+    {
+      to: '/class-teacher-report',
+      icon: FileText,
+      label: 'Class Teacher Report',
+      description: 'Add attendance & conduct',
+      bgColor: 'bg-teal-50 hover:bg-teal-100 border-teal-200',
+      iconBg: 'bg-teal-500',
     },
   ];
 
@@ -76,26 +110,39 @@ export function QuickActions() {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-3">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-        <Zap className="h-4 w-4" />
-        Quick Actions
+    <div className="w-full">
+      <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {actions.map(({ to, icon: Icon, label, description, bgColor, iconBg }, index) => (
+          <Link key={`${to}-${index}`} to={to}>
+            <Card 
+              className={cn(
+                'border transition-all duration-300 cursor-pointer',
+                'hover:scale-[1.02] hover:shadow-md',
+                bgColor
+              )}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className={cn('p-2 rounded-lg', iconBg)}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground text-sm leading-tight">{label}</h3>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
-      {actions.map(({ to, icon: Icon, label, gradient, shadow }) => (
-        <Link key={to} to={to}>
-          <Button 
-            className={cn(
-              'gap-2 bg-gradient-to-r text-white border-0 shadow-lg transition-all duration-300',
-              'hover:scale-105 hover:-translate-y-0.5 hover:shadow-xl',
-              gradient,
-              shadow
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </Button>
-        </Link>
-      ))}
+      {!isAdmin && (
+        <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+          <Lock className="h-3 w-3" />
+          Some features require admin login
+        </p>
+      )}
     </div>
   );
 }
