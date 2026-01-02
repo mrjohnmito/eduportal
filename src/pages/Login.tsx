@@ -152,6 +152,8 @@ export default function Login() {
       if (error) throw error;
 
       if (teacher) {
+        // Store teacher as JSON object for ClassTeacherReport
+        sessionStorage.setItem('teacher', JSON.stringify(teacher));
         sessionStorage.setItem('teacherId', teacher.id);
         sessionStorage.setItem('teacherName', teacher.name);
 
