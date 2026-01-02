@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -39,16 +40,20 @@ export default function BulkPDF() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { students, scores, settings, isAdmin } = useSchool();
+  const { selectedSchool } = useSelectedSchool();
 
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
+    if (!selectedSchool) return;
+    
     const fetchClasses = async () => {
       const { data, error } = await supabase
         .from('classes')
         .select('id, name')
+        .eq('school_id', selectedSchool.id)
         .order('name');
       
       if (!error && data) {
@@ -56,7 +61,7 @@ export default function BulkPDF() {
       }
     };
     fetchClasses();
-  }, []);
+  }, [selectedSchool]);
 
   const generateExcel = () => {
     if (!selectedClass) return;
@@ -161,7 +166,7 @@ export default function BulkPDF() {
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15;
+      const margin = 10;
 
       classStudents.forEach((student, studentIndex) => {
         if (studentIndex > 0) {
@@ -171,82 +176,131 @@ export default function BulkPDF() {
         let yPos = margin;
         const teacherReport = reportsMap.get(student.id);
 
-        // Header Section
-        doc.setFillColor(34, 139, 34); // Green header
-        doc.rect(0, 0, pageWidth, 35, 'F');
+        // ============ HEADER SECTION ============
+        // Student Photo placeholder (top left)
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.3);
+        doc.rect(margin, yPos, 25, 30);
+        doc.setFontSize(6);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Student Photo', margin + 12.5, yPos + 16, { align: 'center' });
 
-        // School Logo (left side)
-        if (settings.schoolLogo) {
-          try {
-            doc.addImage(settings.schoolLogo, 'PNG', 10, 5, 25, 25);
-          } catch {
-            doc.setFillColor(255, 255, 255);
-            doc.circle(22, 17, 10, 'F');
-          }
-        } else {
-          doc.setFillColor(255, 255, 255);
-          doc.circle(22, 17, 10, 'F');
-        }
-
-        // Student Photo (right side)
+        // Try to add student photo if available
         if (student.photo) {
           try {
-            doc.addImage(student.photo, 'PNG', pageWidth - 35, 5, 25, 25);
+            doc.addImage(student.photo, 'PNG', margin, yPos, 25, 30);
           } catch {
-            // No fallback needed
+            // Keep placeholder
           }
         }
 
-        // School Name and Details (center)
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text(settings.schoolName, pageWidth / 2, 12, { align: 'center' });
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Motto: "${settings.motto}"`, pageWidth / 2, 18, { align: 'center' });
-        
-        doc.setFontSize(8);
-        doc.text(`Email: ${settings.email}`, pageWidth / 2, 24, { align: 'center' });
-        doc.text(`Tel: ${settings.contacts.join(' / ')}`, pageWidth / 2, 29, { align: 'center' });
+        // School Logo (center)
+        const logoX = pageWidth / 2 - 12;
+        if (settings.schoolLogo) {
+          try {
+            doc.addImage(settings.schoolLogo, 'PNG', logoX, yPos, 24, 24);
+          } catch {
+            doc.setFillColor(200, 200, 200);
+            doc.circle(pageWidth / 2, yPos + 12, 10, 'F');
+          }
+        } else {
+          doc.setFillColor(200, 200, 200);
+          doc.circle(pageWidth / 2, yPos + 12, 10, 'F');
+        }
 
-        yPos = 45;
-
-        // Report Card Title
+        // School Name and Info (center below logo)
+        yPos += 28;
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text('TERMINAL REPORT CARD', pageWidth / 2, yPos, { align: 'center' });
-        yPos += 10;
-
-        // Student Info Section
-        doc.setFillColor(240, 240, 240);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 25, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 25, 'S');
-
+        doc.text(settings.schoolName.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+        
+        yPos += 6;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Academic Report Card', pageWidth / 2, yPos, { align: 'center' });
+        
+        yPos += 5;
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        const infoY = yPos + 7;
-        
-        doc.text(`Name: ${student.name}`, margin + 5, infoY);
-        doc.text(`Class: ${className}`, margin + 5, infoY + 8);
-        doc.text(`Index No: ${student.indexNumber || 'N/A'}`, margin + 5, infoY + 16);
+        doc.text(`${settings.term} - ${settings.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
 
+        yPos += 10;
+
+        // ============ STUDENT INFO SECTION ============
         const position = positions.get(student.id) || 0;
         const attendance = teacherReport?.attendance || student.attendanceDays || 0;
-        doc.text(`Academic Year: ${settings.academicYear}`, pageWidth / 2, infoY);
-        doc.text(`Term: ${settings.term}`, pageWidth / 2, infoY + 8);
-        doc.text(`Attendance: ${attendance} of ${settings.totalSchoolDays || 64} days`, pageWidth / 2, infoY + 16);
-
-        yPos += 30;
-
-        // Scores Table - Simplified with A(50%), B(50%), Overall, Grade, Remark
         const studentScores = classScores
           .filter(s => s.studentId === student.id)
           .map(s => calculateScores(s));
+        const { aggregate, subjects: aggregateSubjects } = calculateAggregate(studentScores);
 
+        // Draw info box
+        doc.setFillColor(240, 248, 255);
+        doc.rect(margin, yPos, pageWidth - 2 * margin, 24, 'F');
+        doc.setDrawColor(100, 149, 237);
+        doc.setLineWidth(0.5);
+        doc.rect(margin, yPos, pageWidth - 2 * margin, 24, 'S');
+
+        const infoY = yPos + 6;
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);
+        
+        // Row 1
+        doc.setFont('helvetica', 'bold');
+        doc.text('Student Name:', margin + 3, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(student.name, margin + 28, infoY);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text('Class:', margin + 85, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(className, margin + 96, infoY);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text('Serial No:', margin + 140, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(student.indexNumber || 'N/A', margin + 160, infoY);
+
+        // Row 2
+        const infoY2 = infoY + 8;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Position:', margin + 3, infoY2);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${position}${getPositionSuffix(position)} out of ${totalStudents}`, margin + 22, infoY2);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text('Aggregate:', margin + 85, infoY2);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(59, 130, 246);
+        doc.text(aggregate.toString(), margin + 107, infoY2);
+        doc.setTextColor(0, 0, 0);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text('Attendance:', margin + 140, infoY2);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${attendance} / ${settings.totalSchoolDays || 64}`, margin + 164, infoY2);
+
+        // Row 3
+        const infoY3 = infoY2 + 8;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Interest:', margin + 3, infoY3);
+        doc.setFont('helvetica', 'normal');
+        doc.text(teacherReport?.interest || 'N/A', margin + 20, infoY3);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text('Conduct:', margin + 85, infoY3);
+        doc.setFont('helvetica', 'normal');
+        doc.text(teacherReport?.conduct || 'N/A', margin + 103, infoY3);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text('Next Term Begins:', margin + 140, infoY3);
+        doc.setFont('helvetica', 'normal');
+        doc.text('January 7, 2026', margin + 173, infoY3);
+
+        yPos += 30;
+
+        // ============ SCORES TABLE ============
         const tableData = SUBJECTS.map(subject => {
           const score = studentScores.find(s => s.subject === subject);
           if (score) {
@@ -259,12 +313,12 @@ export default function BulkPDF() {
               score.remark
             ];
           }
-          return [subject, '-', '-', '-', '-', '-'];
+          return [subject, '', '', 'No scores recorded', '', ''];
         });
 
         autoTable(doc, {
           startY: yPos,
-          head: [['Subject', 'A (50%)', 'B (50%)', 'Overall\n(100)', 'Grade', 'Remark']],
+          head: [['Subject', 'Class Score (50%)', 'Exam Score (50%)', 'Overall', 'Grade', 'Remark']],
           body: tableData,
           theme: 'grid',
           styles: {
@@ -274,95 +328,113 @@ export default function BulkPDF() {
             halign: 'center',
           },
           headStyles: {
-            fillColor: [34, 139, 34],
+            fillColor: [100, 149, 237],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
             fontSize: 8,
           },
           columnStyles: {
-            0: { halign: 'left', cellWidth: 40 },
-            1: { cellWidth: 22 },
-            2: { cellWidth: 22 },
-            3: { cellWidth: 22 },
-            4: { cellWidth: 18 },
-            5: { halign: 'left', cellWidth: 36 },
+            0: { halign: 'left', cellWidth: 35, fillColor: [100, 149, 237], textColor: [255, 255, 255], fontStyle: 'bold' },
+            1: { cellWidth: 28, fillColor: [255, 255, 224] },
+            2: { cellWidth: 28, fillColor: [255, 255, 224] },
+            3: { cellWidth: 22, fillColor: [255, 228, 196] },
+            4: { cellWidth: 18, fillColor: [255, 228, 196] },
+            5: { halign: 'left', cellWidth: 35 },
+          },
+          alternateRowStyles: {
+            fillColor: [255, 255, 255],
           },
           margin: { left: margin, right: margin },
+          didParseCell: function (data) {
+            // Color the subject column consistently
+            if (data.column.index === 0 && data.section === 'body') {
+              data.cell.styles.fillColor = [100, 149, 237];
+              data.cell.styles.textColor = [255, 255, 255];
+              data.cell.styles.fontStyle = 'bold';
+            }
+            // Highlight Overall and Grade columns
+            if ((data.column.index === 3 || data.column.index === 4) && data.section === 'body') {
+              data.cell.styles.fillColor = [255, 228, 196];
+            }
+            // Highlight Class Score and Exam Score columns
+            if ((data.column.index === 1 || data.column.index === 2) && data.section === 'body') {
+              data.cell.styles.fillColor = [255, 255, 224];
+            }
+          },
         });
 
         // Get final Y position after table
         const finalY = (doc as any).lastAutoTable.finalY || yPos + 80;
-        yPos = finalY + 5;
+        yPos = finalY + 8;
 
-        // Summary Section
+        // ============ SUMMARY SECTION ============
         const totalScore = studentScores.reduce((sum, s) => sum + s.overallTotal, 0);
-        const { aggregate, subjects: aggregateSubjects } = calculateAggregate(studentScores);
-        const overallRemark = getTotalScoreRemark(totalScore);
+        const maxScore = SUBJECTS.length * 100;
+        const subjectsWithScores = studentScores.filter(s => s.overallTotal > 0).length;
 
-        doc.setFillColor(245, 245, 245);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 20, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 20, 'S');
-
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Total Score: ${totalScore.toFixed(1)} / ${SUBJECTS.length * 100}`, margin + 5, yPos + 7);
-        doc.text(`Aggregate: ${aggregate}`, margin + 5, yPos + 14);
-        
-        doc.text(`Class Position: ${position}${getPositionSuffix(position)} / ${totalStudents}`, pageWidth / 2, yPos + 7);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Aggregate Subjects: ${aggregateSubjects.slice(0, 3).join(', ')}...`, pageWidth / 2, yPos + 14);
-
-        yPos += 25;
-
-        // Interest and Conduct (from Class Teacher Report)
-        if (teacherReport?.interest || teacherReport?.conduct) {
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'bold');
-          doc.text(`Interest: `, margin, yPos);
-          doc.setFont('helvetica', 'normal');
-          doc.text(teacherReport?.interest || 'N/A', margin + 18, yPos);
-          
-          doc.setFont('helvetica', 'bold');
-          doc.text(`Conduct: `, pageWidth / 2, yPos);
-          doc.setFont('helvetica', 'normal');
-          doc.text(teacherReport?.conduct || 'N/A', pageWidth / 2 + 18, yPos);
-          yPos += 8;
-        }
-
-        // Remarks Section
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Class Teacher's Remark:", margin, yPos);
-        doc.setFont('helvetica', 'normal');
-        const classTeacherRemark = teacherReport?.class_teacher_remark || overallRemark;
-        doc.text(classTeacherRemark.substring(0, 60), margin + 42, yPos);
-
-        yPos += 8;
-
-        doc.setFont('helvetica', 'bold');
-        doc.text("Headmaster's Remark:", margin, yPos);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Keep up the good work. Promoted to the next class.', margin + 40, yPos);
-
-        yPos += 15;
-
-        // Signature Section
+        // Grand Total Box
+        doc.setFillColor(255, 255, 255);
         doc.setDrawColor(0, 0, 0);
-        doc.line(margin, yPos, margin + 50, yPos);
-        doc.line(pageWidth - margin - 50, yPos, pageWidth - margin, yPos);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(margin, yPos, 80, 12, 3, 3, 'FD');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Grand Total: ${totalScore.toFixed(1)} / ${maxScore}`, margin + 5, yPos + 8);
 
+        // Aggregate Box
+        doc.roundedRect(pageWidth - margin - 80, yPos, 80, 12, 3, 3, 'FD');
+        doc.text(`Aggregate: ${aggregate}`, pageWidth - margin - 75, yPos + 8);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`(Best ${Math.min(6, subjectsWithScores)} subjects)`, pageWidth - margin - 30, yPos + 8);
+
+        yPos += 20;
+
+        // ============ REMARKS SECTION ============
+        // Class Teacher's Remark Box
+        doc.setFillColor(255, 235, 205);
+        doc.roundedRect(margin, yPos, 90, 35, 3, 3, 'F');
+        doc.setDrawColor(255, 165, 0);
+        doc.roundedRect(margin, yPos, 90, 35, 3, 3, 'S');
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text("Class Teacher's Remark:", margin + 5, yPos + 7);
+        
+        doc.setFont('helvetica', 'italic');
         doc.setFontSize(8);
-        doc.text('Class Teacher Signature', margin, yPos + 5);
-        doc.text('Date: ____/____/____', margin, yPos + 10);
+        const classTeacherRemark = teacherReport?.class_teacher_remark || getTotalScoreRemark(totalScore);
+        const remarkLines = doc.splitTextToSize(`"${classTeacherRemark}"`, 80);
+        doc.text(remarkLines, margin + 5, yPos + 15);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text('Signature & Date', margin + 5, yPos + 32);
 
-        doc.text("Headmaster's Signature", pageWidth - margin - 50, yPos + 5);
-        doc.text('Date: ____/____/____', pageWidth - margin - 50, yPos + 10);
+        // Headteacher's Remark Box
+        doc.setFillColor(224, 255, 224);
+        doc.roundedRect(pageWidth - margin - 90, yPos, 90, 35, 3, 3, 'F');
+        doc.setDrawColor(34, 139, 34);
+        doc.roundedRect(pageWidth - margin - 90, yPos, 90, 35, 3, 3, 'S');
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Headteacher's Remark:", pageWidth - margin - 85, yPos + 7);
+        
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        const headRemarkLines = doc.splitTextToSize('"There is the need for extra motivation to sit up."', 80);
+        doc.text(headRemarkLines, pageWidth - margin - 85, yPos + 15);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text('Signature & Date', pageWidth - margin - 85, yPos + 32);
 
         // Footer
         doc.setFontSize(7);
         doc.setTextColor(100, 100, 100);
-        doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
       });
 
       // Save PDF
@@ -409,7 +481,7 @@ export default function BulkPDF() {
         <div className="mb-8 animate-fade-in">
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -475,12 +547,12 @@ export default function BulkPDF() {
             <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
               <p className="font-medium text-foreground mb-2">What's included:</p>
               <ul className="space-y-1">
-                <li>• A (50%) - Continuous Assessment</li>
-                <li>• B (50%) - Exam Score</li>
+                <li>• Student Photo & Serial Number</li>
+                <li>• Class Score (50%) & Exam Score (50%)</li>
                 <li>• Overall Total, Grade & Remark</li>
-                <li>• Attendance, Interest & Conduct</li>
-                <li>• Class positions & Aggregate</li>
-                <li>• Teacher & Headmaster remarks</li>
+                <li>• Position, Aggregate & Attendance</li>
+                <li>• Interest & Conduct</li>
+                <li>• Teacher & Headteacher remarks</li>
               </ul>
             </div>
           </div>
