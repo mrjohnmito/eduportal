@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
@@ -47,33 +47,85 @@ interface ClassItem {
   created_at: string;
 }
 
+interface SchoolInfo {
+  id: string;
+  name: string;
+}
+
 export default function ClassManagement() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { isAdmin, students } = useSchool();
+  const { selectedSchool } = useSelectedSchool();
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
   const [deleteClass, setDeleteClass] = useState<ClassItem | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [targetSchool, setTargetSchool] = useState<SchoolInfo | null>(null);
 
   // Form state
   const [classNumber, setClassNumber] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const { selectedSchool } = useSelectedSchool();
+  // Get school ID from URL params (for super admin) or from context (for regular admin)
+  const schoolIdFromParams = searchParams.get('school');
 
-  const fetchClasses = async () => {
-    if (!selectedSchool) {
-      setLoading(false);
-      return;
+  useEffect(() => {
+    checkAccessAndFetchData();
+  }, [schoolIdFromParams, selectedSchool]);
+
+  const checkAccessAndFetchData = async () => {
+    setLoading(true);
+
+    // Check if user is super admin
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'super_admin')
+        .maybeSingle();
+
+      if (roleData) {
+        setIsSuperAdmin(true);
+        
+        // If super admin and school ID is provided in URL
+        if (schoolIdFromParams) {
+          const { data: schoolData } = await supabase
+            .from('schools')
+            .select('id, name')
+            .eq('id', schoolIdFromParams)
+            .maybeSingle();
+
+          if (schoolData) {
+            setTargetSchool({ id: schoolData.id, name: schoolData.name });
+            await fetchClasses(schoolData.id);
+            return;
+          }
+        }
+      }
     }
 
+    // Fall back to regular admin behavior
+    if (selectedSchool) {
+      setTargetSchool({ id: selectedSchool.id, name: selectedSchool.name });
+      await fetchClasses(selectedSchool.id);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const fetchClasses = async (schoolId: string) => {
     const { data, error } = await supabase
       .from('classes')
       .select('*')
-      .eq('school_id', selectedSchool.id)
+      .eq('school_id', schoolId)
       .order('name');
 
     if (error) {
@@ -83,10 +135,6 @@ export default function ClassManagement() {
     }
     setLoading(false);
   };
-
-  useEffect(() => {
-    fetchClasses();
-  }, []);
 
   const handleOpenDialog = (classItem?: ClassItem) => {
     if (classItem) {
@@ -107,6 +155,15 @@ export default function ClassManagement() {
       toast({
         title: 'Invalid Class Number',
         description: 'Please enter a valid class number (1-12).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!targetSchool) {
+      toast({
+        title: 'Error',
+        description: 'No school selected.',
         variant: 'destructive',
       });
       return;
@@ -142,19 +199,9 @@ export default function ClassManagement() {
         });
       } else {
         // Create new class with school_id
-        if (!selectedSchool) {
-          toast({
-            title: 'Error',
-            description: 'No school selected.',
-            variant: 'destructive',
-          });
-          setSaving(false);
-          return;
-        }
-
         const { error } = await supabase
           .from('classes')
-          .insert({ name: className, school_id: selectedSchool.id });
+          .insert({ name: className, school_id: targetSchool.id });
 
         if (error) {
           if (error.code === '23505') {
@@ -176,7 +223,9 @@ export default function ClassManagement() {
       }
 
       setDialogOpen(false);
-      fetchClasses();
+      if (targetSchool) {
+        fetchClasses(targetSchool.id);
+      }
     } catch (error) {
       console.error('Error saving class:', error);
       toast({
@@ -192,19 +241,21 @@ export default function ClassManagement() {
   const handleDelete = async () => {
     if (!deleteClass) return;
 
-    // Check if class has students
-    const classStudents = students.filter(s => 
-      s.classLevel.toLowerCase().replace(/\s/g, '') === deleteClass.name.toLowerCase().replace(/\s/g, '')
-    );
+    // Check if class has students (only for regular admins with student data)
+    if (!isSuperAdmin) {
+      const classStudents = students.filter(s => 
+        s.classLevel.toLowerCase().replace(/\s/g, '') === deleteClass.name.toLowerCase().replace(/\s/g, '')
+      );
 
-    if (classStudents.length > 0) {
-      toast({
-        title: 'Cannot Delete',
-        description: `${deleteClass.name} has ${classStudents.length} students. Please remove them first.`,
-        variant: 'destructive',
-      });
-      setDeleteClass(null);
-      return;
+      if (classStudents.length > 0) {
+        toast({
+          title: 'Cannot Delete',
+          description: `${deleteClass.name} has ${classStudents.length} students. Please remove them first.`,
+          variant: 'destructive',
+        });
+        setDeleteClass(null);
+        return;
+      }
     }
 
     try {
@@ -221,7 +272,9 @@ export default function ClassManagement() {
       });
 
       setDeleteClass(null);
-      fetchClasses();
+      if (targetSchool) {
+        fetchClasses(targetSchool.id);
+      }
     } catch (error) {
       console.error('Error deleting class:', error);
       toast({
@@ -233,12 +286,22 @@ export default function ClassManagement() {
   };
 
   const getStudentCount = (className: string) => {
+    if (isSuperAdmin) return null; // Super admin doesn't have student context
     // Convert "Basic 7" to "basic7" format to match classLevel
     const classId = className.toLowerCase().replace(/\s/g, '');
     return students.filter(s => s.classLevel === classId).length;
   };
 
-  if (!isAdmin) {
+  const handleBack = () => {
+    if (isSuperAdmin && schoolIdFromParams) {
+      navigate('/super-admin-dashboard');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  // Access check
+  if (!isAdmin && !isSuperAdmin && !loading) {
     return (
       <MainLayout>
         <div className="container py-8">
@@ -263,17 +326,19 @@ export default function ClassManagement() {
         <div className="mb-8 animate-fade-in">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            onClick={handleBack}
             className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Dashboard
+            {isSuperAdmin && schoolIdFromParams ? 'Back to Super Admin Dashboard' : 'Back to Dashboard'}
           </Button>
 
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Class Management</h1>
-              <p className="text-muted-foreground">Add and manage school classes</p>
+              <p className="text-muted-foreground">
+                {targetSchool ? `Manage classes for ${targetSchool.name}` : 'Add and manage school classes'}
+              </p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -342,7 +407,7 @@ export default function ClassManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Class Name</TableHead>
-                  <TableHead>Students</TableHead>
+                  {!isSuperAdmin && <TableHead>Students</TableHead>}
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -356,11 +421,13 @@ export default function ClassManagement() {
                         {classItem.name}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-sm">
-                        {getStudentCount(classItem.name)} students
-                      </span>
-                    </TableCell>
+                    {!isSuperAdmin && (
+                      <TableCell>
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-sm">
+                          {getStudentCount(classItem.name)} students
+                        </span>
+                      </TableCell>
+                    )}
                     <TableCell className="text-muted-foreground">
                       {new Date(classItem.created_at).toLocaleDateString()}
                     </TableCell>
