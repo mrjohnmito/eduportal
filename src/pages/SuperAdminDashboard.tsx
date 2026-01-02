@@ -37,6 +37,7 @@ import {
   Lock,
   Unlock,
   User,
+  GraduationCap,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -734,6 +735,14 @@ export default function SuperAdminDashboard() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/class-management?school=${school.id}`)}
+                          title="Manage Classes"
+                        >
+                          <GraduationCap className="h-4 w-4 text-primary" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
