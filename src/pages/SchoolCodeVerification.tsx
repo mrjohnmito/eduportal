@@ -1,25 +1,94 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { GraduationCap, Key, ArrowRight, ArrowLeft, AlertTriangle, Lock } from 'lucide-react';
 import { z } from 'zod';
+import { School } from '@/types/school';
 
 const codeSchema = z.string().min(1, 'School code is required');
 
 export default function SchoolCodeVerification() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { selectedSchool, clearSelectedSchool } = useSelectedSchool();
+  const { selectedSchool, setSelectedSchool, clearSelectedSchool } = useSelectedSchool();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  // Redirect if no school selected
+  // Handle direct link with school ID in URL
+  useEffect(() => {
+    const schoolId = searchParams.get('school');
+    
+    if (schoolId && !selectedSchool) {
+      // Fetch school data from URL parameter
+      const fetchSchool = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('schools')
+            .select('*')
+            .eq('id', schoolId)
+            .single();
+
+          if (error || !data) {
+            toast({
+              title: 'School Not Found',
+              description: 'The school link may be invalid or expired.',
+              variant: 'destructive',
+            });
+            navigate('/');
+            return;
+          }
+
+          const school: School = {
+            id: data.id,
+            name: data.name,
+            logoUrl: data.logo_url || undefined,
+            schoolCode: data.school_code,
+            subscriptionStatus: data.subscription_status,
+            subscriptionExpiry: data.subscription_expiry || undefined,
+            themeColor: data.theme_color || undefined,
+            createdAt: data.created_at,
+            adminEmail: data.admin_email || undefined,
+            adminPasswordHash: data.admin_password_hash || undefined,
+            isLocked: data.is_locked || false,
+          };
+
+          setSelectedSchool(school);
+        } catch (error) {
+          console.error('Error fetching school:', error);
+          navigate('/');
+        } finally {
+          setInitialLoading(false);
+        }
+      };
+
+      fetchSchool();
+    } else if (!selectedSchool) {
+      navigate('/');
+    } else {
+      setInitialLoading(false);
+    }
+  }, [searchParams, selectedSchool, setSelectedSchool, navigate, toast]);
+
+  // Show loading while fetching school from URL
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-muted-foreground animate-pulse">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!selectedSchool) {
-    navigate('/');
     return null;
   }
 

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { 
   UserPlus, 
   FileDown, 
@@ -11,7 +14,10 @@ import {
   GraduationCap, 
   FileText,
   FileSpreadsheet,
-  Lock
+  Lock,
+  Share2,
+  Copy,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,12 +32,62 @@ interface ActionItem {
 
 export function QuickActions() {
   const { isAdmin } = useSchool();
+  const { selectedSchool } = useSelectedSchool();
+  const { toast } = useToast();
   const [isTeacher, setIsTeacher] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const teacherData = sessionStorage.getItem('teacher');
     setIsTeacher(!!teacherData);
   }, []);
+
+  const getTeacherPortalLink = () => {
+    if (!selectedSchool) return '';
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/school-code?school=${selectedSchool.id}`;
+  };
+
+  const handleCopyLink = async () => {
+    const link = getTeacherPortalLink();
+    if (!link) return;
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast({
+        title: 'Link Copied!',
+        description: 'Teacher portal link has been copied to clipboard.',
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: 'Failed to copy',
+        description: 'Please copy the link manually.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleShareLink = async () => {
+    const link = getTeacherPortalLink();
+    if (!link) return;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${selectedSchool?.name} - Teacher Portal`,
+          text: 'Access the teacher login portal for score entry and reports.',
+          url: link,
+        });
+      } catch (error) {
+        // User cancelled or share failed, fallback to copy
+        handleCopyLink();
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
 
   const adminActions: ActionItem[] = [
     {
@@ -110,35 +166,86 @@ export function QuickActions() {
   }
 
   return (
-    <div className="w-full">
-      <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {actions.map(({ to, icon: Icon, label, description, bgColor, iconBg }, index) => (
-          <Link key={`${to}-${index}`} to={to}>
-            <Card 
-              className={cn(
-                'border transition-all duration-300 cursor-pointer',
-                'hover:scale-[1.02] hover:shadow-md',
-                bgColor
-              )}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className={cn('p-2 rounded-lg', iconBg)}>
-                    <Icon className="h-5 w-5 text-white" />
+    <div className="w-full space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {actions.map(({ to, icon: Icon, label, description, bgColor, iconBg }, index) => (
+            <Link key={`${to}-${index}`} to={to}>
+              <Card 
+                className={cn(
+                  'border transition-all duration-300 cursor-pointer',
+                  'hover:scale-[1.02] hover:shadow-md',
+                  bgColor
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className={cn('p-2 rounded-lg', iconBg)}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm leading-tight">{label}</h3>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground text-sm leading-tight">{label}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
+
+      {/* Share Teacher Portal Link - Admin Only */}
+      {isAdmin && selectedSchool && (
+        <div>
+          <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Share2 className="h-5 w-5 text-primary" />
+            Share Teacher Portal
+          </h2>
+          <Card className="border border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                Share this link with teachers so they can access the login portal directly.
+              </p>
+              <div className="flex items-center gap-2 p-3 bg-background rounded-lg border">
+                <code className="flex-1 text-xs text-foreground truncate">
+                  {getTeacherPortalLink()}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyLink}
+                  className="shrink-0 gap-2"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleShareLink}
+                  className="shrink-0 gap-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {!isAdmin && (
-        <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
           <Lock className="h-3 w-3" />
           Some features require admin login
         </p>
