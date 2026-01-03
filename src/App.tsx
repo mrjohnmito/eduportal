@@ -50,6 +50,7 @@ const App = () => (
               <Route path="/bulk-pdf" element={<BulkPDF />} />
               <Route path="/teachers" element={<TeacherManagement />} />
               <Route path="/classes" element={<ClassManagement />} />
+              <Route path="/class-management" element={<ClassManagement />} />
               <Route path="/class-teacher-report" element={<ClassTeacherReport />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
