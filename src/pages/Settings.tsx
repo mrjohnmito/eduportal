@@ -79,22 +79,32 @@ export default function Settings() {
   const { selectedSchool } = useSelectedSchool();
 
   // School settings state
-  const [schoolName, setSchoolName] = useState(settings.schoolName);
-  const [motto, setMotto] = useState(settings.motto);
-  const [email, setEmail] = useState(settings.email);
-  const [academicYear, setAcademicYear] = useState(settings.academicYear);
-  const [term, setTerm] = useState(settings.term);
-  const [contacts, setContacts] = useState(settings.contacts.join(', '));
-  const [logo, setLogo] = useState(settings.schoolLogo || '');
-  const [totalSchoolDays, setTotalSchoolDays] = useState(settings.totalSchoolDays?.toString() || '64');
+  const [schoolName, setSchoolName] = useState('');
+  const [motto, setMotto] = useState('');
+  const [email, setEmail] = useState('');
+  const [academicYear, setAcademicYear] = useState('');
+  const [term, setTerm] = useState('');
+  const [contacts, setContacts] = useState('');
+  const [logo, setLogo] = useState('');
+  const [totalSchoolDays, setTotalSchoolDays] = useState('64');
   
   // Interest and Conduct options
-  const [interestOptions, setInterestOptions] = useState<string[]>(
-    settings.interestOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']
-  );
-  const [conductOptions, setConductOptions] = useState<string[]>(
-    settings.conductOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']
-  );
+  const [interestOptions, setInterestOptions] = useState<string[]>([]);
+  const [conductOptions, setConductOptions] = useState<string[]>([]);
+
+  // Sync local state with fetched settings when they change
+  useEffect(() => {
+    setSchoolName(settings.schoolName || '');
+    setMotto(settings.motto || '');
+    setEmail(settings.email || '');
+    setAcademicYear(settings.academicYear || '');
+    setTerm(settings.term || '');
+    setContacts(settings.contacts?.join(', ') || '');
+    setLogo(settings.schoolLogo || '');
+    setTotalSchoolDays(settings.totalSchoolDays?.toString() || '64');
+    setInterestOptions(settings.interestOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']);
+    setConductOptions(settings.conductOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']);
+  }, [settings]);
   const [newInterest, setNewInterest] = useState('');
   const [newConduct, setNewConduct] = useState('');
 
