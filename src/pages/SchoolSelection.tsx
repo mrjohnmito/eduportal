@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { School } from '@/types/school';
-import { Button } from '@/components/ui/button';
 import { 
   GraduationCap, 
   Building2, 
-  Shield, 
   Lock, 
   AlertTriangle, 
   CheckCircle,
@@ -113,9 +111,6 @@ export default function SchoolSelection() {
     }
   };
 
-  const handleSuperAdminLogin = () => {
-    navigate('/super-admin-login');
-  };
 
   const features = [
     {
@@ -170,14 +165,6 @@ export default function SchoolSelection() {
               </div>
               <span className="text-xl font-bold text-foreground">EduReport</span>
             </div>
-            <Button
-              variant="ghost"
-              onClick={handleSuperAdminLogin}
-              className="gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Super Admin</span>
-            </Button>
           </nav>
 
           {/* Hero Content */}
