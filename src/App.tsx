@@ -36,6 +36,7 @@ const App = () => (
               {/* Multi-school flow */}
               <Route path="/" element={<SchoolSelection />} />
               <Route path="/school-code" element={<SchoolCodeVerification />} />
+              <Route path="/t/:shortId" element={<SchoolCodeVerification />} />
               <Route path="/super-admin-login" element={<SuperAdminLogin />} />
               <Route path="/super-admin" element={<SuperAdminDashboard />} />
               

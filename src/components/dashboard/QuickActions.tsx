@@ -45,7 +45,8 @@ export function QuickActions() {
   const getTeacherPortalLink = () => {
     if (!selectedSchool) return '';
     const baseUrl = window.location.origin;
-    return `${baseUrl}/school-code?school=${selectedSchool.id}`;
+    // Use first 8 characters of the school ID for a shorter link
+    return `${baseUrl}/t/${selectedSchool.id.substring(0, 8)}`;
   };
 
   const handleCopyLink = async () => {

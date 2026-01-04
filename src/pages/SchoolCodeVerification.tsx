@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,25 +15,33 @@ const codeSchema = z.string().min(1, 'School code is required');
 export default function SchoolCodeVerification() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { shortId } = useParams<{ shortId?: string }>();
   const { toast } = useToast();
   const { selectedSchool, setSelectedSchool, clearSelectedSchool } = useSelectedSchool();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // Handle direct link with school ID in URL
+  // Handle direct link with school ID in URL (full ID or short ID)
   useEffect(() => {
     const schoolId = searchParams.get('school');
+    const schoolIdPrefix = shortId; // Short ID from /t/:shortId route
     
-    if (schoolId && !selectedSchool) {
+    if ((schoolId || schoolIdPrefix) && !selectedSchool) {
       // Fetch school data from URL parameter
       const fetchSchool = async () => {
         try {
-          const { data, error } = await supabase
-            .from('schools')
-            .select('*')
-            .eq('id', schoolId)
-            .single();
+          let query = supabase.from('schools').select('*');
+          
+          if (schoolId) {
+            // Full ID lookup
+            query = query.eq('id', schoolId);
+          } else if (schoolIdPrefix) {
+            // Short ID prefix lookup - find schools where ID starts with the prefix
+            query = query.ilike('id', `${schoolIdPrefix}%`);
+          }
+
+          const { data, error } = await query.single();
 
           if (error || !data) {
             toast({
@@ -74,7 +82,7 @@ export default function SchoolCodeVerification() {
     } else {
       setInitialLoading(false);
     }
-  }, [searchParams, selectedSchool, setSelectedSchool, navigate, toast]);
+  }, [searchParams, shortId, selectedSchool, setSelectedSchool, navigate, toast]);
 
   // Show loading while fetching school from URL
   if (initialLoading) {
