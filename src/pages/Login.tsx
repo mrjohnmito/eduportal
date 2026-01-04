@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, LogIn, User, Key, Shield, ArrowLeft, AlertTriangle, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { z } from 'zod';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -20,6 +21,8 @@ export default function Login() {
   const { toast } = useToast();
   const { settings, login } = useSchool();
   const { selectedSchool, clearSelectedSchool } = useSelectedSchool();
+
+  useDocumentTitle('Login');
 
   // Admin login state
   const [adminEmail, setAdminEmail] = useState('');

@@ -8,6 +8,7 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, Calendar, AlertTriangle } from 'lucide-react';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 interface ClassItem {
   id: string;
@@ -20,6 +21,8 @@ export default function Dashboard() {
   const { selectedSchool } = useSelectedSchool();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
+
+  useDocumentTitle('Dashboard');
 
   // Check authentication and school selection
   useEffect(() => {
