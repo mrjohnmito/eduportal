@@ -175,7 +175,7 @@ export default function SchoolSelection() {
               <p className="text-muted-foreground text-sm">
                 No schools have been registered. Contact the system administrator to get started.
               </p>
-            </div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
+            </div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {schools.map(school => {
             const verified = isSchoolVerified(school.id);
             const subscriptionValid = isSubscriptionValid(school);
@@ -259,7 +259,7 @@ export default function SchoolSelection() {
               <span className="font-semibold text-foreground">Edu Pro</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} EduReport. All rights reserved.
+              © {new Date().getFullYear()} Edu Pro. All rights reserved.
             </p>
           </div>
         </div>
