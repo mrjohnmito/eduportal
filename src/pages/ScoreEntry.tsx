@@ -3,15 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
-import { SubjectScore, Student } from '@/types/school';
+import { SubjectScore, Student, GRADE_SCALE } from '@/types/school';
 import { calculateScores, validateScore } from '@/lib/gradeUtils';
 import { CalculatedScore } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, Save, Users, Download } from 'lucide-react';
+import { ChevronLeft, Save, Users, Download, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ScoreRow {
   student: Student;
@@ -35,6 +37,7 @@ export default function ScoreEntry() {
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [scoreRows, setScoreRows] = useState<ScoreRow[]>([]);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const decodedSubject = decodeURIComponent(subject || '');
 
@@ -196,6 +199,114 @@ export default function ScoreEntry() {
     );
   };
 
+  const handlePrintReport = async () => {
+    if (!classInfo || scoreRows.length === 0) return;
+    
+    setIsPrinting(true);
+    
+    try {
+      const doc = new jsPDF('l', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      let yPos = margin;
+
+      // Header
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${classInfo.name} - ${decodedSubject} Score Report`, pageWidth / 2, yPos, { align: 'center' });
+      
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
+      
+      yPos += 10;
+
+      // Table data
+      const tableData = scoreRows.map((row, index) => [
+        (index + 1).toString(),
+        row.student.name.toUpperCase(),
+        row.score.test1?.toString() ?? '-',
+        row.score.groupWork?.toString() ?? '-',
+        row.score.test2?.toString() ?? '-',
+        row.score.project?.toString() ?? '-',
+        row.calculated.subtotal.toString(),
+        row.calculated.caScore.toFixed(1),
+        row.score.examScore?.toString() ?? '-',
+        row.calculated.examPercent.toFixed(1),
+        row.calculated.overallTotal.toFixed(1),
+        row.calculated.grade.toString(),
+        row.calculated.remark
+      ]);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          'S/N', 'Student Name', 'Test 1 (30)', 'Group (20)', 'Test 2 (30)', 'Project (20)',
+          'Subtotal', 'Class Score (50%)', 'Exam (100)', 'Exam Score (50%)', 'Overall', 'Grade', 'Remark'
+        ]],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 7,
+          cellPadding: 2,
+          valign: 'middle',
+          halign: 'center',
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 7,
+        },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          1: { halign: 'left', cellWidth: 40 },
+          6: { fillColor: [219, 234, 254] },
+          7: { fillColor: [220, 252, 231] },
+          9: { fillColor: [255, 237, 213] },
+          10: { fillColor: [243, 232, 255], fontStyle: 'bold' },
+          11: { fillColor: [254, 249, 195] },
+          12: { halign: 'left', cellWidth: 25 },
+        },
+        margin: { left: margin, right: margin },
+      });
+
+      // Grading scale legend
+      const finalY = (doc as any).lastAutoTable.finalY || yPos + 80;
+      yPos = finalY + 10;
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Grading Scale:', margin, yPos);
+      
+      yPos += 5;
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      
+      const scaleText = GRADE_SCALE.map(g => `${g.min}-${g.max}% = Grade ${g.grade} (${g.remark})`).join('  |  ');
+      const lines = doc.splitTextToSize(scaleText, pageWidth - 2 * margin);
+      doc.text(lines, margin, yPos);
+
+      // Save
+      doc.save(`${classInfo.name}_${decodedSubject}_Scores.pdf`);
+
+      toast({
+        title: 'Report Generated',
+        description: `Score report for ${decodedSubject} has been downloaded.`,
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate report. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   if (loading || !classInfo || !classLevel) {
     return (
       <MainLayout>
@@ -252,9 +363,15 @@ export default function ScoreEntry() {
                   variant="outline"
                   size="sm"
                   className="gap-1 text-xs"
+                  onClick={handlePrintReport}
+                  disabled={isPrinting || scoreRows.length === 0}
                 >
-                  <Download className="h-3.5 w-3.5" />
-                  Print Report
+                  {isPrinting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                  {isPrinting ? 'Generating...' : 'Print Report'}
                 </Button>
               </div>
             </div>
