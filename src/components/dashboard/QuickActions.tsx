@@ -90,7 +90,8 @@ export function QuickActions() {
     }
   };
 
-  const adminActions: ActionItem[] = [
+  // Common actions available to both admin and teachers
+  const commonActions: ActionItem[] = [
     {
       to: '/bulk-pdf',
       icon: FileDown,
@@ -149,18 +150,8 @@ export function QuickActions() {
     },
   ];
 
-  const teacherActions: ActionItem[] = [
-    {
-      to: '/class-teacher-report',
-      icon: FileText,
-      label: 'Class Teacher Report',
-      description: 'Add attendance & conduct',
-      bgColor: 'bg-teal-50 hover:bg-teal-100 border-teal-200',
-      iconBg: 'bg-teal-500',
-    },
-  ];
-
-  const actions = isAdmin ? adminActions : isTeacher ? teacherActions : [];
+  // Both admin and teachers see the same actions
+  const actions = (isAdmin || isTeacher) ? commonActions : [];
 
   if (actions.length === 0) {
     return null;
