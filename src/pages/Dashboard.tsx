@@ -44,19 +44,30 @@ export default function Dashboard() {
     const fetchClasses = async () => {
       if (!selectedSchool) return;
 
+      // Admins use authenticated session; teachers use access-code flow.
+      const teacherId = sessionStorage.getItem('teacherId');
+      if (!user && !teacherId) return;
+
+      setClassesLoading(true);
+
       const { data, error } = await supabase
         .from('classes')
         .select('*')
         .eq('school_id', selectedSchool.id)
         .order('name');
-      
-      if (!error && data) {
-        setClasses(data);
+
+      if (error) {
+        console.error('Error fetching classes:', error);
+        setClasses([]);
+      } else {
+        setClasses(data || []);
       }
+
       setClassesLoading(false);
     };
+
     fetchClasses();
-  }, [selectedSchool?.id]);
+  }, [selectedSchool?.id, user?.id]);
 
   return (
     <MainLayout>

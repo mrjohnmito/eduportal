@@ -61,6 +61,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setLoading(true);
+
     try {
       // Fetch students filtered by school_id
       const { data: studentsData, error: studentsError } = await supabase
@@ -418,14 +420,19 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     }
 
     if (data.user) {
+      // Keep local state in sync immediately (auth listener will also update).
+      setSession(data.session ?? null);
+      setUser(data.user);
+
       const hasAdminRole = await checkAdminRole(data.user.id);
       setIsAdmin(hasAdminRole);
-      
-      // Refresh data after successful login to ensure data is loaded with authenticated session
+
+      // Refresh data after login using an authenticated session.
       if (hasAdminRole && selectedSchool) {
+        await supabase.auth.getSession();
         await fetchData();
       }
-      
+
       return hasAdminRole;
     }
 
