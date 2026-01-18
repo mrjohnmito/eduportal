@@ -188,12 +188,12 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch data when selected school changes
+  // Fetch data when selected school changes or auth state changes
   useEffect(() => {
     if (selectedSchool) {
       fetchData();
     }
-  }, [selectedSchool?.id]);
+  }, [selectedSchool?.id, session?.access_token]);
 
   const refreshData = async () => {
     await fetchData();
@@ -420,6 +420,12 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     if (data.user) {
       const hasAdminRole = await checkAdminRole(data.user.id);
       setIsAdmin(hasAdminRole);
+      
+      // Refresh data after successful login to ensure data is loaded with authenticated session
+      if (hasAdminRole && selectedSchool) {
+        await fetchData();
+      }
+      
       return hasAdminRole;
     }
 
