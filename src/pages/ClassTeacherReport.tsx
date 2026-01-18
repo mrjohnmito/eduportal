@@ -232,8 +232,8 @@ export default function ClassTeacherReport() {
             <p className="mt-1 text-sm text-muted-foreground">
               Please login with your teacher access code to access this page.
             </p>
-            <Button onClick={() => navigate('/')} className="mt-4">
-              Go to Login
+            <Button onClick={() => navigate('/dashboard')} className="mt-4">
+              Back to Dashboard
             </Button>
           </div>
         </div>

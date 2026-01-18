@@ -9,8 +9,8 @@ export function Header() {
   const { selectedSchool, clearSelectedSchool } = useSelectedSchool();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     sessionStorage.removeItem('teacherId');
     sessionStorage.removeItem('teacherName');
     clearSelectedSchool();
