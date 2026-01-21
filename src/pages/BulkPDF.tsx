@@ -225,7 +225,7 @@ export default function BulkPDF() {
         doc.setFont('helvetica', 'normal');
         doc.text(`${settings.term} - ${settings.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
 
-        yPos += 10;
+        yPos += 15;
 
         // ============ STUDENT INFO SECTION ============
         const position = positions.get(student.id) || 0;
@@ -237,10 +237,10 @@ export default function BulkPDF() {
 
         // Draw info box
         doc.setFillColor(240, 248, 255);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 24, 'F');
+        doc.rect(margin, yPos, pageWidth - 2 * margin, 28, 'F');
         doc.setDrawColor(100, 149, 237);
         doc.setLineWidth(0.5);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 24, 'S');
+        doc.rect(margin, yPos, pageWidth - 2 * margin, 28, 'S');
 
         const infoY = yPos + 6;
         doc.setFontSize(9);
@@ -298,7 +298,7 @@ export default function BulkPDF() {
         doc.setFont('helvetica', 'normal');
         doc.text('January 7, 2026', margin + 173, infoY3);
 
-        yPos += 30;
+        yPos += 34;
 
         // ============ SCORES TABLE ============
         const tableData = SUBJECTS.map(subject => {
@@ -372,21 +372,20 @@ export default function BulkPDF() {
         const maxScore = SUBJECTS.length * 100;
         const subjectsWithScores = studentScores.filter(s => s.overallTotal > 0).length;
 
-        // Grand Total Box
-        doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(0, 0, 0);
+        // Light Blue Summary Banner
+        doc.setFillColor(173, 216, 230);
+        doc.setDrawColor(100, 149, 237);
         doc.setLineWidth(0.5);
-        doc.roundedRect(margin, yPos, 80, 12, 3, 3, 'FD');
-        doc.setFontSize(10);
+        doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 14, 3, 3, 'FD');
+        
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text(`Grand Total: ${totalScore.toFixed(1)} / ${maxScore}`, margin + 5, yPos + 8);
-
-        // Aggregate Box
-        doc.roundedRect(pageWidth - margin - 80, yPos, 80, 12, 3, 3, 'FD');
-        doc.text(`Aggregate: ${aggregate}`, pageWidth - margin - 75, yPos + 8);
-        doc.setFontSize(7);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Grand Total: ${totalScore.toFixed(1)} / ${maxScore}`, margin + 25, yPos + 9);
+        doc.text(`Aggregate: ${aggregate}`, pageWidth / 2 + 20, yPos + 9);
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        doc.text(`(Best ${Math.min(6, subjectsWithScores)} subjects)`, pageWidth - margin - 30, yPos + 8);
+        doc.text(`(Best ${Math.min(6, subjectsWithScores)} subjects)`, pageWidth - margin - 35, yPos + 9);
 
         yPos += 20;
 
