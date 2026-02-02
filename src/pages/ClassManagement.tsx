@@ -294,7 +294,7 @@ export default function ClassManagement() {
 
   const handleBack = () => {
     if (isSuperAdmin && schoolIdFromParams) {
-      navigate('/super-admin-dashboard');
+      navigate('/super-admin');
     } else {
       navigate('/dashboard');
     }
