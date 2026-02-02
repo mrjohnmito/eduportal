@@ -65,6 +65,7 @@ export default function SuperAdminDashboard() {
   const [formLoading, setFormLoading] = useState(false);
 
   useEffect(() => {
+    document.title = 'Super Admin Dashboard | Edu Pro';
     checkAccess();
     fetchSchools();
   }, []);

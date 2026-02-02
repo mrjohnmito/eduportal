@@ -1,9 +1,14 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GraduationCap, Users, BookOpen, BarChart3, Shield, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'Edu Pro - School Management System';
+  }, []);
 
   const features = [
     { icon: Users, title: 'Student Management', description: 'Easily manage student records and profiles' },
