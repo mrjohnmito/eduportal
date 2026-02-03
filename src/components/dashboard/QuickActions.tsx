@@ -38,8 +38,10 @@ export function QuickActions() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    // Check multiple sources for teacher authentication for robustness
     const teacherData = sessionStorage.getItem('teacher');
-    setIsTeacher(!!teacherData);
+    const teacherId = sessionStorage.getItem('teacherId');
+    setIsTeacher(!!teacherData || !!teacherId);
   }, []);
 
   const getTeacherPortalLink = () => {
