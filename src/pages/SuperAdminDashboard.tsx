@@ -341,6 +341,29 @@ export default function SuperAdminDashboard() {
 
       if (error) throw error;
 
+      // Clean up any localStorage/sessionStorage entries related to this school
+      // This prevents stale verification data from causing issues in other schools
+      localStorage.removeItem(`school_verified_${school.id}`);
+      
+      // Also clean up any entries that might use the short ID prefix
+      const shortId = school.id.substring(0, 6);
+      localStorage.removeItem(`school_verified_${shortId}`);
+      
+      // If the currently selected school in sessionStorage matches the deleted one, clear it
+      try {
+        const storedSchool = sessionStorage.getItem('selectedSchool');
+        if (storedSchool) {
+          const parsed = JSON.parse(storedSchool);
+          if (parsed.id === school.id) {
+            sessionStorage.removeItem('selectedSchool');
+            sessionStorage.removeItem('teacher');
+            sessionStorage.removeItem('teacherId');
+          }
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+
       toast({
         title: 'School Deleted',
         description: `${school.name} has been deleted.`,
