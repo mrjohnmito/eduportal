@@ -11,6 +11,7 @@ import { GraduationCap, LogIn, User, Key, Shield, ArrowLeft, AlertTriangle, Cale
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { z } from 'zod';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { motion } from 'framer-motion';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -232,10 +233,31 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4 overflow-hidden">
+      <motion.div 
+        className="w-full max-w-md"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <motion.div 
+            className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 200, 
+              damping: 15,
+              delay: 0.2 
+            }}
+            whileHover={{ scale: 1.1, rotate: 5 }}
+          >
             {selectedSchool.logoUrl ? (
               <img
                 src={selectedSchool.logoUrl}
@@ -245,16 +267,40 @@ export default function Login() {
             ) : (
               <GraduationCap className="h-8 w-8 text-primary" />
             )}
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">{selectedSchool.name}</h1>
-          <p className="text-muted-foreground mt-1">School Management System</p>
-        </div>
+          </motion.div>
+          <motion.h1 
+            className="text-2xl font-bold text-foreground"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            {selectedSchool.name}
+          </motion.h1>
+          <motion.p 
+            className="text-muted-foreground mt-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+          >
+            School Management System
+          </motion.p>
+        </motion.div>
 
         {/* Subscription Warning */}
         {!canLogin && (
-          <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 animate-fade-in">
+          <motion.div 
+            className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4"
+            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <div className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
+              <motion.div
+                animate={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              >
+                <AlertTriangle className="h-5 w-5" />
+              </motion.div>
               <span className="font-medium">
                 {!isSubscriptionActive ? 'Subscription Inactive' : 'Subscription Expired'}
               </span>
@@ -262,12 +308,17 @@ export default function Login() {
             <p className="text-sm text-destructive/80 mt-1">
               Please contact your administrator to renew the subscription.
             </p>
-          </div>
+          </motion.div>
         )}
 
         {/* Subscription Info */}
         {canLogin && remainingDays !== null && remainingDays <= 30 && (
-          <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 animate-fade-in">
+          <motion.div 
+            className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4"
+            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <div className="flex items-center gap-2 text-amber-600">
               <Calendar className="h-5 w-5" />
               <span className="font-medium">Subscription Expiring Soon</span>
@@ -275,31 +326,57 @@ export default function Login() {
             <p className="text-sm text-amber-600/80 mt-1">
               {remainingDays} day{remainingDays !== 1 ? 's' : ''} remaining until expiry.
             </p>
-          </div>
+          </motion.div>
         )}
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-lg animate-fade-in [animation-delay:100ms]">
+        <motion.div 
+          className="rounded-xl border border-border bg-card p-6 shadow-lg"
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ 
+            duration: 0.5, 
+            delay: 0.2,
+            ease: "easeOut"
+          }}
+        >
           <Tabs defaultValue="teacher" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="teacher" className="gap-2" disabled={!canLogin}>
-                <User className="h-4 w-4" />
-                Teacher
-              </TabsTrigger>
-              <TabsTrigger value="admin" className="gap-2" disabled={!canLogin}>
-                <Shield className="h-4 w-4" />
-                Admin
-              </TabsTrigger>
-            </TabsList>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="teacher" className="gap-2" disabled={!canLogin}>
+                  <User className="h-4 w-4" />
+                  Teacher
+                </TabsTrigger>
+                <TabsTrigger value="admin" className="gap-2" disabled={!canLogin}>
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </TabsTrigger>
+              </TabsList>
+            </motion.div>
 
             <TabsContent value="teacher">
-              <form onSubmit={handleTeacherLogin} className="space-y-4">
+              <motion.form 
+                onSubmit={handleTeacherLogin} 
+                className="space-y-4"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 <div className="text-center mb-4">
                   <p className="text-sm text-muted-foreground">
                     Enter your access code provided by the admin
                   </p>
                 </div>
 
-                <div className="space-y-2">
+                <motion.div 
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
                   <Label htmlFor="accessCode">Access Code</Label>
                   <div className="relative">
                     <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -314,32 +391,51 @@ export default function Login() {
                       disabled={!canLogin}
                     />
                   </div>
-                </div>
+                </motion.div>
 
-                <Button
-                  type="submit"
-                  disabled={teacherLoading || !canLogin}
-                  className="w-full gap-2 gradient-primary text-primary-foreground"
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {teacherLoading ? 'Verifying...' : (
-                    <>
-                      <LogIn className="h-4 w-4" />
-                      Enter Dashboard
-                    </>
-                  )}
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    disabled={teacherLoading || !canLogin}
+                    className="w-full gap-2 gradient-primary text-primary-foreground"
+                  >
+                    {teacherLoading ? 'Verifying...' : (
+                      <>
+                        <LogIn className="h-4 w-4" />
+                        Enter Dashboard
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </motion.form>
             </TabsContent>
 
             <TabsContent value="admin">
-              <form onSubmit={handleAdminLogin} className="space-y-4">
+              <motion.form 
+                onSubmit={handleAdminLogin} 
+                className="space-y-4"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 <div className="text-center mb-4">
                   <p className="text-sm text-muted-foreground">
                     Login with your admin credentials
                   </p>
                 </div>
 
-                <div className="space-y-2">
+                <motion.div 
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -350,9 +446,14 @@ export default function Login() {
                     autoComplete="email"
                     disabled={!canLogin}
                   />
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
+                <motion.div 
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                >
                   <Label htmlFor="password">Password</Label>
                   <Input
                     id="password"
@@ -363,41 +464,61 @@ export default function Login() {
                     autoComplete="current-password"
                     disabled={!canLogin}
                   />
-                </div>
+                </motion.div>
 
-                <Button
-                  type="submit"
-                  disabled={adminLoading || !canLogin}
-                  className="w-full gap-2 gradient-primary text-primary-foreground"
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {adminLoading ? 'Logging in...' : (
-                    <>
-                      <LogIn className="h-4 w-4" />
-                      Admin Login
-                    </>
-                  )}
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    disabled={adminLoading || !canLogin}
+                    className="w-full gap-2 gradient-primary text-primary-foreground"
+                  >
+                    {adminLoading ? 'Logging in...' : (
+                      <>
+                        <LogIn className="h-4 w-4" />
+                        Admin Login
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </motion.form>
             </TabsContent>
           </Tabs>
 
-          <div className="mt-4 pt-4 border-t border-border">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleBack}
-              className="w-full gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Change School
-            </Button>
-          </div>
-        </div>
+          <motion.div 
+            className="mt-4 pt-4 border-t border-border"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <motion.div whileHover={{ x: -5 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleBack}
+                className="w-full gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Change School
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
 
-        <p className="text-center text-sm text-muted-foreground mt-6 animate-fade-in [animation-delay:200ms]">
+        <motion.p 
+          className="text-center text-sm text-muted-foreground mt-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.4 }}
+        >
           "{settings.motto}"
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
     </div>
   );
 }
