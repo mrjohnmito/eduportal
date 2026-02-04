@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { GraduationCap, Key, ArrowRight, ArrowLeft, AlertTriangle, Lock } from 'lucide-react';
 import { z } from 'zod';
 import { School } from '@/types/school';
+import { motion } from 'framer-motion';
 
 const codeSchema = z.string().min(1, 'School code is required');
 
@@ -215,10 +216,31 @@ export default function SchoolCodeVerification() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4 overflow-hidden">
+      <motion.div 
+        className="w-full max-w-md"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <motion.div 
+            className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 200, 
+              damping: 15,
+              delay: 0.2 
+            }}
+            whileHover={{ scale: 1.1, rotate: 5 }}
+          >
             {selectedSchool.logoUrl ? (
               <img
                 src={selectedSchool.logoUrl}
@@ -228,26 +250,64 @@ export default function SchoolCodeVerification() {
             ) : (
               <GraduationCap className="h-8 w-8 text-primary" />
             )}
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">{selectedSchool.name}</h1>
-          <p className="text-muted-foreground mt-1">Enter your school code to continue</p>
-        </div>
+          </motion.div>
+          <motion.h1 
+            className="text-2xl font-bold text-foreground"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            {selectedSchool.name}
+          </motion.h1>
+          <motion.p 
+            className="text-muted-foreground mt-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+          >
+            Enter your school code to continue
+          </motion.p>
+        </motion.div>
 
         {!selectedSchool.subscriptionStatus && (
-          <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 animate-fade-in">
+          <motion.div 
+            className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4"
+            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <div className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
+              <motion.div
+                animate={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              >
+                <AlertTriangle className="h-5 w-5" />
+              </motion.div>
               <span className="font-medium">Subscription Inactive</span>
             </div>
             <p className="text-sm text-destructive/80 mt-1">
               This school's subscription is currently inactive.
             </p>
-          </div>
+          </motion.div>
         )}
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-lg animate-fade-in [animation-delay:100ms]">
+        <motion.div 
+          className="rounded-xl border border-border bg-card p-6 shadow-lg"
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ 
+            duration: 0.5, 
+            delay: 0.2,
+            ease: "easeOut"
+          }}
+        >
           <form onSubmit={handleVerify} className="space-y-6">
-            <div className="space-y-2">
+            <motion.div 
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
               <Label htmlFor="code">School Code</Label>
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -264,34 +324,47 @@ export default function SchoolCodeVerification() {
               <p className="text-xs text-muted-foreground">
                 The school code was provided by your administrator.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                className="gap-2"
+            <motion.div 
+              className="flex gap-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <motion.div whileHover={{ x: -3 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </Button>
+              </motion.div>
+              <motion.div 
+                className="flex-1"
+                whileHover={{ scale: 1.02 }} 
+                whileTap={{ scale: 0.98 }}
               >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex-1 gap-2 gradient-primary text-primary-foreground"
-              >
-                {loading ? 'Verifying...' : (
-                  <>
-                    Verify & Continue
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full gap-2 gradient-primary text-primary-foreground"
+                >
+                  {loading ? 'Verifying...' : (
+                    <>
+                      Verify & Continue
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            </motion.div>
           </form>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
