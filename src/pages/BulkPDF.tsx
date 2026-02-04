@@ -235,70 +235,78 @@ export default function BulkPDF() {
           .map(s => calculateScores(s));
         const { aggregate, subjects: aggregateSubjects } = calculateAggregate(studentScores);
 
-        // Draw info box
+        // Draw info box - increased height for 4 rows with proper spacing
+        const infoBoxHeight = 38;
+        const infoBoxPadding = 5;
+        const rowHeight = 7;
+        const colWidth = (pageWidth - 2 * margin - 2 * infoBoxPadding) / 2;
+        
         doc.setFillColor(240, 248, 255);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 28, 'F');
+        doc.rect(margin, yPos, pageWidth - 2 * margin, infoBoxHeight, 'F');
         doc.setDrawColor(100, 149, 237);
         doc.setLineWidth(0.5);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, 28, 'S');
+        doc.rect(margin, yPos, pageWidth - 2 * margin, infoBoxHeight, 'S');
 
-        const infoY = yPos + 6;
+        const leftCol = margin + infoBoxPadding;
+        const rightCol = margin + infoBoxPadding + colWidth;
+        let infoRowY = yPos + infoBoxPadding + 4;
+        
         doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
         
-        // Row 1
+        // Row 1: Student Name | Class, Serial No
         doc.setFont('helvetica', 'bold');
-        doc.text('Student Name:', margin + 3, infoY);
+        doc.text('Student Name:', leftCol, infoRowY);
         doc.setFont('helvetica', 'normal');
-        doc.text(student.name, margin + 28, infoY);
+        doc.text(student.name, leftCol + 26, infoRowY);
         
         doc.setFont('helvetica', 'bold');
-        doc.text('Class:', margin + 85, infoY);
+        doc.text('Class:', rightCol, infoRowY);
         doc.setFont('helvetica', 'normal');
-        doc.text(className, margin + 96, infoY);
-        
+        doc.text(className, rightCol + 13, infoRowY);
         doc.setFont('helvetica', 'bold');
-        doc.text('Serial No:', margin + 140, infoY);
+        doc.text('Serial No:', rightCol + 45, infoRowY);
         doc.setFont('helvetica', 'normal');
-        doc.text(student.indexNumber || 'N/A', margin + 160, infoY);
+        doc.text(student.indexNumber || 'N/A', rightCol + 65, infoRowY);
 
-        // Row 2
-        const infoY2 = infoY + 8;
+        // Row 2: Position | Aggregate, Attendance
+        infoRowY += rowHeight;
         doc.setFont('helvetica', 'bold');
-        doc.text('Position:', margin + 3, infoY2);
+        doc.text('Position:', leftCol, infoRowY);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${position}${getPositionSuffix(position)} out of ${totalStudents}`, margin + 22, infoY2);
+        doc.text(`${position}${getPositionSuffix(position)} out of ${totalStudents}`, leftCol + 18, infoRowY);
         
         doc.setFont('helvetica', 'bold');
-        doc.text('Aggregate:', margin + 85, infoY2);
+        doc.text('Aggregate:', rightCol, infoRowY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(59, 130, 246);
-        doc.text(aggregate.toString(), margin + 107, infoY2);
+        doc.text(aggregate.toString(), rightCol + 22, infoRowY);
         doc.setTextColor(0, 0, 0);
-        
         doc.setFont('helvetica', 'bold');
-        doc.text('Attendance:', margin + 140, infoY2);
+        doc.text('Attendance:', rightCol + 45, infoRowY);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${attendance} / ${settings.totalSchoolDays || 64}`, margin + 164, infoY2);
+        doc.text(`${attendance} / ${settings.totalSchoolDays || 64}`, rightCol + 68, infoRowY);
 
-        // Row 3
-        const infoY3 = infoY2 + 8;
+        // Row 3: Interest | Conduct
+        infoRowY += rowHeight;
         doc.setFont('helvetica', 'bold');
-        doc.text('Interest:', margin + 3, infoY3);
+        doc.text('Interest:', leftCol, infoRowY);
         doc.setFont('helvetica', 'normal');
-        doc.text(teacherReport?.interest || 'N/A', margin + 20, infoY3);
+        doc.text(teacherReport?.interest || 'N/A', leftCol + 17, infoRowY);
         
         doc.setFont('helvetica', 'bold');
-        doc.text('Conduct:', margin + 85, infoY3);
+        doc.text('Conduct:', rightCol, infoRowY);
         doc.setFont('helvetica', 'normal');
-        doc.text(teacherReport?.conduct || 'N/A', margin + 103, infoY3);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('Next Term Begins:', margin + 140, infoY3);
-        doc.setFont('helvetica', 'normal');
-        doc.text('January 7, 2026', margin + 173, infoY3);
+        doc.text(teacherReport?.conduct || 'N/A', rightCol + 18, infoRowY);
 
-        yPos += 34;
+        // Row 4: Next Term Begins (right-aligned within box)
+        infoRowY += rowHeight;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Next Term Begins:', leftCol, infoRowY);
+        doc.setFont('helvetica', 'normal');
+        doc.text('January 7, 2026', leftCol + 35, infoRowY);
+
+        yPos += infoBoxHeight + 6;
 
         // ============ SCORES TABLE ============
         const tableData = SUBJECTS.map(subject => {
