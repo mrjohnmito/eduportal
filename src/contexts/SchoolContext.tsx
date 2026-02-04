@@ -22,8 +22,9 @@ interface SchoolContextType {
   getStudentsByClass: (classLevel: string) => Student[];
   clearSubjectData: (classLevel: string, subject: string) => Promise<void>;
   updateSettings: (updates: Partial<SchoolSettings>) => Promise<void>;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, isSchoolAdmin?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
+  checkSchoolAdminSession: () => boolean;
   refreshData: () => Promise<void>;
 }
 
@@ -159,6 +160,23 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     return !!data;
   };
 
+  // Check for school admin session in sessionStorage
+  const checkSchoolAdminSession = (): boolean => {
+    try {
+      const adminSessionStr = sessionStorage.getItem('adminSession');
+      if (adminSessionStr) {
+        const adminSession = JSON.parse(adminSessionStr);
+        // Validate that the session is for the current school
+        if (adminSession.schoolId === selectedSchool?.id && adminSession.isAdmin) {
+          return true;
+        }
+      }
+    } catch {
+      // Invalid session data
+    }
+    return false;
+  };
+
   // Initialize auth and data
   useEffect(() => {
     // Set up auth state listener
@@ -172,23 +190,29 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
             checkAdminRole(session.user.id).then(setIsAdmin);
           }, 0);
         } else {
-          setIsAdmin(false);
+          // Check for school admin session when no Supabase user
+          const isSchoolAdmin = checkSchoolAdminSession();
+          setIsAdmin(isSchoolAdmin);
         }
       }
     );
 
-    // Check for existing session
+    // Check for existing session (Supabase or school admin)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         checkAdminRole(session.user.id).then(setIsAdmin);
+      } else {
+        // Check for school admin session
+        const isSchoolAdmin = checkSchoolAdminSession();
+        setIsAdmin(isSchoolAdmin);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [selectedSchool?.id]);
 
   // Fetch data when selected school changes or auth state changes
   useEffect(() => {
@@ -408,7 +432,17 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     setSettings(prev => ({ ...prev, ...updates }));
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, isSchoolAdmin?: boolean): Promise<boolean> => {
+    // If this is a school admin login (credentials from schools table)
+    if (isSchoolAdmin) {
+      setIsAdmin(true);
+      if (selectedSchool) {
+        await fetchData();
+      }
+      return true;
+    }
+
+    // Otherwise, try Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -440,6 +474,9 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // Clear school admin session
+    sessionStorage.removeItem('adminSession');
+    
     await supabase.auth.signOut();
     setIsAdmin(false);
     setUser(null);
@@ -469,6 +506,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         refreshData,
+        checkSchoolAdminSession,
       }}
     >
       {children}

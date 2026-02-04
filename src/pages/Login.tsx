@@ -91,6 +91,49 @@ export default function Login() {
     setAdminLoading(true);
 
     try {
+      // First, check if credentials match the school's admin credentials
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('schools')
+        .select('admin_email, admin_password_hash')
+        .eq('id', selectedSchool.id)
+        .single();
+
+      if (schoolError) throw schoolError;
+
+      // Check if the email matches the school's admin email
+      if (schoolData?.admin_email && 
+          schoolData.admin_email.toLowerCase() === adminEmail.toLowerCase() &&
+          schoolData.admin_password_hash) {
+        
+        // Decode the stored password (base64) and compare
+        try {
+          const storedPassword = atob(schoolData.admin_password_hash);
+          
+          if (storedPassword === adminPassword) {
+            // Credentials match - set admin session in sessionStorage
+            sessionStorage.setItem('adminSession', JSON.stringify({
+              schoolId: selectedSchool.id,
+              email: adminEmail,
+              isAdmin: true,
+              timestamp: Date.now(),
+            }));
+            
+            // Trigger login in context
+            await login(adminEmail, adminPassword, true);
+            
+            toast({
+              title: 'Welcome, Admin!',
+              description: 'You have successfully logged in.',
+            });
+            navigate('/dashboard');
+            return;
+          }
+        } catch {
+          // Password decode failed, continue to Supabase Auth
+        }
+      }
+
+      // Fallback to Supabase Auth for super admins or other auth users
       const success = await login(adminEmail, adminPassword);
 
       if (success) {
