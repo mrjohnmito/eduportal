@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Student } from '@/types/school';
-import { UserPlus, Pencil, Trash2, Upload, ChevronLeft, FileSpreadsheet, AlertCircle, CheckCircle2, Download } from 'lucide-react';
+import { UserPlus, Pencil, Trash2, Upload, ChevronLeft, FileSpreadsheet, AlertCircle, CheckCircle2, Download, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +73,9 @@ export default function StudentManagement() {
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkClass, setBulkClass] = useState<string>('');
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const editPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Form state
   const [newName, setNewName] = useState('');
@@ -106,14 +109,67 @@ export default function StudentManagement() {
 
   const filteredStudents = students.filter(s => s.classLevel === selectedClass);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewPhoto(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please select an image file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select an image smaller than 2MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingPhoto(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${selectedSchool?.id || 'unknown'}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('student-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('student-photos')
+        .getPublicUrl(filePath);
+
+      setNewPhoto(publicUrl);
+      toast({
+        title: 'Photo Uploaded',
+        description: 'Student photo has been uploaded successfully.',
+      });
+    } catch (error: any) {
+      console.error('Error uploading photo:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload photo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (isEdit && editPhotoInputRef.current) {
+        editPhotoInputRef.current.value = '';
+      } else if (photoInputRef.current) {
+        photoInputRef.current.value = '';
+      }
     }
   };
 
@@ -555,17 +611,29 @@ export default function StudentManagement() {
                           className="h-16 w-16 rounded-full object-cover"
                         />
                       )}
-                      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-2 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-                        <Upload className="h-4 w-4" />
-                        Upload Photo
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handlePhotoUpload}
-                        />
-                      </label>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handlePhotoUpload(e, false)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={uploadingPhoto}
+                        className="gap-2"
+                      >
+                        {uploadingPhoto ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+                      </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">Max 2MB, JPG/PNG</p>
                   </div>
                   <Button onClick={handleAddStudent} className="w-full gradient-primary text-primary-foreground">
                     Add Student
@@ -689,17 +757,29 @@ export default function StudentManagement() {
                                       className="h-16 w-16 rounded-full object-cover"
                                     />
                                   )}
-                                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-2 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-                                    <Upload className="h-4 w-4" />
-                                    Change Photo
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={handlePhotoUpload}
-                                    />
-                                  </label>
+                                  <input
+                                    ref={editPhotoInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => handlePhotoUpload(e, true)}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => editPhotoInputRef.current?.click()}
+                                    disabled={uploadingPhoto}
+                                    className="gap-2"
+                                  >
+                                    {uploadingPhoto ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Upload className="h-4 w-4" />
+                                    )}
+                                    {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                                  </Button>
                                 </div>
+                                <p className="text-xs text-muted-foreground">Max 2MB, JPG/PNG</p>
                               </div>
                               <Button onClick={handleUpdateStudent} className="w-full">
                                 Save Changes
