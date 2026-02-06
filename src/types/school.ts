@@ -59,6 +59,7 @@ export interface SchoolSettings {
   totalSchoolDays?: number;
   interestOptions?: string[];
   conductOptions?: string[];
+  nextTermBegins?: string;
   schoolId?: string;
 }
 
