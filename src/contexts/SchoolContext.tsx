@@ -125,6 +125,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           totalSchoolDays: (settingsData as any).total_school_days || 64,
           interestOptions: (settingsData as any).interest_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
           conductOptions: (settingsData as any).conduct_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
+          nextTermBegins: (settingsData as any).next_term_begins || undefined,
           schoolId: selectedSchool.id,
         });
       } else {
@@ -405,6 +406,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       total_school_days: updates.totalSchoolDays,
       interest_options: updates.interestOptions,
       conduct_options: updates.conductOptions,
+      next_term_begins: updates.nextTermBegins,
       school_id: selectedSchool.id,
     };
 

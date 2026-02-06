@@ -120,6 +120,7 @@ export type Database = {
           interest_options: string[] | null
           logo_url: string | null
           motto: string | null
+          next_term_begins: string | null
           phone1: string | null
           phone2: string | null
           school_id: string | null
@@ -137,6 +138,7 @@ export type Database = {
           interest_options?: string[] | null
           logo_url?: string | null
           motto?: string | null
+          next_term_begins?: string | null
           phone1?: string | null
           phone2?: string | null
           school_id?: string | null
@@ -154,6 +156,7 @@ export type Database = {
           interest_options?: string[] | null
           logo_url?: string | null
           motto?: string | null
+          next_term_begins?: string | null
           phone1?: string | null
           phone2?: string | null
           school_id?: string | null

@@ -87,6 +87,7 @@ export default function Settings() {
   const [contacts, setContacts] = useState('');
   const [logo, setLogo] = useState('');
   const [totalSchoolDays, setTotalSchoolDays] = useState('64');
+  const [nextTermBegins, setNextTermBegins] = useState('');
   
   // Interest and Conduct options
   const [interestOptions, setInterestOptions] = useState<string[]>([]);
@@ -102,6 +103,7 @@ export default function Settings() {
     setContacts(settings.contacts?.join(', ') || '');
     setLogo(settings.schoolLogo || '');
     setTotalSchoolDays(settings.totalSchoolDays?.toString() || '64');
+    setNextTermBegins(settings.nextTermBegins || '');
     setInterestOptions(settings.interestOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']);
     setConductOptions(settings.conductOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']);
   }, [settings]);
@@ -167,6 +169,7 @@ export default function Settings() {
       contacts: contacts.split(',').map(c => c.trim()).filter(Boolean),
       schoolLogo: logo || undefined,
       totalSchoolDays: totalSchoolDays ? parseInt(totalSchoolDays) : 64,
+      nextTermBegins: nextTermBegins || undefined,
       interestOptions,
       conductOptions,
     });
@@ -543,6 +546,20 @@ export default function Settings() {
                   />
                   <p className="text-xs text-muted-foreground">
                     This is the total number of days students are expected to attend school for the term
+                  </p>
+                </div>
+
+                {/* Next Term Begins */}
+                <div className="space-y-2">
+                  <Label htmlFor="nextTermBegins">Next Term Begins</Label>
+                  <Input
+                    id="nextTermBegins"
+                    value={nextTermBegins}
+                    onChange={e => setNextTermBegins(e.target.value)}
+                    placeholder="e.g., January 7, 2026"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This date will appear on the report cards
                   </p>
                 </div>
 
