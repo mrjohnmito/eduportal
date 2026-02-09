@@ -3,12 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { School } from '@/types/school';
-import { GraduationCap, Building2, Lock, AlertTriangle, CheckCircle, BookOpen, Users, BarChart3, FileText, ArrowRight, Sparkles, X } from 'lucide-react';
+import { GraduationCap, Building2, Lock, AlertTriangle, CheckCircle, BookOpen, Users, BarChart3, FileText, ArrowRight, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import featureStudentMgmt from '@/assets/feature-student-management.jpg';
-import featureGradeRecording from '@/assets/feature-grade-recording.jpg';
-import featureReportGen from '@/assets/feature-report-generation.jpg';
-import featureAnalytics from '@/assets/feature-performance-analytics.jpg';
 export default function SchoolSelection() {
   const navigate = useNavigate();
   const {
@@ -20,7 +16,6 @@ export default function SchoolSelection() {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [previewFeature, setPreviewFeature] = useState<{ title: string; image: string } | null>(null);
   useEffect(() => {
     fetchSchools();
   }, []);
@@ -99,23 +94,19 @@ export default function SchoolSelection() {
   const features = [{
     icon: Users,
     title: 'Student Management',
-    description: 'Easily manage student records, enrollment, and academic profiles.',
-    image: featureStudentMgmt
+    description: 'Easily manage student records, enrollment, and academic profiles.'
   }, {
     icon: BookOpen,
     title: 'Grade Recording',
-    description: 'Record and track student scores across all subjects and terms.',
-    image: featureGradeRecording
+    description: 'Record and track student scores across all subjects and terms.'
   }, {
     icon: FileText,
     title: 'Report Generation',
-    description: 'Generate professional report cards with just a few clicks.',
-    image: featureReportGen
+    description: 'Generate professional report cards with just a few clicks.'
   }, {
     icon: BarChart3,
     title: 'Performance Analytics',
-    description: 'Visualize class performance and identify areas for improvement.',
-    image: featureAnalytics
+    description: 'Visualize class performance and identify areas for improvement.'
   }];
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5">
@@ -252,14 +243,13 @@ export default function SchoolSelection() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {features.map((feature, index) => <button key={index} onClick={() => setPreviewFeature({ title: feature.title, image: feature.image })} className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:shadow-lg hover:border-primary/30 text-left cursor-pointer">
+            {features.map((feature, index) => <div key={index} className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:shadow-lg hover:border-primary/30">
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 transition-colors group-hover:bg-primary/20">
                   <feature.icon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{feature.description}</p>
-                <span className="text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">Click to preview →</span>
-              </button>)}
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
+              </div>)}
           </div>
         </div>
       </section>
@@ -280,22 +270,5 @@ export default function SchoolSelection() {
           </div>
         </div>
       </footer>
-
-      {/* Feature Preview Modal */}
-      {previewFeature && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPreviewFeature(null)}>
-          <div className="relative bg-card rounded-2xl border border-border shadow-2xl max-w-2xl w-full overflow-hidden animate-in zoom-in-95 fade-in duration-200" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h3 className="font-semibold text-foreground text-lg">{previewFeature.title}</h3>
-              <button onClick={() => setPreviewFeature(null)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                <X className="h-5 w-5 text-muted-foreground" />
-              </button>
-            </div>
-            <div className="p-4">
-              <img src={previewFeature.image} alt={previewFeature.title} className="w-full rounded-xl border border-border" />
-            </div>
-          </div>
-        </div>
-      )}
     </div>;
 }
