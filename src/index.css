@@ -157,6 +157,44 @@
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+
+  .shooting-star {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: hsl(var(--primary));
+    border-radius: 50%;
+    animation: shoot linear infinite;
+    opacity: 0;
+  }
+
+  .shooting-star::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 60px;
+    height: 1.5px;
+    background: linear-gradient(to left, hsl(var(--primary) / 0.6), transparent);
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes shoot {
+  0% {
+    transform: translate(0, 0) rotate(-35deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-500px, 300px) rotate(-35deg);
+    opacity: 0;
+  }
 }
 
 @keyframes float {

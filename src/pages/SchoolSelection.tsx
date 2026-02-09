@@ -123,11 +123,17 @@ export default function SchoolSelection() {
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-secondary/10 blur-3xl" />
+          {/* Shooting stars */}
+          <div className="shooting-star" style={{ top: '10%', right: '-5%', animationDuration: '3s', animationDelay: '0s' }} />
+          <div className="shooting-star" style={{ top: '25%', right: '-10%', animationDuration: '2.5s', animationDelay: '1.2s' }} />
+          <div className="shooting-star" style={{ top: '5%', right: '10%', animationDuration: '3.5s', animationDelay: '2.5s' }} />
+          <div className="shooting-star" style={{ top: '40%', right: '-3%', animationDuration: '2.8s', animationDelay: '4s' }} />
+          <div className="shooting-star" style={{ top: '15%', right: '20%', animationDuration: '3.2s', animationDelay: '5.5s' }} />
         </div>
 
         <div className="relative container mx-auto px-4 py-6">
           {/* Navigation */}
-          <nav className="flex items-center justify-between mb-16">
+          <nav className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
                 <GraduationCap className="h-6 w-6 text-primary-foreground" />
@@ -137,7 +143,7 @@ export default function SchoolSelection() {
           </nav>
 
           {/* Hero Content */}
-          <div className="max-w-3xl mx-auto text-center pb-16">
+          <div className="max-w-3xl mx-auto text-center pb-8">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm text-primary mb-6">
               <Sparkles className="h-4 w-4" />
               <span>Streamlined School Management</span>
