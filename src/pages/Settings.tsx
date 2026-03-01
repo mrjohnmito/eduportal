@@ -137,6 +137,7 @@ export default function Settings() {
     }
   };
 
+
   const addInterestOption = () => {
     if (newInterest.trim() && !interestOptions.includes(newInterest.trim())) {
       setInterestOptions([...interestOptions, newInterest.trim()]);

@@ -141,6 +141,7 @@ export type Database = {
           next_term_begins?: string | null
           phone1?: string | null
           phone2?: string | null
+          report_card_template?: string | null
           school_id?: string | null
           school_name?: string
           term?: string | null
@@ -159,6 +160,7 @@ export type Database = {
           next_term_begins?: string | null
           phone1?: string | null
           phone2?: string | null
+          report_card_template?: string | null
           school_id?: string | null
           school_name?: string
           term?: string | null

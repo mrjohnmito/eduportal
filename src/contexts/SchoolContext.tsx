@@ -35,14 +35,7 @@ const defaultSettings: SchoolSettings = {
   academicYear: '2024/2025',
   term: 'First Term',
   contacts: ['0557387992', '0545231646'],
-};
 
-const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
-
-export function SchoolProvider({ children }: { children: ReactNode }) {
-  const { selectedSchool } = useSelectedSchool();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [scores, setScores] = useState<SubjectScore[]>([]);
   const [settings, setSettings] = useState<SchoolSettings>(defaultSettings);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
@@ -409,6 +402,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       next_term_begins: updates.nextTermBegins,
       school_id: selectedSchool.id,
     };
+
 
     if (existing) {
       const { error } = await supabase
