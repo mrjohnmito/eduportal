@@ -289,17 +289,38 @@ export default function BulkPDF() {
         doc.setLineWidth(0.3);
         doc.roundedRect(margin, yPos, contentWidth, infoCardH, 3, 3, 'S');
 
-        // Student photo area (right side)
+        // Student photo area (grayscale in info card)
         const photoW = 22;
         const photoH = 26;
         const photoX = pageWidth - margin - photoW - 4;
         const photoY = yPos + 3;
-        doc.setDrawColor(...primary);
+        doc.setDrawColor(...borderGray);
         doc.setLineWidth(0.5);
         doc.roundedRect(photoX, photoY, photoW, photoH, 2, 2, 'S');
         if (student.photo) {
           try {
-            doc.addImage(student.photo, 'PNG', photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1);
+            // Convert to grayscale by drawing on a canvas
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = student.photo;
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 240;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, 200, 240);
+              const imageData = ctx.getImageData(0, 0, 200, 240);
+              const data = imageData.data;
+              for (let i = 0; i < data.length; i += 4) {
+                const avg = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                data[i] = avg;
+                data[i + 1] = avg;
+                data[i + 2] = avg;
+              }
+              ctx.putImageData(imageData, 0, 0);
+              const grayDataUrl = canvas.toDataURL('image/png');
+              doc.addImage(grayDataUrl, 'PNG', photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1);
+            }
           } catch {
             doc.setFontSize(6);
             doc.setTextColor(...textMuted);
@@ -309,6 +330,28 @@ export default function BulkPDF() {
           doc.setFontSize(6);
           doc.setTextColor(...textMuted);
           doc.text('Photo', photoX + photoW / 2, photoY + photoH / 2, { align: 'center' });
+        }
+
+        // ============ COLORED PHOTO (top-right of page) ============
+        const colorPhotoW = 28;
+        const colorPhotoH = 32;
+        const colorPhotoX = pageWidth - margin - colorPhotoW;
+        const colorPhotoY = 10;
+        doc.setDrawColor(...primary);
+        doc.setLineWidth(0.6);
+        doc.roundedRect(colorPhotoX, colorPhotoY, colorPhotoW, colorPhotoH, 2.5, 2.5, 'S');
+        if (student.photo) {
+          try {
+            doc.addImage(student.photo, 'PNG', colorPhotoX + 0.5, colorPhotoY + 0.5, colorPhotoW - 1, colorPhotoH - 1);
+          } catch {
+            doc.setFontSize(6);
+            doc.setTextColor(...textMuted);
+            doc.text('Photo', colorPhotoX + colorPhotoW / 2, colorPhotoY + colorPhotoH / 2, { align: 'center' });
+          }
+        } else {
+          doc.setFontSize(6);
+          doc.setTextColor(...textMuted);
+          doc.text('Photo', colorPhotoX + colorPhotoW / 2, colorPhotoY + colorPhotoH / 2, { align: 'center' });
         }
 
         // Info grid (left side, 2 columns)
@@ -347,11 +390,11 @@ export default function BulkPDF() {
         doc.setTextColor(146, 64, 14); // amber-800
         doc.text(posText, posBadgeX + 2, infoY);
 
-        drawInfoPair('Aggregate: ', aggregate.toString(), midCol, infoY);
+        drawInfoPair('Conduct: ', teacherReport?.conduct || 'N/A', midCol, infoY);
 
         infoY += 6;
         drawInfoPair('Interest: ', teacherReport?.interest || 'N/A', leftCol, infoY);
-        drawInfoPair('Conduct: ', teacherReport?.conduct || 'N/A', midCol, infoY);
+        drawInfoPair('Next Term Begins: ', settings.nextTermBegins || 'N/A', midCol, infoY);
 
         yPos += infoCardH + 5;
 
@@ -537,14 +580,7 @@ export default function BulkPDF() {
 
         yPos += remarkBoxHeight + 4;
 
-        // ============ NEXT TERM INFO ============
-        if (settings.nextTermBegins) {
-          doc.setFontSize(7);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...textMuted);
-          doc.text(`Next Term Begins: ${settings.nextTermBegins}`, pageWidth / 2, yPos + 2, { align: 'center' });
-          yPos += 6;
-        }
+        // (Next Term Begins is now in the student info card)
 
         // ============ FOOTER ============
         // Accent line
