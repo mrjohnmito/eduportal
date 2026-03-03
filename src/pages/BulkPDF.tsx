@@ -332,7 +332,7 @@ export default function BulkPDF() {
           doc.text('Photo', photoX + photoW / 2, photoY + photoH / 2, { align: 'center' });
         }
 
-        // ============ COLORED PHOTO (top-right of page) ============
+        // ============ COLORED PHOTO (top-left of page) ============
         const colorPhotoW = 28;
         const colorPhotoH = 32;
         const colorPhotoX = pageWidth - margin - colorPhotoW;
