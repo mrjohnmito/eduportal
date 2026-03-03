@@ -1,67 +1,54 @@
 
 
-## Add "Master Sheet" Feature
+## Fix Build Error + Modernize PDF Report Card
 
-### Overview
-Create a new "Master Sheet" page that generates a summary of student performance for a chosen class, with filters for academic year, term, and optionally a specific subject. Users can download the report as Excel (.xlsx) or PDF. Also add a quick action card on the dashboard linking to this page.
+### Priority 1: Fix Critical Build Error
 
----
+The `src/contexts/SchoolContext.tsx` file is broken -- the last edit accidentally removed the closing `};` of `defaultSettings` and the `SchoolProvider` function declaration + state initialization lines. This needs to be restored:
 
-### New File: `src/pages/MasterSheet.tsx`
+- Line 37: Add closing `};` after the contacts array
+- Lines 38-43: Restore `const SchoolContext = createContext(...)`, `export function SchoolProvider(...)`, and the state declarations (`students`, `scores`, etc.)
 
-A multi-step page with the following flow:
+### Priority 2: Modernize the PDF Report Card
 
-**Step 1 - Select Class Level**
-- Fetch classes from the database (like BulkPDF does)
-- Display a dropdown to pick a class
+Redesign `src/pages/BulkPDF.tsx` PDF generation to create a more modern academic report card:
 
-**Step 2 - Select Subject**
-- Show a dropdown with all subjects from `SUBJECTS` constant plus an "All Subjects" option
-- Default to "All Subjects"
+**Header:**
+- Add a subtle colored accent bar across the top of the page
+- School logo centered with name in a modern serif-style bold font
+- Motto in italic below, with contact info in a smaller font
+- "ACADEMIC REPORT CARD" as a styled banner with rounded corners and gradient fill
+- Term and academic year below the banner
 
-**Step 3 - Export Format**
-- Two buttons: "Excel (.xlsx)" and "PDF"
+**Student Info Section:**
+- Modern card-style layout with rounded corners and subtle shadow effect (drawn via PDF rectangles)
+- Two-column grid with label-value pairs using a clean sans-serif look
+- Student photo in a rounded rectangle with a thin colored border
+- Position displayed with a colored badge-style highlight
 
-**Step 4 - Confirm and Generate**
-- Show a summary of selections
-- Generate button triggers the export
+**Scores Table:**
+- Clean modern table with:
+  - Rounded header corners (simulated)
+  - Alternating row colors (white / very light blue-gray)
+  - Subject column with a left-aligned bold blue text (no fill)
+  - Score columns with centered numbers
+  - Grade column with color-coded badges: green for grades 1-3, amber for 4-6, red for 7-9
+  - Thin column separators instead of heavy grid lines
 
-**Report Content:**
-For each student in the selected class, show:
-- Student Name
-- For each subject (or selected subject): Class Score (50%), Exam Score (50%), Overall, Grade, Remark
-- Total Score and Position (when "All Subjects")
+**Grand Total & Aggregate:**
+- Modern summary bar with gradient background
+- Total score in large bold text, aggregate in a pill-shaped badge
 
-The data comes from the existing `students` and `scores` arrays in `SchoolContext`, filtered by the selected class level. Academic year and term are taken from the current school settings.
+**Remarks Section:**
+- Two modern card-style boxes side by side
+- Colored left border accent (blue for class teacher, green for headteacher)
+- Clean typography with remark text and signature line
 
-**Excel Export:** Uses the existing `xlsx` library to create a spreadsheet with formatted columns.
+**Footer:**
+- Thin accent line with school contacts centered below
+- "Generated on" timestamp in light gray
 
-**PDF Export:** Uses `jsPDF` + `autoTable` to create a landscape PDF table with the same color-coded columns as the report card (blue headers, yellow score columns, peach overall/grade columns).
-
----
-
-### Changes to Existing Files
-
-**`src/App.tsx`** (1 change)
-- Add route: `<Route path="/master-sheet" element={<MasterSheet />} />`
-- Import the new MasterSheet component
-
-**`src/components/dashboard/QuickActions.tsx`** (1 change)
-- Add a new action card to the `commonActions` array:
-  - Route: `/master-sheet`
-  - Icon: `FileSpreadsheet`
-  - Label: "Master Sheet"
-  - Description: "Class performance summary"
-  - Colors: indigo theme (bg-indigo-50, bg-indigo-500)
-
----
-
-### Technical Details
-
-- Reuses existing utilities: `calculateScores`, `calculatePositions`, `getPositionSuffix` from `gradeUtils.ts`
-- Reuses existing constants: `SUBJECTS` from `types/school.ts`
-- Fetches classes from Supabase filtered by `school_id` (same pattern as BulkPDF)
-- Uses `useSchool()` for students, scores, and settings data
-- No database changes needed -- all data already exists
-- Follows the same page layout pattern as BulkPDF (MainLayout wrapper, back button, card-based UI)
+### Files to Modify
+1. `src/contexts/SchoolContext.tsx` -- Fix the broken syntax (restore missing lines)
+2. `src/pages/BulkPDF.tsx` -- Complete PDF layout modernization
 
