@@ -168,76 +168,108 @@ export default function BulkPDF() {
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 10;
+      const margin = 12;
+
+      // Modern color palette
+      const primary = [22, 78, 153] as [number, number, number]; // Deep blue
+      const primaryLight = [37, 99, 186] as [number, number, number];
+      const accent = [16, 185, 129] as [number, number, number]; // Emerald green
+      const warmGray = [248, 249, 250] as [number, number, number];
+      const borderGray = [226, 232, 240] as [number, number, number];
+      const textDark = [30, 41, 59] as [number, number, number];
+      const textMuted = [100, 116, 139] as [number, number, number];
 
       classStudents.forEach((student, studentIndex) => {
         if (studentIndex > 0) {
           doc.addPage();
         }
 
-        let yPos = margin;
+        let yPos = 0;
         const teacherReport = reportsMap.get(student.id);
+        const contentWidth = pageWidth - 2 * margin;
 
-        // ============ DATE/TIME STAMP (top-left) ============
-        const now = new Date();
-        const dateTimeStamp = `${now.toLocaleDateString('en-GB')} ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-        doc.setFontSize(7);
-        doc.setTextColor(100, 100, 100);
-        doc.text(dateTimeStamp, margin, 6);
+        // ============ TOP ACCENT BAR ============
+        doc.setFillColor(...primary);
+        doc.rect(0, 0, pageWidth, 4, 'F');
+        // Gradient effect - lighter strip
+        doc.setFillColor(...primaryLight);
+        doc.rect(0, 3.5, pageWidth, 0.5, 'F');
 
-        // ============ HEADER SECTION ============
-        // Student Photo (left side)
-        doc.setDrawColor(180, 180, 180);
-        doc.setLineWidth(0.3);
-        doc.rect(margin, yPos, 25, 30);
-        doc.setFontSize(6);
-        doc.setTextColor(150, 150, 150);
-        doc.text('Student Photo', margin + 12.5, yPos + 16, { align: 'center' });
+        yPos = 10;
 
-        // Try to add student photo if available
-        if (student.photo) {
-          try {
-            doc.addImage(student.photo, 'PNG', margin, yPos, 25, 30);
-          } catch {
-            // Keep placeholder
-          }
-        }
-
-        // School Logo (centered)
-        const logoX = pageWidth / 2 - 12;
+        // ============ SCHOOL LOGO (centered) ============
+        const logoSize = 22;
+        const logoX = pageWidth / 2 - logoSize / 2;
         if (settings.schoolLogo) {
           try {
-            doc.addImage(settings.schoolLogo, 'PNG', logoX, yPos, 24, 24);
+            doc.addImage(settings.schoolLogo, 'PNG', logoX, yPos, logoSize, logoSize);
           } catch {
-            doc.setFillColor(200, 200, 200);
-            doc.circle(pageWidth / 2, yPos + 12, 10, 'F');
+            // Draw placeholder circle
+            doc.setFillColor(200, 210, 225);
+            doc.circle(pageWidth / 2, yPos + logoSize / 2, logoSize / 2, 'F');
           }
         } else {
-          doc.setFillColor(200, 200, 200);
-          doc.circle(pageWidth / 2, yPos + 12, 10, 'F');
+          doc.setFillColor(200, 210, 225);
+          doc.circle(pageWidth / 2, yPos + logoSize / 2, logoSize / 2, 'F');
         }
 
-        // School Name in blue (below logo)
-        yPos += 28;
-        doc.setTextColor(0, 102, 204);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
+        yPos += logoSize + 4;
+
+        // ============ SCHOOL NAME ============
+        doc.setTextColor(...primary);
+        doc.setFontSize(16);
+        doc.setFont('times', 'bold');
         doc.text(settings.schoolName.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
-        
-        yPos += 6;
-        doc.setFontSize(11);
-        doc.setTextColor(0, 0, 0);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Academic Report Card', pageWidth / 2, yPos, { align: 'center' });
-        
+
         yPos += 5;
-        doc.setFontSize(10);
+        // Motto in italic
+        doc.setFontSize(9);
+        doc.setFont('times', 'italic');
+        doc.setTextColor(...textMuted);
+        doc.text(`"${settings.motto}"`, pageWidth / 2, yPos, { align: 'center' });
+
+        yPos += 4;
+        // Contact info
         doc.setFont('helvetica', 'normal');
-        doc.text(`${settings.term} - ${settings.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setTextColor(...textMuted);
+        const contactLine = [settings.email, ...settings.contacts].filter(Boolean).join('  |  ');
+        doc.text(contactLine, pageWidth / 2, yPos, { align: 'center' });
 
-        yPos += 12;
+        yPos += 6;
 
-        // ============ STUDENT INFO SECTION ============
+        // ============ ACADEMIC REPORT CARD BANNER ============
+        const bannerH = 9;
+        const bannerW = 90;
+        const bannerX = (pageWidth - bannerW) / 2;
+        // Rounded rectangle banner with gradient fill
+        doc.setFillColor(...primary);
+        doc.roundedRect(bannerX, yPos, bannerW, bannerH, 2, 2, 'F');
+        // Lighter overlay on bottom half for gradient effect
+        doc.setFillColor(...primaryLight);
+        doc.rect(bannerX, yPos + bannerH / 2, bannerW, bannerH / 2, 'F');
+        // Re-round the bottom
+        doc.setFillColor(...primary);
+        doc.roundedRect(bannerX, yPos, bannerW, bannerH, 2, 2, 'S');
+        // Refill properly
+        doc.setFillColor(...primary);
+        doc.roundedRect(bannerX, yPos, bannerW, bannerH, 2, 2, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ACADEMIC REPORT CARD', pageWidth / 2, yPos + 6.5, { align: 'center' });
+
+        yPos += bannerH + 4;
+        // Term & Year
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textDark);
+        doc.text(`${settings.term}  •  ${settings.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
+
+        yPos += 7;
+
+        // ============ STUDENT INFO CARD ============
         const position = positions.get(student.id) || 0;
         const attendance = teacherReport?.attendance || student.attendanceDays || 0;
         const studentScores = classScores
@@ -245,79 +277,85 @@ export default function BulkPDF() {
           .map(s => calculateScores(s));
         const { aggregate } = calculateAggregate(studentScores);
 
-        // Draw info box with light gray background
-        const infoBoxHeight = 28;
-        const contentWidth = pageWidth - 2 * margin;
-        
-        doc.setFillColor(245, 245, 245);
-        doc.rect(margin, yPos, contentWidth, infoBoxHeight, 'F');
-        doc.setDrawColor(200, 200, 200);
+        const infoCardH = 32;
+        // Card shadow (subtle offset rectangle)
+        doc.setFillColor(230, 230, 235);
+        doc.roundedRect(margin + 1, yPos + 1, contentWidth, infoCardH, 3, 3, 'F');
+        // Card background
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(margin, yPos, contentWidth, infoCardH, 3, 3, 'F');
+        // Card border
+        doc.setDrawColor(...borderGray);
         doc.setLineWidth(0.3);
-        doc.rect(margin, yPos, contentWidth, infoBoxHeight, 'S');
+        doc.roundedRect(margin, yPos, contentWidth, infoCardH, 3, 3, 'S');
 
-        const leftCol = margin + 4;
-        const midCol = margin + contentWidth * 0.4;
-        const rightCol = margin + contentWidth * 0.7;
-        let infoRowY = yPos + 6;
-        
+        // Student photo area (right side)
+        const photoW = 22;
+        const photoH = 26;
+        const photoX = pageWidth - margin - photoW - 4;
+        const photoY = yPos + 3;
+        doc.setDrawColor(...primary);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(photoX, photoY, photoW, photoH, 2, 2, 'S');
+        if (student.photo) {
+          try {
+            doc.addImage(student.photo, 'PNG', photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1);
+          } catch {
+            doc.setFontSize(6);
+            doc.setTextColor(...textMuted);
+            doc.text('Photo', photoX + photoW / 2, photoY + photoH / 2, { align: 'center' });
+          }
+        } else {
+          doc.setFontSize(6);
+          doc.setTextColor(...textMuted);
+          doc.text('Photo', photoX + photoW / 2, photoY + photoH / 2, { align: 'center' });
+        }
+
+        // Info grid (left side, 2 columns)
+        const leftCol = margin + 5;
+        const midCol = margin + contentWidth * 0.38;
+        let infoY = yPos + 7;
         doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        
-        // Row 1: Name | Class | Serial
-        doc.setFont('helvetica', 'bold');
-        doc.text('Name:', leftCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(student.name, leftCol + 12, infoRowY);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('Class:', midCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(className, midCol + 12, infoRowY);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('Serial:', rightCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(student.indexNumber || 'N/A', rightCol + 12, infoRowY);
 
-        // Row 2: Position | Aggregate | Attendance
-        infoRowY += 7;
-        doc.setFont('helvetica', 'bold');
-        doc.text('Position:', leftCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`${position}${getPositionSuffix(position)} out of ${totalStudents}`, leftCol + 18, infoRowY);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('Aggregate:', midCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 102, 204);
-        doc.text(aggregate.toString(), midCol + 20, infoRowY);
-        doc.setTextColor(0, 0, 0);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('Attendance:', rightCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`${attendance} / ${settings.totalSchoolDays || 64}`, rightCol + 22, infoRowY);
+        const drawInfoPair = (label: string, value: string, x: number, y: number) => {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...textMuted);
+          doc.text(label, x, y);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...textDark);
+          doc.text(value, x + doc.getTextWidth(label) + 2, y);
+        };
 
-        // Row 3: Interest | Conduct | Next Term Begins
-        infoRowY += 7;
-        doc.setFont('helvetica', 'bold');
-        doc.text('Interest:', leftCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(teacherReport?.interest || 'N/A', leftCol + 15, infoRowY);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('Conduct:', midCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(teacherReport?.conduct || 'N/A', midCol + 17, infoRowY);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('Next Term Begins:', rightCol, infoRowY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(settings.nextTermBegins || 'TBA', rightCol + 32, infoRowY);
+        drawInfoPair('Name: ', student.name, leftCol, infoY);
+        drawInfoPair('Class: ', className, midCol, infoY);
 
-        yPos += infoBoxHeight + 6;
+        infoY += 6;
+        drawInfoPair('Serial: ', student.indexNumber || 'N/A', leftCol, infoY);
+        drawInfoPair('Attendance: ', `${attendance} / ${settings.totalSchoolDays || 64}`, midCol, infoY);
 
-        // ============ SCORES TABLE ============
+        infoY += 6;
+        // Position badge
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textMuted);
+        doc.text('Position: ', leftCol, infoY);
+        const posText = `${position}${getPositionSuffix(position)} / ${totalStudents}`;
+        const posBadgeW = doc.getTextWidth(posText) + 6;
+        const posBadgeX = leftCol + doc.getTextWidth('Position: ');
+        doc.setFillColor(254, 243, 199); // amber-100
+        doc.roundedRect(posBadgeX - 1, infoY - 3.5, posBadgeW, 5, 1.5, 1.5, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(146, 64, 14); // amber-800
+        doc.text(posText, posBadgeX + 2, infoY);
+
+        drawInfoPair('Aggregate: ', aggregate.toString(), midCol, infoY);
+
+        infoY += 6;
+        drawInfoPair('Interest: ', teacherReport?.interest || 'N/A', leftCol, infoY);
+        drawInfoPair('Conduct: ', teacherReport?.conduct || 'N/A', midCol, infoY);
+
+        yPos += infoCardH + 5;
+
+        // ============ SCORES TABLE (Modern) ============
         const tableData = SUBJECTS.map(subject => {
           const score = studentScores.find(s => s.subject === subject);
           if (score) {
@@ -330,148 +368,201 @@ export default function BulkPDF() {
               score.remark
             ];
           }
-          return [subject, '', '', 'No scores recorded', '', ''];
+          return [subject, '-', '-', '-', '-', '-'];
         });
 
         autoTable(doc, {
           startY: yPos,
           head: [['Subject', 'Class Score (50%)', 'Exam Score (50%)', 'Overall', 'Grade', 'Remark']],
           body: tableData,
-          theme: 'grid',
+          theme: 'plain',
           styles: {
-            fontSize: 8,
-            cellPadding: 2,
+            fontSize: 7.5,
+            cellPadding: { top: 2.5, right: 2, bottom: 2.5, left: 2 },
             valign: 'middle',
             halign: 'center',
+            lineColor: [226, 232, 240],
+            lineWidth: 0.2,
           },
           headStyles: {
-            fillColor: [59, 130, 246],
+            fillColor: [...primary] as [number, number, number],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 8,
+            fontSize: 7.5,
+            cellPadding: { top: 3, right: 2, bottom: 3, left: 2 },
           },
           columnStyles: {
-            0: { halign: 'left', cellWidth: 35 },
+            0: { halign: 'left', cellWidth: 34, fontStyle: 'bold' },
             1: { cellWidth: 28 },
             2: { cellWidth: 28 },
             3: { cellWidth: 22 },
             4: { cellWidth: 18 },
-            5: { halign: 'left', cellWidth: 35 },
+            5: { halign: 'left', cellWidth: 36 },
           },
           margin: { left: margin, right: margin },
+          alternateRowStyles: {
+            fillColor: [245, 248, 255],
+          },
           didParseCell: function (data) {
-            // Subject column: Blue background with white text
-            if (data.column.index === 0 && data.section === 'body') {
-              data.cell.styles.fillColor = [59, 130, 246];
-              data.cell.styles.textColor = [255, 255, 255];
-              data.cell.styles.fontStyle = 'bold';
-            }
-            // Class Score & Exam Score columns: Light yellow
-            if ((data.column.index === 1 || data.column.index === 2) && data.section === 'body') {
-              data.cell.styles.fillColor = [255, 255, 200];
-            }
-            // Overall & Grade columns: Light peach
-            if ((data.column.index === 3 || data.column.index === 4) && data.section === 'body') {
-              data.cell.styles.fillColor = [255, 218, 185];
-            }
-            // Remark column: White
-            if (data.column.index === 5 && data.section === 'body') {
-              data.cell.styles.fillColor = [255, 255, 255];
+            if (data.section === 'body') {
+              // Subject column - blue bold text, no fill
+              if (data.column.index === 0) {
+                data.cell.styles.textColor = [...primary] as [number, number, number];
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.fillColor = undefined as any;
+              }
+              // Grade column - color-coded badges
+              if (data.column.index === 4) {
+                const gradeVal = parseInt(data.cell.raw as string);
+                if (!isNaN(gradeVal)) {
+                  if (gradeVal >= 1 && gradeVal <= 3) {
+                    data.cell.styles.textColor = [5, 122, 85]; // green-700
+                    data.cell.styles.fillColor = [209, 250, 229]; // green-100
+                  } else if (gradeVal >= 4 && gradeVal <= 6) {
+                    data.cell.styles.textColor = [146, 64, 14]; // amber-800
+                    data.cell.styles.fillColor = [254, 243, 199]; // amber-100
+                  } else if (gradeVal >= 7 && gradeVal <= 9) {
+                    data.cell.styles.textColor = [185, 28, 28]; // red-700
+                    data.cell.styles.fillColor = [254, 226, 226]; // red-100
+                  }
+                  data.cell.styles.fontStyle = 'bold';
+                }
+              }
             }
           },
         });
 
         // Get final Y position after table
         const finalY = (doc as any).lastAutoTable.finalY || yPos + 80;
-        yPos = finalY + 8;
+        yPos = finalY + 5;
 
-        // ============ GRAND TOTAL SECTION ============
+        // ============ GRAND TOTAL & AGGREGATE BAR ============
         const totalScore = studentScores.reduce((sum, s) => sum + s.overallTotal, 0);
         const maxScore = SUBJECTS.length * 100;
         const subjectsWithScores = studentScores.filter(s => s.overallTotal > 0).length;
 
-        // White box with border
-        const summaryWidth = pageWidth - 2 * margin;
-        doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(100, 100, 100);
-        doc.setLineWidth(0.5);
-        doc.rect(margin, yPos, summaryWidth, 12, 'FD');
-        
-        doc.setFontSize(10);
+        const summaryH = 11;
+        // Gradient-style summary bar
+        doc.setFillColor(...primary);
+        doc.roundedRect(margin, yPos, contentWidth, summaryH, 2, 2, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(`Grand Total: ${totalScore.toFixed(1)} / ${maxScore}`, margin + 8, yPos + 8);
-        doc.text(`Aggregate: ${aggregate}`, pageWidth - margin - 40, yPos + 8);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`(Best ${Math.min(6, subjectsWithScores)} subjects)`, pageWidth - margin - 8, yPos + 8, { align: 'right' });
+        doc.text(`Grand Total: ${totalScore.toFixed(1)} / ${maxScore}`, margin + 6, yPos + 7.5);
 
-        yPos += 18;
-
-        // ============ REMARKS SECTION ============
-        const remarkBoxWidth = (pageWidth - 2 * margin - 6) / 2;
-        const remarkBoxHeight = 35;
-
-        // Class Teacher's Remark Box
+        // Aggregate pill badge
+        const aggText = `Aggregate: ${aggregate}`;
+        const aggW = doc.getTextWidth(aggText) + 10;
+        const aggX = pageWidth - margin - aggW - 4;
         doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(150, 150, 150);
-        doc.setLineWidth(0.3);
-        doc.rect(margin, yPos, remarkBoxWidth, remarkBoxHeight, 'FD');
-        
-        // Blue underlined header
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 102, 204);
-        doc.text("Class Teacher's Remark:", margin + 4, yPos + 7);
-        doc.setDrawColor(0, 102, 204);
-        doc.setLineWidth(0.5);
-        doc.line(margin + 4, yPos + 8.5, margin + 50, yPos + 8.5);
-        
-        // Remark text
-        doc.setFont('helvetica', 'italic');
+        doc.roundedRect(aggX, yPos + 2, aggW, 7, 3, 3, 'F');
+        doc.setTextColor(...primary);
         doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.text(aggText, aggX + aggW / 2, yPos + 6.5, { align: 'center' });
+
+        doc.setFontSize(6);
+        doc.setTextColor(200, 220, 255);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`(Best ${Math.min(6, subjectsWithScores)} subjects)`, aggX - 3, yPos + 7, { align: 'right' });
+
+        yPos += summaryH + 6;
+
+        // ============ REMARKS SECTION (side by side cards) ============
+        const remarkBoxWidth = (contentWidth - 6) / 2;
+        const remarkBoxHeight = 32;
+
+        // --- Class Teacher Remark Card ---
+        // Shadow
+        doc.setFillColor(230, 230, 235);
+        doc.roundedRect(margin + 0.5, yPos + 0.5, remarkBoxWidth, remarkBoxHeight, 2, 2, 'F');
+        // Card
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(margin, yPos, remarkBoxWidth, remarkBoxHeight, 2, 2, 'F');
+        doc.setDrawColor(...borderGray);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(margin, yPos, remarkBoxWidth, remarkBoxHeight, 2, 2, 'S');
+        // Blue left accent border
+        doc.setFillColor(...primary);
+        doc.roundedRect(margin, yPos, 2.5, remarkBoxHeight, 1, 1, 'F');
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...primary);
+        doc.text("Class Teacher's Remark", margin + 6, yPos + 6);
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...textDark);
         const classTeacherRemark = teacherReport?.class_teacher_remark || getTotalScoreRemark(totalScore);
-        const remarkLines = doc.splitTextToSize(`"${classTeacherRemark}"`, remarkBoxWidth - 10);
-        doc.text(remarkLines, margin + 4, yPos + 15);
-        
-        // Signature line
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.text('Signature & Date: _________________', margin + 4, yPos + remarkBoxHeight - 3);
+        const remarkLines = doc.splitTextToSize(`"${classTeacherRemark}"`, remarkBoxWidth - 12);
+        doc.text(remarkLines, margin + 6, yPos + 12);
 
-        // Headteacher's Remark Box
-        const headRemarkX = margin + remarkBoxWidth + 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(...textMuted);
+        doc.text('Signature & Date: ____________________', margin + 6, yPos + remarkBoxHeight - 3);
+
+        // --- Headteacher Remark Card ---
+        const headX = margin + remarkBoxWidth + 6;
+        // Shadow
+        doc.setFillColor(230, 230, 235);
+        doc.roundedRect(headX + 0.5, yPos + 0.5, remarkBoxWidth, remarkBoxHeight, 2, 2, 'F');
+        // Card
         doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(150, 150, 150);
+        doc.roundedRect(headX, yPos, remarkBoxWidth, remarkBoxHeight, 2, 2, 'F');
+        doc.setDrawColor(...borderGray);
         doc.setLineWidth(0.3);
-        doc.rect(headRemarkX, yPos, remarkBoxWidth, remarkBoxHeight, 'FD');
-        
-        // Blue underlined header
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 102, 204);
-        doc.text("Headteacher's Remark:", headRemarkX + 4, yPos + 7);
-        doc.setDrawColor(0, 102, 204);
-        doc.setLineWidth(0.5);
-        doc.line(headRemarkX + 4, yPos + 8.5, headRemarkX + 47, yPos + 8.5);
-        
-        // Remark text
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        const headRemarkLines = doc.splitTextToSize('"Keep up the good work."', remarkBoxWidth - 10);
-        doc.text(headRemarkLines, headRemarkX + 4, yPos + 15);
-        
-        // Signature line
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.text('Signature & Date: _________________', headRemarkX + 4, yPos + remarkBoxHeight - 3);
+        doc.roundedRect(headX, yPos, remarkBoxWidth, remarkBoxHeight, 2, 2, 'S');
+        // Green left accent border
+        doc.setFillColor(...accent);
+        doc.roundedRect(headX, yPos, 2.5, remarkBoxHeight, 1, 1, 'F');
 
-        // Footer
-        doc.setFontSize(7);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...accent);
+        doc.text("Headteacher's Remark", headX + 6, yPos + 6);
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...textDark);
+        const headRemarkLines = doc.splitTextToSize('"Keep up the good work."', remarkBoxWidth - 12);
+        doc.text(headRemarkLines, headX + 6, yPos + 12);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(...textMuted);
+        doc.text('Signature & Date: ____________________', headX + 6, yPos + remarkBoxHeight - 3);
+
+        yPos += remarkBoxHeight + 4;
+
+        // ============ NEXT TERM INFO ============
+        if (settings.nextTermBegins) {
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...textMuted);
+          doc.text(`Next Term Begins: ${settings.nextTermBegins}`, pageWidth / 2, yPos + 2, { align: 'center' });
+          yPos += 6;
+        }
+
+        // ============ FOOTER ============
+        // Accent line
+        doc.setDrawColor(...primary);
+        doc.setLineWidth(0.4);
+        doc.line(margin + 30, pageHeight - 14, pageWidth - margin - 30, pageHeight - 14);
+
+        // School contacts
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textMuted);
+        doc.text(contactLine, pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+        // Generated timestamp
+        doc.setFontSize(6);
+        doc.setTextColor(180, 180, 190);
+        const now = new Date();
+        doc.text(`Generated on ${now.toLocaleDateString('en-GB')} at ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
       });
 
       // Save PDF
