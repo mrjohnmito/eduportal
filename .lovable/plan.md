@@ -1,54 +1,48 @@
 
 
-## Fix Build Error + Modernize PDF Report Card
+## Rebuild BulkPDF.tsx — Modern Academic Report Card
 
-### Priority 1: Fix Critical Build Error
+The entire `src/pages/BulkPDF.tsx` file was accidentally wiped. It needs to be fully rewritten from scratch, restoring and improving the modern report card design.
 
-The `src/contexts/SchoolContext.tsx` file is broken -- the last edit accidentally removed the closing `};` of `defaultSettings` and the `SchoolProvider` function declaration + state initialization lines. This needs to be restored:
+### What will be rebuilt
 
-- Line 37: Add closing `};` after the contacts array
-- Lines 38-43: Restore `const SchoolContext = createContext(...)`, `export function SchoolProvider(...)`, and the state declarations (`students`, `scores`, etc.)
+**Single file: `src/pages/BulkPDF.tsx`** — complete rewrite (~600 lines)
 
-### Priority 2: Modernize the PDF Report Card
+**Page UI:** Class selection dropdown, generate button, progress indicator (same pattern as before using MainLayout, useSchool, Supabase class fetching).
 
-Redesign `src/pages/BulkPDF.tsx` PDF generation to create a more modern academic report card:
+**PDF Generation per student:**
 
-**Header:**
-- Add a subtle colored accent bar across the top of the page
-- School logo centered with name in a modern serif-style bold font
-- Motto in italic below, with contact info in a smaller font
-- "ACADEMIC REPORT CARD" as a styled banner with rounded corners and gradient fill
-- Term and academic year below the banner
+1. **Header** — Deep blue accent bar across top, centered school logo, school name (serif bold, blue), motto (italic), contacts (small gray), rounded "ACADEMIC REPORT CARD" banner with blue gradient, term/year info
 
-**Student Info Section:**
-- Modern card-style layout with rounded corners and subtle shadow effect (drawn via PDF rectangles)
-- Two-column grid with label-value pairs using a clean sans-serif look
-- Student photo in a rounded rectangle with a thin colored border
-- Position displayed with a colored badge-style highlight
+2. **Colored Photo** — Large photo box at top-right corner with the student's uploaded color photo
 
-**Scores Table:**
-- Clean modern table with:
-  - Rounded header corners (simulated)
-  - Alternating row colors (white / very light blue-gray)
-  - Subject column with a left-aligned bold blue text (no fill)
-  - Score columns with centered numbers
-  - Grade column with color-coded badges: green for grades 1-3, amber for 4-6, red for 7-9
-  - Thin column separators instead of heavy grid lines
+3. **Student Info Card** — Rounded rectangle with shadow effect, light gray fill, two-column grid:
+   - Name, Class, Index Number, Position (badge-style)
+   - Conduct, Next Term Begins
+   - Grayscale version of student photo in a small box inside the card
 
-**Grand Total & Aggregate:**
-- Modern summary bar with gradient background
-- Total score in large bold text, aggregate in a pill-shaped badge
+4. **Scores Table** — autoTable with:
+   - Blue header row for Subject column
+   - Yellow tint for Class Score / Exam Score columns
+   - Peach tint for Overall / Grade / Remark columns
+   - Alternating row colors (white / light blue-gray)
+   - Grade color-coded badges: Green (1-3), Amber (4-6), Red (7-9)
 
-**Remarks Section:**
-- Two modern card-style boxes side by side
-- Colored left border accent (blue for class teacher, green for headteacher)
-- Clean typography with remark text and signature line
+5. **Grand Total & Aggregate** — Summary bar with gradient, large bold total, pill-shaped aggregate badge
 
-**Footer:**
-- Thin accent line with school contacts centered below
-- "Generated on" timestamp in light gray
+6. **Attendance Row** — Days present / total days
 
-### Files to Modify
-1. `src/contexts/SchoolContext.tsx` -- Fix the broken syntax (restore missing lines)
-2. `src/pages/BulkPDF.tsx` -- Complete PDF layout modernization
+7. **Remarks** — Two side-by-side cards:
+   - Class Teacher: blue left border accent, remark text, signature line
+   - Headteacher: emerald left border accent, remark text, signature line
+
+8. **Footer** — Thin accent line, school contacts, "Generated on" timestamp
+
+### Dependencies used
+- `jspdf` + `jspdf-autotable` for PDF
+- `useSchool()` context for students, scores, settings
+- `gradeUtils.ts` for score calculations
+- Supabase client for fetching classes and student photos
+
+This fixes the build error (missing default export) and restores the full feature.
 
