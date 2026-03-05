@@ -171,10 +171,10 @@ const BulkPDF: React.FC = () => {
         doc.rect(0, 0, pageW, 4, 'F');
         y = 6;
 
-        // ===== COLORED PHOTO (top-right) =====
+        // ===== COLORED PHOTO (top-left) =====
         const photoBoxW = 32;
         const photoBoxH = 38;
-        const photoBoxX = pageW - margin - photoBoxW;
+        const photoBoxX = margin;
         const photoBoxY = y;
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
         if (colorPhoto) {
@@ -285,12 +285,12 @@ const BulkPDF: React.FC = () => {
         drawField('Interest', report?.interest || 'N/A', col2X, 1);
         drawField('Next Term Begins', settings.nextTermBegins || 'TBA', col2X, 2);
 
-        // Grayscale photo in info card
-        const infoPhotoW = 20;
-        const infoPhotoH = 24;
+        // Grayscale photo in info card (small)
+        const infoPhotoW = 14;
+        const infoPhotoH = 17;
         const infoPhotoX = margin + contentW - infoPhotoW - 5;
         const infoPhotoY = y + 6;
-        drawRoundedRect(doc, infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, [235, 235, 235], [200, 200, 200]);
+        drawRoundedRect(doc, infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, [235, 235, 235]);
         if (grayPhoto) {
           doc.addImage(grayPhoto, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2);
         } else {
@@ -429,9 +429,6 @@ const BulkPDF: React.FC = () => {
 
         // Class Teacher Remark
         drawRoundedRect(doc, margin, y, remarkW, remarkH, 2, [248, 249, 250], [220, 220, 220]);
-        // Blue left accent
-        doc.setFillColor(...PRIMARY_LIGHT);
-        doc.rect(margin, y + 1, 2, remarkH - 2, 'F');
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
@@ -452,9 +449,6 @@ const BulkPDF: React.FC = () => {
         // Headteacher Remark
         const htX = margin + remarkW + 4;
         drawRoundedRect(doc, htX, y, remarkW, remarkH, 2, [248, 249, 250], [220, 220, 220]);
-        // Emerald left accent
-        doc.setFillColor(...EMERALD);
-        doc.rect(htX, y + 1, 2, remarkH - 2, 'F');
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
