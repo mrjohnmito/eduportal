@@ -22,6 +22,8 @@ const PRIMARY: [number, number, number] = [22, 78, 153];
 const PRIMARY_LIGHT: [number, number, number] = [59, 130, 246];
 const EMERALD: [number, number, number] = [16, 185, 129];
 
+const normalizeClassKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
 async function loadImage(url: string): Promise<string | null> {
   try {
     const response = await fetch(url, { mode: 'cors' });
@@ -99,8 +101,8 @@ const BulkPDF: React.FC = () => {
     setProgress(0);
 
     try {
-      const selectedClassName = classes.find(c => c.id === selectedClass)?.name || selectedClass;
-      const classStudents = students.filter(s => s.classLevel === selectedClassName || s.classLevel === selectedClass);
+      const selectedClassKey = normalizeClassKey(selectedClass);
+      const classStudents = students.filter((s) => normalizeClassKey(s.classLevel) === selectedClassKey);
       if (classStudents.length === 0) {
         toast.error('No students found in this class');
         setGenerating(false);
