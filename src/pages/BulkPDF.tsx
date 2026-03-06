@@ -101,8 +101,8 @@ const BulkPDF: React.FC = () => {
     setProgress(0);
 
     try {
-      const selectedClassName = classes.find(c => c.id === selectedClass)?.name || selectedClass;
-      const classStudents = students.filter(s => s.classLevel === selectedClassName || s.classLevel === selectedClass);
+      const selectedClassKey = normalizeClassKey(selectedClass);
+      const classStudents = students.filter((s) => normalizeClassKey(s.classLevel) === selectedClassKey);
       if (classStudents.length === 0) {
         toast.error('No students found in this class');
         setGenerating(false);
