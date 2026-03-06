@@ -311,31 +311,27 @@ const BulkPDF: React.FC = () => {
         // ===== SCORES TABLE =====
         const tableHeaders = [
           'Subject',
-          'Test 1\n(20)',
-          'Group\nWork (20)',
-          'Test 2\n(20)',
-          'Project\n(20)',
-          'Sub\nTotal',
           'Class\nScore (50%)',
           'Exam\nScore (50%)',
           'Overall\nTotal',
+          'Position',
           'Grade',
           'Remark',
         ];
 
-        const tableBody = calcScores.map(s => [
-          s.subject,
-          String(s.test1 ?? 0),
-          String(s.groupWork ?? 0),
-          String(s.test2 ?? 0),
-          String(s.project ?? 0),
-          String(s.subtotal),
-          s.caScore.toFixed(1),
-          s.examPercent.toFixed(1),
-          s.overallTotal.toFixed(1),
-          String(s.grade),
-          s.remark,
-        ]);
+        const tableBody = calcScores.map(s => {
+          const subjPos = subjectPositions.get(s.subject)?.get(student.id) || 0;
+          const posStr = `${subjPos}${getPositionSuffix(subjPos)}`;
+          return [
+            s.subject,
+            s.caScore.toFixed(1),
+            s.examPercent.toFixed(1),
+            s.overallTotal.toFixed(1),
+            posStr,
+            String(s.grade),
+            s.remark,
+          ];
+        });
 
         autoTable(doc, {
           startY: y,
@@ -358,19 +354,19 @@ const BulkPDF: React.FC = () => {
             halign: 'center',
           },
           columnStyles: {
-            0: { halign: 'left', fontStyle: 'bold', textColor: PRIMARY, cellWidth: 28 },
-            5: { fillColor: [255, 251, 235] },
-            6: { fillColor: [255, 251, 235] },
-            7: { fillColor: [255, 251, 235] },
-            8: { fillColor: [255, 237, 213] },
-            9: { fillColor: [255, 237, 213] },
-            10: { fillColor: [255, 237, 213] },
+            0: { halign: 'left', fontStyle: 'bold', textColor: PRIMARY, cellWidth: 32 },
+            1: { fillColor: [255, 251, 235] },
+            2: { fillColor: [255, 251, 235] },
+            3: { fillColor: [255, 237, 213] },
+            4: { fillColor: [255, 237, 213] },
+            5: { fillColor: [255, 237, 213] },
+            6: { fillColor: [255, 237, 213] },
           },
           alternateRowStyles: {
             fillColor: [245, 248, 255],
           },
           didParseCell: (data) => {
-            if (data.section === 'body' && data.column.index === 9) {
+            if (data.section === 'body' && data.column.index === 5) {
               const grade = parseInt(data.cell.text[0]);
               if (grade >= 1 && grade <= 3) {
                 data.cell.styles.textColor = [22, 163, 74];
