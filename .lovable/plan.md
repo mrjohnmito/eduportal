@@ -1,31 +1,48 @@
 
 
-## Fix Report Card Layout Issues
+## Rebuild BulkPDF.tsx — Modern Academic Report Card
 
-### Changes to `src/pages/BulkPDF.tsx`
+The entire `src/pages/BulkPDF.tsx` file was accidentally wiped. It needs to be fully rewritten from scratch, restoring and improving the modern report card design.
 
-**1. Remove deep blue accent bar at top** (lines 172-175)
-- Delete the 4mm blue `doc.rect()` bar, start `y` at 2 instead.
+### What will be rebuilt
 
-**2. Remove the blue banner behind "ACADEMIC REPORT CARD"** (lines 223-233)
-- Remove the two `roundedRect` calls (dark blue + lighter blue).
-- Keep the "ACADEMIC REPORT CARD" text, render it as bold blue text on white background instead.
+**Single file: `src/pages/BulkPDF.tsx`** — complete rewrite (~600 lines)
 
-**3. Simplify scores table columns** (lines 308-334)
-- Reduce headers to: `Subject`, `Class Score (50%)`, `Exam Score (50%)`, `Overall Total`, `Position`, `Grade`, `Remark`
-- Need to calculate per-subject positions across students
-- Update table body and column style indices accordingly
+**Page UI:** Class selection dropdown, generate button, progress indicator (same pattern as before using MainLayout, useSchool, Supabase class fetching).
 
-**4. Fix Headteacher's remark** (line 463)
-- Currently `htRemark = totalRemark` (the score-based remark from `getTotalScoreRemark`), which is wrong — it's showing the total score remark in the headteacher box instead of an actual headteacher remark.
-- Change to use `report?.head_teacher_remark || 'N/A'` (or similar field from class_teacher_reports table).
+**PDF Generation per student:**
 
-**5. Fix school name overlapping logo** (lines 194-206)
-- The logo is drawn at `headerCenterX - 10` and the school name text starts at `y += 22` which may overlap. Add more spacing after logo.
+1. **Header** — Deep blue accent bar across top, centered school logo, school name (serif bold, blue), motto (italic), contacts (small gray), rounded "ACADEMIC REPORT CARD" banner with blue gradient, term/year info
 
-**6. Shrink info card height** (line 243)
-- Reduce `cardH` from 36 to ~28, and tighten `lineH` from 5.5 to 5.
+2. **Colored Photo** — Large photo box at top-right corner with the student's uploaded color photo
 
-### Subject Position Calculation
-Need to add a helper that calculates each student's rank per subject within the class, so we can show "Position" per subject row.
+3. **Student Info Card** — Rounded rectangle with shadow effect, light gray fill, two-column grid:
+   - Name, Class, Index Number, Position (badge-style)
+   - Conduct, Next Term Begins
+   - Grayscale version of student photo in a small box inside the card
+
+4. **Scores Table** — autoTable with:
+   - Blue header row for Subject column
+   - Yellow tint for Class Score / Exam Score columns
+   - Peach tint for Overall / Grade / Remark columns
+   - Alternating row colors (white / light blue-gray)
+   - Grade color-coded badges: Green (1-3), Amber (4-6), Red (7-9)
+
+5. **Grand Total & Aggregate** — Summary bar with gradient, large bold total, pill-shaped aggregate badge
+
+6. **Attendance Row** — Days present / total days
+
+7. **Remarks** — Two side-by-side cards:
+   - Class Teacher: blue left border accent, remark text, signature line
+   - Headteacher: emerald left border accent, remark text, signature line
+
+8. **Footer** — Thin accent line, school contacts, "Generated on" timestamp
+
+### Dependencies used
+- `jspdf` + `jspdf-autotable` for PDF
+- `useSchool()` context for students, scores, settings
+- `gradeUtils.ts` for score calculations
+- Supabase client for fetching classes and student photos
+
+This fixes the build error (missing default export) and restores the full feature.
 

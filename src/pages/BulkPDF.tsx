@@ -135,6 +135,20 @@ const BulkPDF: React.FC = () => {
       const positions = calculatePositions(studentTotals);
       const totalStudents = classStudents.length;
 
+      // Calculate per-subject positions
+      const subjectPositions = new Map<string, Map<string, number>>(); // subject -> (studentId -> position)
+      const allSubjects = new Set<string>();
+      studentCalcScores.forEach(scores => scores.forEach(s => allSubjects.add(s.subject)));
+      
+      for (const subject of allSubjects) {
+        const subjectTotals: { studentId: string; total: number }[] = [];
+        for (const student of classStudents) {
+          const calc = studentCalcScores.get(student.id)?.find(s => s.subject === subject);
+          subjectTotals.push({ studentId: student.id, total: calc?.overallTotal ?? 0 });
+        }
+        subjectPositions.set(subject, calculatePositions(subjectTotals));
+      }
+
       // Load school logo
       let logoData: string | null = null;
       if (settings.schoolLogo) {
@@ -167,12 +181,7 @@ const BulkPDF: React.FC = () => {
           }
         }
 
-        let y = 0;
-
-        // ===== ACCENT BAR =====
-        doc.setFillColor(...PRIMARY);
-        doc.rect(0, 0, pageW, 4, 'F');
-        y = 6;
+        let y = 4;
 
         // ===== COLORED PHOTO (top-left) =====
         const photoBoxW = 32;
@@ -193,7 +202,7 @@ const BulkPDF: React.FC = () => {
 
         if (logoData) {
           doc.addImage(logoData, 'PNG', headerCenterX - 10, y, 20, 20);
-          y += 22;
+          y += 24;
         } else {
           y += 4;
         }
@@ -220,17 +229,12 @@ const BulkPDF: React.FC = () => {
         doc.text(contactLine, headerCenterX, y, { align: 'center' });
         y += 6;
 
-        // Banner
-        const bannerH = 8;
-        doc.setFillColor(...PRIMARY);
-        doc.roundedRect(margin + 20, y, contentW - 40, bannerH, 3, 3, 'F');
-        doc.setFillColor(...PRIMARY_LIGHT);
-        doc.roundedRect(margin + 22, y + 0.5, contentW - 44, bannerH - 1, 2.5, 2.5, 'F');
+        // Academic Report Card title
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.setTextColor(255, 255, 255);
-        doc.text('ACADEMIC REPORT CARD', headerCenterX, y + bannerH / 2 + 1, { align: 'center' });
-        y += bannerH + 3;
+        doc.setFontSize(12);
+        doc.setTextColor(...PRIMARY);
+        doc.text('ACADEMIC REPORT CARD', headerCenterX, y + 4, { align: 'center' });
+        y += 8;
 
         // Term / Year
         doc.setFont('helvetica', 'normal');
@@ -240,7 +244,7 @@ const BulkPDF: React.FC = () => {
         y += 6;
 
         // ===== STUDENT INFO CARD =====
-        const cardH = 36;
+        const cardH = 28;
         // Shadow
         doc.setFillColor(220, 220, 220);
         doc.roundedRect(margin + 0.5, y + 0.5, contentW, cardH, 3, 3, 'F');
@@ -250,7 +254,7 @@ const BulkPDF: React.FC = () => {
         const cardY = y + 4;
         const col1X = margin + 5;
         const col2X = margin + contentW / 2 + 5;
-        const lineH = 5.5;
+        const lineH = 5;
 
         doc.setFontSize(7.5);
 
@@ -307,31 +311,27 @@ const BulkPDF: React.FC = () => {
         // ===== SCORES TABLE =====
         const tableHeaders = [
           'Subject',
-          'Test 1\n(20)',
-          'Group\nWork (20)',
-          'Test 2\n(20)',
-          'Project\n(20)',
-          'Sub\nTotal',
           'Class\nScore (50%)',
           'Exam\nScore (50%)',
           'Overall\nTotal',
+          'Position',
           'Grade',
           'Remark',
         ];
 
-        const tableBody = calcScores.map(s => [
-          s.subject,
-          String(s.test1 ?? 0),
-          String(s.groupWork ?? 0),
-          String(s.test2 ?? 0),
-          String(s.project ?? 0),
-          String(s.subtotal),
-          s.caScore.toFixed(1),
-          s.examPercent.toFixed(1),
-          s.overallTotal.toFixed(1),
-          String(s.grade),
-          s.remark,
-        ]);
+        const tableBody = calcScores.map(s => {
+          const subjPos = subjectPositions.get(s.subject)?.get(student.id) || 0;
+          const posStr = `${subjPos}${getPositionSuffix(subjPos)}`;
+          return [
+            s.subject,
+            s.caScore.toFixed(1),
+            s.examPercent.toFixed(1),
+            s.overallTotal.toFixed(1),
+            posStr,
+            String(s.grade),
+            s.remark,
+          ];
+        });
 
         autoTable(doc, {
           startY: y,
@@ -354,19 +354,19 @@ const BulkPDF: React.FC = () => {
             halign: 'center',
           },
           columnStyles: {
-            0: { halign: 'left', fontStyle: 'bold', textColor: PRIMARY, cellWidth: 28 },
-            5: { fillColor: [255, 251, 235] },
-            6: { fillColor: [255, 251, 235] },
-            7: { fillColor: [255, 251, 235] },
-            8: { fillColor: [255, 237, 213] },
-            9: { fillColor: [255, 237, 213] },
-            10: { fillColor: [255, 237, 213] },
+            0: { halign: 'left', fontStyle: 'bold', textColor: PRIMARY, cellWidth: 32 },
+            1: { fillColor: [255, 251, 235] },
+            2: { fillColor: [255, 251, 235] },
+            3: { fillColor: [255, 237, 213] },
+            4: { fillColor: [255, 237, 213] },
+            5: { fillColor: [255, 237, 213] },
+            6: { fillColor: [255, 237, 213] },
           },
           alternateRowStyles: {
             fillColor: [245, 248, 255],
           },
           didParseCell: (data) => {
-            if (data.section === 'body' && data.column.index === 9) {
+            if (data.section === 'body' && data.column.index === 5) {
               const grade = parseInt(data.cell.text[0]);
               if (grade >= 1 && grade <= 3) {
                 data.cell.styles.textColor = [22, 163, 74];
@@ -396,12 +396,6 @@ const BulkPDF: React.FC = () => {
         doc.setFontSize(10);
         doc.setTextColor(255, 255, 255);
         doc.text(`Grand Total: ${grandTotal.toFixed(1)}`, margin + 8, y + summaryH / 2 + 1);
-
-        // Total score remark
-        const totalRemark = getTotalScoreRemark(grandTotal);
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(7);
-        doc.text(totalRemark, margin + contentW / 2, y + summaryH / 2 + 1, { align: 'center' });
 
         // Aggregate badge
         const aggText = `Aggregate: ${aggregate.aggregate}`;
@@ -460,7 +454,7 @@ const BulkPDF: React.FC = () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(60, 60, 60);
-        const htRemark = totalRemark;
+        const htRemark = getTotalScoreRemark(grandTotal);
         const htLines = doc.splitTextToSize(htRemark, remarkW - 12);
         doc.text(htLines, htX + 6, y + 10);
         doc.setDrawColor(150, 150, 150);
