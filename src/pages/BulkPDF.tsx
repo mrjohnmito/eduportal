@@ -202,7 +202,7 @@ const BulkPDF: React.FC = () => {
 
         if (logoData) {
           doc.addImage(logoData, 'PNG', headerCenterX - 10, y, 20, 20);
-          y += 22;
+          y += 24;
         } else {
           y += 4;
         }
