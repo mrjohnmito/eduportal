@@ -454,7 +454,7 @@ const BulkPDF: React.FC = () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(60, 60, 60);
-        const htRemark = totalRemark;
+        const htRemark = getTotalScoreRemark(grandTotal);
         const htLines = doc.splitTextToSize(htRemark, remarkW - 12);
         doc.text(htLines, htX + 6, y + 10);
         doc.setDrawColor(150, 150, 150);
