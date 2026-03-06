@@ -181,12 +181,7 @@ const BulkPDF: React.FC = () => {
           }
         }
 
-        let y = 0;
-
-        // ===== ACCENT BAR =====
-        doc.setFillColor(...PRIMARY);
-        doc.rect(0, 0, pageW, 4, 'F');
-        y = 6;
+        let y = 4;
 
         // ===== COLORED PHOTO (top-left) =====
         const photoBoxW = 32;
