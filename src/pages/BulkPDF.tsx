@@ -397,12 +397,6 @@ const BulkPDF: React.FC = () => {
         doc.setTextColor(255, 255, 255);
         doc.text(`Grand Total: ${grandTotal.toFixed(1)}`, margin + 8, y + summaryH / 2 + 1);
 
-        // Total score remark
-        const totalRemark = getTotalScoreRemark(grandTotal);
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(7);
-        doc.text(totalRemark, margin + contentW / 2, y + summaryH / 2 + 1, { align: 'center' });
-
         // Aggregate badge
         const aggText = `Aggregate: ${aggregate.aggregate}`;
         const aggW = doc.getTextWidth(aggText) + 8;
