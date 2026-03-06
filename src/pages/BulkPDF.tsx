@@ -135,6 +135,20 @@ const BulkPDF: React.FC = () => {
       const positions = calculatePositions(studentTotals);
       const totalStudents = classStudents.length;
 
+      // Calculate per-subject positions
+      const subjectPositions = new Map<string, Map<string, number>>(); // subject -> (studentId -> position)
+      const allSubjects = new Set<string>();
+      studentCalcScores.forEach(scores => scores.forEach(s => allSubjects.add(s.subject)));
+      
+      for (const subject of allSubjects) {
+        const subjectTotals: { studentId: string; total: number }[] = [];
+        for (const student of classStudents) {
+          const calc = studentCalcScores.get(student.id)?.find(s => s.subject === subject);
+          subjectTotals.push({ studentId: student.id, total: calc?.overallTotal ?? 0 });
+        }
+        subjectPositions.set(subject, calculatePositions(subjectTotals));
+      }
+
       // Load school logo
       let logoData: string | null = null;
       if (settings.schoolLogo) {
