@@ -229,17 +229,12 @@ const BulkPDF: React.FC = () => {
         doc.text(contactLine, headerCenterX, y, { align: 'center' });
         y += 6;
 
-        // Banner
-        const bannerH = 8;
-        doc.setFillColor(...PRIMARY);
-        doc.roundedRect(margin + 20, y, contentW - 40, bannerH, 3, 3, 'F');
-        doc.setFillColor(...PRIMARY_LIGHT);
-        doc.roundedRect(margin + 22, y + 0.5, contentW - 44, bannerH - 1, 2.5, 2.5, 'F');
+        // Academic Report Card title
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.setTextColor(255, 255, 255);
-        doc.text('ACADEMIC REPORT CARD', headerCenterX, y + bannerH / 2 + 1, { align: 'center' });
-        y += bannerH + 3;
+        doc.setFontSize(12);
+        doc.setTextColor(...PRIMARY);
+        doc.text('ACADEMIC REPORT CARD', headerCenterX, y + 4, { align: 'center' });
+        y += 8;
 
         // Term / Year
         doc.setFont('helvetica', 'normal');
