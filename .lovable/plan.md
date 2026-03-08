@@ -1,38 +1,48 @@
 
 
-## Fix Report Card Issues
+## Rebuild BulkPDF.tsx — Modern Academic Report Card
 
-### 3 issues to address:
+The entire `src/pages/BulkPDF.tsx` file was accidentally wiped. It needs to be fully rewritten from scratch, restoring and improving the modern report card design.
 
-**1. Teacher's Remark showing "N/A"**
-The `class_teacher_reports` table is currently empty — no teacher has submitted any reports yet, so `report?.class_teacher_remark` correctly returns "N/A". The code logic is correct. However, to improve UX, I'll change the fallback text from "N/A" to something more informative like "No remark entered" and add a console log during generation showing how many reports were matched, so admins can troubleshoot.
+### What will be rebuilt
 
-**2. Stretched student photos in PDF**
-Currently both the color photo (line 193) and grayscale photo (line 302) use fixed width/height that don't preserve aspect ratio. Fix: load the image into an `Image` element to get natural dimensions, then calculate fitted dimensions that maintain aspect ratio within the allocated box.
+**Single file: `src/pages/BulkPDF.tsx`** — complete rewrite (~600 lines)
 
-**3. Increase image upload limit from 2MB to 5MB**
-Two files need updating:
-- `src/pages/StudentManagement.tsx` — lines 126-131 and label text at lines 636, 782
-- `src/pages/SuperAdminDashboard.tsx` — lines 185-190 and label text at line 499
+**Page UI:** Class selection dropdown, generate button, progress indicator (same pattern as before using MainLayout, useSchool, Supabase class fetching).
 
-Change `2 * 1024 * 1024` → `5 * 1024 * 1024` and update all "2MB" labels to "5MB".
+**PDF Generation per student:**
 
-### Changes summary
+1. **Header** — Deep blue accent bar across top, centered school logo, school name (serif bold, blue), motto (italic), contacts (small gray), rounded "ACADEMIC REPORT CARD" banner with blue gradient, term/year info
 
-| File | Change |
-|---|---|
-| `src/pages/BulkPDF.tsx` | Fix photo aspect ratio for both color and grayscale photos; improve remark fallback text |
-| `src/pages/StudentManagement.tsx` | Change upload limit from 2MB to 5MB (code + labels) |
-| `src/pages/SuperAdminDashboard.tsx` | Change upload limit from 2MB to 5MB (code + labels) |
+2. **Colored Photo** — Large photo box at top-right corner with the student's uploaded color photo
 
-### Photo aspect ratio fix detail
-Add a helper function `getImageDimensions(dataUrl)` that returns `{width, height}`. Then when placing photos, calculate fitted dimensions:
-```
-const ratio = Math.min(boxW / imgW, boxH / imgH);
-const drawW = imgW * ratio;
-const drawH = imgH * ratio;
-const offsetX = (boxW - drawW) / 2;
-const offsetY = (boxH - drawH) / 2;
-```
-This centers the photo within its box while maintaining aspect ratio.
+3. **Student Info Card** — Rounded rectangle with shadow effect, light gray fill, two-column grid:
+   - Name, Class, Index Number, Position (badge-style)
+   - Conduct, Next Term Begins
+   - Grayscale version of student photo in a small box inside the card
+
+4. **Scores Table** — autoTable with:
+   - Blue header row for Subject column
+   - Yellow tint for Class Score / Exam Score columns
+   - Peach tint for Overall / Grade / Remark columns
+   - Alternating row colors (white / light blue-gray)
+   - Grade color-coded badges: Green (1-3), Amber (4-6), Red (7-9)
+
+5. **Grand Total & Aggregate** — Summary bar with gradient, large bold total, pill-shaped aggregate badge
+
+6. **Attendance Row** — Days present / total days
+
+7. **Remarks** — Two side-by-side cards:
+   - Class Teacher: blue left border accent, remark text, signature line
+   - Headteacher: emerald left border accent, remark text, signature line
+
+8. **Footer** — Thin accent line, school contacts, "Generated on" timestamp
+
+### Dependencies used
+- `jspdf` + `jspdf-autotable` for PDF
+- `useSchool()` context for students, scores, settings
+- `gradeUtils.ts` for score calculations
+- Supabase client for fetching classes and student photos
+
+This fixes the build error (missing default export) and restores the full feature.
 

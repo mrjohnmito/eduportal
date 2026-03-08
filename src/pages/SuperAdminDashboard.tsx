@@ -182,11 +182,11 @@ export default function SuperAdminDashboard() {
       return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: 'File Too Large',
-        description: 'Please select an image smaller than 2MB.',
+        description: 'Please select an image smaller than 5MB.',
         variant: 'destructive',
       });
       return;
@@ -496,7 +496,7 @@ export default function SuperAdminDashboard() {
                         <Upload className="h-4 w-4" />
                         {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
                       </Button>
-                      <p className="text-xs text-muted-foreground">Max 2MB, JPG/PNG</p>
+                      <p className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</p>
                     </div>
                   </div>
                   {formLogoUrl && (

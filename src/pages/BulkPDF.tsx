@@ -39,6 +39,24 @@ async function loadImage(url: string): Promise<string | null> {
   }
 }
 
+function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.width, height: img.height });
+    img.onerror = () => resolve({ width: 1, height: 1 });
+    img.src = dataUrl;
+  });
+}
+
+function fitImage(imgW: number, imgH: number, boxW: number, boxH: number) {
+  const ratio = Math.min(boxW / imgW, boxH / imgH);
+  const drawW = imgW * ratio;
+  const drawH = imgH * ratio;
+  const offsetX = (boxW - drawW) / 2;
+  const offsetY = (boxH - drawH) / 2;
+  return { drawW, drawH, offsetX, offsetY };
+}
+
 function makeGrayscale(dataUrl: string): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -190,7 +208,9 @@ const BulkPDF: React.FC = () => {
         const photoBoxY = y;
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
         if (colorPhoto) {
-          doc.addImage(colorPhoto, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2);
+          const dims = await getImageDimensions(colorPhoto);
+          const fit = fitImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
+          doc.addImage(colorPhoto, 'JPEG', photoBoxX + 1 + fit.offsetX, photoBoxY + 1 + fit.offsetY, fit.drawW, fit.drawH);
         } else {
           doc.setFontSize(7);
           doc.setTextColor(150, 150, 150);
@@ -299,7 +319,9 @@ const BulkPDF: React.FC = () => {
         const infoPhotoY = y + 6;
         drawRoundedRect(doc, infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, [235, 235, 235]);
         if (grayPhoto) {
-          doc.addImage(grayPhoto, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2);
+          const gDims = await getImageDimensions(grayPhoto);
+          const gFit = fitImage(gDims.width, gDims.height, infoPhotoW - 2, infoPhotoH - 2);
+          doc.addImage(grayPhoto, 'JPEG', infoPhotoX + 1 + gFit.offsetX, infoPhotoY + 1 + gFit.offsetY, gFit.drawW, gFit.drawH);
         } else {
           doc.setFontSize(6);
           doc.setTextColor(150, 150, 150);
@@ -434,7 +456,7 @@ const BulkPDF: React.FC = () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(60, 60, 60);
-        const ctRemark = report?.class_teacher_remark || 'N/A';
+        const ctRemark = report?.class_teacher_remark || 'No remark entered';
         const ctLines = doc.splitTextToSize(ctRemark, remarkW - 12);
         doc.text(ctLines, margin + 6, y + 10);
         doc.setDrawColor(150, 150, 150);
@@ -454,7 +476,7 @@ const BulkPDF: React.FC = () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(60, 60, 60);
-        const htRemark = getTotalScoreRemark(grandTotal);
+        const htRemark = getTotalScoreRemark(grandTotal) || 'No remark available';
         const htLines = doc.splitTextToSize(htRemark, remarkW - 12);
         doc.text(htLines, htX + 6, y + 10);
         doc.setDrawColor(150, 150, 150);
