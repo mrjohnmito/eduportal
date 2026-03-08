@@ -779,7 +779,7 @@ export default function StudentManagement() {
                                     {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
                                   </Button>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Max 2MB, JPG/PNG</p>
+                                <p className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</p>
                               </div>
                               <Button onClick={handleUpdateStudent} className="w-full">
                                 Save Changes

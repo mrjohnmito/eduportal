@@ -496,7 +496,7 @@ export default function SuperAdminDashboard() {
                         <Upload className="h-4 w-4" />
                         {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
                       </Button>
-                      <p className="text-xs text-muted-foreground">Max 2MB, JPG/PNG</p>
+                      <p className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</p>
                     </div>
                   </div>
                   {formLogoUrl && (
