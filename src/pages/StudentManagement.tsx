@@ -123,11 +123,11 @@ export default function StudentManagement() {
       return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: 'File Too Large',
-        description: 'Please select an image smaller than 2MB.',
+        description: 'Please select an image smaller than 5MB.',
         variant: 'destructive',
       });
       return;
