@@ -39,6 +39,24 @@ async function loadImage(url: string): Promise<string | null> {
   }
 }
 
+function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.width, height: img.height });
+    img.onerror = () => resolve({ width: 1, height: 1 });
+    img.src = dataUrl;
+  });
+}
+
+function fitImage(imgW: number, imgH: number, boxW: number, boxH: number) {
+  const ratio = Math.min(boxW / imgW, boxH / imgH);
+  const drawW = imgW * ratio;
+  const drawH = imgH * ratio;
+  const offsetX = (boxW - drawW) / 2;
+  const offsetY = (boxH - drawH) / 2;
+  return { drawW, drawH, offsetX, offsetY };
+}
+
 function makeGrayscale(dataUrl: string): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image();
