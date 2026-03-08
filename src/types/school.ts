@@ -113,3 +113,29 @@ export const TOTAL_SCORE_REMARKS: { min: number; max: number; remark: string }[]
   { min: 700, max: 899, remark: 'Incredible display of academic prowess.' },
   { min: 900, max: 1000, remark: 'You are simply a genius.' },
 ];
+
+export const HEADTEACHER_REMARKS: { min: number; max: number; remark: string }[] = [
+  { min: 0, max: 99, remark: 'There is the need to sit up.' },
+  { min: 100, max: 249, remark: 'Buck up in weaker subjects.' },
+  { min: 250, max: 299, remark: 'There is the need for increased parental support.' },
+  { min: 300, max: 399, remark: 'There is the need for extra motivation to sit up.' },
+  { min: 400, max: 449, remark: 'Good work done, keep it up.' },
+  { min: 450, max: 499, remark: 'Impressive performance, the sky can be your limit.' },
+  { min: 500, max: 649, remark: 'Do not rest on your oars because you can go beyond the sky.' },
+  { min: 650, max: 699, remark: 'What a promising performance. Keep it up!' },
+  { min: 700, max: 899, remark: 'Incredible display of academic prowess. Keep it up!' },
+  { min: 900, max: 1000, remark: 'You are simply a genius. Keep it up!' },
+];
+
+export const CLASS_TEACHER_REMARKS: { min: number; max: number; remark: string }[] = [
+  { min: 0, max: 99, remark: 'Below average. There is the need for parental support.' },
+  { min: 100, max: 249, remark: 'Below average, you must work hard. There is the need for parental support.' },
+  { min: 250, max: 299, remark: 'You must sit up. There is the need for parental support.' },
+  { min: 300, max: 399, remark: 'Average performance, more room for improvement.' },
+  { min: 400, max: 449, remark: 'Well done but more room for improvement.' },
+  { min: 450, max: 499, remark: 'More room for improvement.' },
+  { min: 500, max: 649, remark: 'Good work done, keep improving.' },
+  { min: 650, max: 699, remark: 'Excellent, keep it up.' },
+  { min: 700, max: 899, remark: 'Incredible display of academic prowess. Keep it up!' },
+  { min: 900, max: 1000, remark: 'Excellent performance. Keep working hard.' },
+];
