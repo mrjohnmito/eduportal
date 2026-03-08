@@ -457,7 +457,7 @@ const BulkPDF: React.FC = () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(60, 60, 60);
-        const ctRemark = report?.class_teacher_remark || 'No remark entered';
+        const ctRemark = getClassTeacherRemark(grandTotal);
         const ctLines = doc.splitTextToSize(ctRemark, remarkW - 12);
         doc.text(ctLines, margin + 6, y + 10);
         doc.setDrawColor(150, 150, 150);
