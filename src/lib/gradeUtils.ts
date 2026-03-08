@@ -1,4 +1,4 @@
-import { GRADE_SCALE, TOTAL_SCORE_REMARKS, SubjectScore, CalculatedScore } from '@/types/school';
+import { GRADE_SCALE, TOTAL_SCORE_REMARKS, HEADTEACHER_REMARKS, CLASS_TEACHER_REMARKS, SubjectScore, CalculatedScore } from '@/types/school';
 
 export function calculateGrade(score: number): { grade: number; remark: string } {
   const rounded = Math.round(score);
@@ -12,6 +12,24 @@ export function calculateGrade(score: number): { grade: number; remark: string }
 
 export function getTotalScoreRemark(totalScore: number): string {
   for (const item of TOTAL_SCORE_REMARKS) {
+    if (totalScore >= item.min && totalScore <= item.max) {
+      return item.remark;
+    }
+  }
+  return 'Keep working hard!';
+}
+
+export function getHeadteacherRemark(totalScore: number): string {
+  for (const item of HEADTEACHER_REMARKS) {
+    if (totalScore >= item.min && totalScore <= item.max) {
+      return item.remark;
+    }
+  }
+  return 'Keep working hard!';
+}
+
+export function getClassTeacherRemark(totalScore: number): string {
+  for (const item of CLASS_TEACHER_REMARKS) {
     if (totalScore >= item.min && totalScore <= item.max) {
       return item.remark;
     }
