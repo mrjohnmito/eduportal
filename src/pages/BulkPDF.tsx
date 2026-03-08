@@ -514,19 +514,46 @@ const BulkPDF: React.FC = () => {
     }
   };
 
+  const selectedClassKey = selectedClass ? normalizeClassKey(selectedClass) : '';
+  const matchedStudents = selectedClass
+    ? students.filter((s) => normalizeClassKey(s.classLevel) === selectedClassKey)
+    : [];
+
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <h1 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-          <FileText className="h-6 w-6" />
-          Bulk Report Card PDF
-        </h1>
+      <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-6 text-primary-foreground shadow-lg"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="rounded-xl bg-primary-foreground/20 p-2.5">
+              <GraduationCap className="h-6 w-6" />
+            </div>
+            <h1 className="text-2xl font-bold">Bulk Report Cards</h1>
+          </div>
+          <p className="text-primary-foreground/80 text-sm">
+            Generate beautifully formatted PDF report cards for an entire class in one click.
+          </p>
+        </motion.div>
 
-        <div className="bg-card rounded-lg border p-6 space-y-4">
+        {/* Main Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-xl border shadow-sm p-6 space-y-5"
+        >
+          {/* Class Selector */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-1 block">Select Class</label>
+            <label className="text-sm font-semibold text-foreground mb-2 block flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Select Class
+            </label>
             <Select value={selectedClass} onValueChange={setSelectedClass}>
-              <SelectTrigger>
+              <SelectTrigger className="h-11 rounded-lg border-2 border-muted focus:border-primary transition-colors">
                 <SelectValue placeholder="Choose a class..." />
               </SelectTrigger>
               <SelectContent>
@@ -537,18 +564,55 @@ const BulkPDF: React.FC = () => {
             </Select>
           </div>
 
-          {generating && (
-            <div className="space-y-2">
-              <Progress value={progress} className="h-2" />
-              <p className="text-sm text-muted-foreground text-center">{progress}% complete</p>
-            </div>
+          {/* Stats Preview */}
+          {selectedClass && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-3 rounded-lg bg-accent/50 border border-accent p-3"
+            >
+              <div className="rounded-full bg-primary/10 p-2">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {matchedStudents.length} student{matchedStudents.length !== 1 ? 's' : ''} found
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Reports will be generated for {selectedClass}
+                </p>
+              </div>
+            </motion.div>
           )}
 
-          <Button onClick={generatePDF} disabled={generating || !selectedClass} className="w-full">
-            <FileText className="h-4 w-4 mr-2" />
+          {/* Progress */}
+          {generating && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-2"
+            >
+              <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary via-primary/80 to-primary transition-all duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground text-center font-medium">{progress}% complete</p>
+            </motion.div>
+          )}
+
+          {/* Generate Button */}
+          <Button
+            onClick={generatePDF}
+            disabled={generating || !selectedClass}
+            className="w-full h-12 rounded-lg text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md transition-all"
+            size="lg"
+          >
+            <FileText className="h-5 w-5 mr-2" />
             {generating ? 'Generating...' : 'Generate Report Cards'}
           </Button>
-        </div>
+        </motion.div>
       </div>
     </MainLayout>
   );
