@@ -1,4 +1,4 @@
-import { GRADE_SCALE, TOTAL_SCORE_REMARKS, SubjectScore, CalculatedScore } from '@/types/school';
+import { GRADE_SCALE, TOTAL_SCORE_REMARKS, HEADTEACHER_REMARKS, CLASS_TEACHER_REMARKS, SubjectScore, CalculatedScore } from '@/types/school';
 
 export function calculateGrade(score: number): { grade: number; remark: string } {
   const rounded = Math.round(score);
