@@ -1,91 +1,48 @@
 
 
-## Plan: Super Admin Messaging, Inbox & Dashboard Modernization
+## Rebuild BulkPDF.tsx — Modern Academic Report Card
 
-### 1. Create `admin_messages` Database Table
+The entire `src/pages/BulkPDF.tsx` file was accidentally wiped. It needs to be fully rewritten from scratch, restoring and improving the modern report card design.
 
-New migration to create a messaging table:
+### What will be rebuilt
 
-```sql
-CREATE TABLE public.admin_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  school_id uuid NOT NULL,
-  subject text NOT NULL,
-  message text NOT NULL,
-  is_read boolean NOT NULL DEFAULT false,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+**Single file: `src/pages/BulkPDF.tsx`** — complete rewrite (~600 lines)
 
-ALTER TABLE public.admin_messages ENABLE ROW LEVEL SECURITY;
+**Page UI:** Class selection dropdown, generate button, progress indicator (same pattern as before using MainLayout, useSchool, Supabase class fetching).
 
--- Super admins can insert/manage all messages
-CREATE POLICY "Super admins can manage messages" ON public.admin_messages
-  FOR ALL TO authenticated
-  USING (has_role(auth.uid(), 'super_admin'::app_role))
-  WITH CHECK (has_role(auth.uid(), 'super_admin'::app_role));
+**PDF Generation per student:**
 
--- Anyone can view messages by school (school admins use sessionStorage auth)
-CREATE POLICY "Anyone can view messages by school" ON public.admin_messages
-  FOR SELECT TO public USING (true);
+1. **Header** — Deep blue accent bar across top, centered school logo, school name (serif bold, blue), motto (italic), contacts (small gray), rounded "ACADEMIC REPORT CARD" banner with blue gradient, term/year info
 
--- Anyone can update messages (for marking read)
-CREATE POLICY "Anyone can update messages by school" ON public.admin_messages
-  FOR UPDATE TO public USING (true);
+2. **Colored Photo** — Large photo box at top-right corner with the student's uploaded color photo
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.admin_messages;
-```
+3. **Student Info Card** — Rounded rectangle with shadow effect, light gray fill, two-column grid:
+   - Name, Class, Index Number, Position (badge-style)
+   - Conduct, Next Term Begins
+   - Grayscale version of student photo in a small box inside the card
 
-### 2. Super Admin Dashboard — Add Messaging Section
+4. **Scores Table** — autoTable with:
+   - Blue header row for Subject column
+   - Yellow tint for Class Score / Exam Score columns
+   - Peach tint for Overall / Grade / Remark columns
+   - Alternating row colors (white / light blue-gray)
+   - Grade color-coded badges: Green (1-3), Amber (4-6), Red (7-9)
 
-**File: `src/pages/SuperAdminDashboard.tsx`**
+5. **Grand Total & Aggregate** — Summary bar with gradient, large bold total, pill-shaped aggregate badge
 
-- Add a "Send Message" dialog with: school selector (dropdown of all schools or "All Schools"), subject field, message textarea
-- Insert one row per target school (or one per school if "All Schools" selected)
-- Add a "Messages" tab/section showing sent message history
-- Modernize with framer-motion animations and gradient header (matching the design language from BulkPDF)
+6. **Attendance Row** — Days present / total days
 
-### 3. School Admin Header — Add Inbox with Blinking Badge
+7. **Remarks** — Two side-by-side cards:
+   - Class Teacher: blue left border accent, remark text, signature line
+   - Headteacher: emerald left border accent, remark text, signature line
 
-**File: `src/components/layout/Header.tsx`**
+8. **Footer** — Thin accent line, school contacts, "Generated on" timestamp
 
-- For admin users: add a Mail/Inbox icon button next to Settings
-- Fetch unread message count from `admin_messages` where `school_id = selectedSchool.id AND is_read = false`
-- Show a pulsing red badge with count when > 0
-- On click, open an inbox dialog/sheet showing messages sorted by date
-- Mark messages as read when opened
-- Subscribe to realtime changes for live updates
+### Dependencies used
+- `jspdf` + `jspdf-autotable` for PDF
+- `useSchool()` context for students, scores, settings
+- `gradeUtils.ts` for score calculations
+- Supabase client for fetching classes and student photos
 
-### 4. Admin Login Already Uses Super Admin Password
-
-The current flow already works: Super admin sets `admin_password_hash: btoa(password)` during school creation, and `Login.tsx` decodes with `atob()` and compares. **No changes needed here.**
-
-### 5. Modernize School Admin Dashboard
-
-**File: `src/pages/Dashboard.tsx`**
-
-- Add gradient header section with school branding
-- Use framer-motion for staggered card animations
-- Add colorful stat cards (total students, total classes, subscription status)
-- Improve class card grid with gradient backgrounds
-
-### 6. Add Back Buttons to All Sub-Pages
-
-**Files:** `src/pages/StudentManagement.tsx`, `src/pages/Settings.tsx`, `src/pages/ClearData.tsx`, `src/pages/TeacherManagement.tsx`, `src/pages/ClassManagement.tsx`, `src/pages/ClassTeacherReport.tsx`, `src/pages/BulkPDF.tsx`
-
-- Ensure each page has a prominent back button (← Back to Dashboard) at the top using `navigate('/dashboard')`
-- Some pages already have this (ClassPortal, ScoreEntry, ClearData) — verify and add where missing
-
-### Summary of Files Changed
-
-| File | Change |
-|---|---|
-| Migration SQL | Create `admin_messages` table with RLS + realtime |
-| `src/pages/SuperAdminDashboard.tsx` | Add messaging UI + modern gradient styling |
-| `src/components/layout/Header.tsx` | Add inbox icon with blinking unread badge + message dialog |
-| `src/pages/Dashboard.tsx` | Modernize with gradients, animations, stat cards |
-| `src/pages/StudentManagement.tsx` | Ensure back button present |
-| `src/pages/Settings.tsx` | Ensure back button present |
-| `src/pages/TeacherManagement.tsx` | Ensure back button present |
-| `src/pages/ClassManagement.tsx` | Ensure back button present |
-| `src/pages/ClassTeacherReport.tsx` | Ensure back button present |
+This fixes the build error (missing default export) and restores the full feature.
 

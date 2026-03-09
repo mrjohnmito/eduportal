@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
@@ -8,7 +9,7 @@ import { SubjectScore, CalculatedScore, SUBJECTS } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Sparkles, Users, GraduationCap } from 'lucide-react';
+import { FileText, Sparkles, Users, GraduationCap, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
@@ -90,6 +91,7 @@ function drawRoundedRect(doc: jsPDF, x: number, y: number, w: number, h: number,
 }
 
 const BulkPDF: React.FC = () => {
+  const navigate = useNavigate();
   const { students, scores, settings } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -522,6 +524,11 @@ const BulkPDF: React.FC = () => {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
+        {/* Back Button */}
+        <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2 text-muted-foreground hover:text-foreground -ml-2">
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}

@@ -7,8 +7,9 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
-import { GraduationCap, Calendar, AlertTriangle } from 'lucide-react';
+import { GraduationCap, Calendar, AlertTriangle, Users, BookOpen, Activity } from 'lucide-react';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { motion } from 'framer-motion';
 
 interface ClassItem {
   id: string;
@@ -17,112 +18,151 @@ interface ClassItem {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { settings, isAdmin, user, loading, subscriptionExpiry, subscriptionDaysRemaining } = useSchool();
+  const { settings, isAdmin, user, loading, subscriptionExpiry, subscriptionDaysRemaining, students } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
 
   useDocumentTitle('Dashboard');
 
-  // Check authentication and school selection
   useEffect(() => {
     if (loading) return;
-    
     const teacherId = sessionStorage.getItem('teacherId');
-    if (!user && !teacherId) {
-      navigate('/');
-      return;
-    }
-
-    if (!selectedSchool) {
-      navigate('/');
-    }
+    if (!user && !teacherId) { navigate('/'); return; }
+    if (!selectedSchool) navigate('/');
   }, [user, loading, navigate, selectedSchool]);
 
-  // Fetch classes from database filtered by school_id
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedSchool) return;
-
-      // Admins use authenticated session; teachers use access-code flow.
       const teacherId = sessionStorage.getItem('teacherId');
       if (!user && !teacherId) return;
-
       setClassesLoading(true);
-
       const { data, error } = await supabase
         .from('classes')
         .select('*')
         .eq('school_id', selectedSchool.id)
         .order('name');
-
-      if (error) {
-        console.error('Error fetching classes:', error);
-        setClasses([]);
-      } else {
-        setClasses(data || []);
-      }
-
+      if (error) { console.error('Error fetching classes:', error); setClasses([]); }
+      else setClasses(data || []);
       setClassesLoading(false);
     };
-
     fetchClasses();
   }, [selectedSchool?.id, user?.id]);
 
+  const totalStudents = students?.length || 0;
+
   return (
     <MainLayout>
-      <div className="container py-6">
-        {/* Subscription Warning for Admins */}
+      <div className="container py-6 space-y-6">
+        {/* Subscription Warning */}
         {isAdmin && subscriptionDaysRemaining !== null && subscriptionDaysRemaining <= 30 && (
-          <div className={`mb-6 rounded-xl border p-4 animate-fade-in ${
-            subscriptionDaysRemaining <= 7 
-              ? 'border-destructive/50 bg-destructive/10' 
-              : 'border-amber-500/50 bg-amber-500/10'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {subscriptionDaysRemaining <= 7 ? (
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                ) : (
-                  <Calendar className="h-5 w-5 text-amber-600" />
-                )}
-                <div>
-                  <p className={`font-medium ${subscriptionDaysRemaining <= 7 ? 'text-destructive' : 'text-amber-600'}`}>
-                    Subscription {subscriptionDaysRemaining <= 0 ? 'Expired' : 'Expiring Soon'}
-                  </p>
-                  <p className={`text-sm ${subscriptionDaysRemaining <= 7 ? 'text-destructive/80' : 'text-amber-600/80'}`}>
-                    {subscriptionDaysRemaining <= 0 
-                      ? 'Please renew to continue using all features.'
-                      : `${subscriptionDaysRemaining} day${subscriptionDaysRemaining !== 1 ? 's' : ''} remaining until ${subscriptionExpiry}`
-                    }
-                  </p>
-                </div>
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-xl border p-4 ${
+              subscriptionDaysRemaining <= 7
+                ? 'border-destructive/50 bg-destructive/10'
+                : 'border-amber-500/50 bg-amber-500/10'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {subscriptionDaysRemaining <= 7 ? (
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              ) : (
+                <Calendar className="h-5 w-5 text-amber-600" />
+              )}
+              <div>
+                <p className={`font-medium ${subscriptionDaysRemaining <= 7 ? 'text-destructive' : 'text-amber-600'}`}>
+                  Subscription {subscriptionDaysRemaining <= 0 ? 'Expired' : 'Expiring Soon'}
+                </p>
+                <p className={`text-sm ${subscriptionDaysRemaining <= 7 ? 'text-destructive/80' : 'text-amber-600/80'}`}>
+                  {subscriptionDaysRemaining <= 0
+                    ? 'Please renew to continue using all features.'
+                    : `${subscriptionDaysRemaining} day${subscriptionDaysRemaining !== 1 ? 's' : ''} remaining until ${subscriptionExpiry}`}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Hero Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-gradient-to-r from-primary/90 via-primary to-primary/80 p-6 text-primary-foreground shadow-lg"
+        >
+          <div className="flex items-center gap-4">
+            {selectedSchool?.logoUrl ? (
+              <img
+                src={selectedSchool.logoUrl}
+                alt="School Logo"
+                className="h-14 w-14 rounded-xl object-cover ring-2 ring-primary-foreground/30 shadow-md"
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-foreground/20">
+                <GraduationCap className="h-8 w-8" />
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold uppercase tracking-wide">{settings.schoolName}</h1>
+              <p className="text-primary-foreground/80 text-sm">{settings.motto} • {settings.academicYear} • {settings.term}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Quick Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+        >
+          <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-foreground">{totalStudents}</p>
+                <p className="text-xs text-muted-foreground">Students</p>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Header Section */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            {selectedSchool?.logoUrl && (
-              <img 
-                src={selectedSchool.logoUrl} 
-                alt="School Logo" 
-                className="h-12 w-12 object-contain rounded-lg"
-              />
-            )}
-            <div>
-              <h1 className="text-2xl font-bold text-foreground uppercase tracking-wide">
-                {settings.schoolName}
-              </h1>
-              <p className="text-sm text-muted-foreground">School Management System</p>
+          <div className="rounded-xl border bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-emerald-500/10 p-2">
+                <BookOpen className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-foreground">{classes.length}</p>
+                <p className="text-xs text-muted-foreground">Classes</p>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="rounded-xl border bg-gradient-to-br from-secondary/5 to-secondary/10 p-4 shadow-sm col-span-2 sm:col-span-1">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-secondary/10 p-2">
+                <Activity className="h-5 w-5 text-secondary" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-foreground">
+                  {isAdmin && subscriptionDaysRemaining !== null
+                    ? subscriptionDaysRemaining <= 0 ? 'Expired' : `${subscriptionDaysRemaining}d`
+                    : 'Active'}
+                </p>
+                <p className="text-xs text-muted-foreground">Subscription</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
-        {/* Select a Class Section */}
-        <div className="mb-8">
+        {/* Select a Class */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
@@ -131,41 +171,39 @@ export default function Dashboard() {
             <TotalStudentsCard />
           </div>
 
-          {/* Class Cards Grid */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {classesLoading ? (
-              <div className="col-span-full text-center text-muted-foreground py-8">
-                Loading classes...
-              </div>
+              <div className="col-span-full text-center text-muted-foreground py-8">Loading classes...</div>
             ) : classes.length === 0 ? (
               <div className="col-span-full text-center text-muted-foreground py-8">
                 No classes found. {isAdmin && 'Add classes from the Classes menu.'}
               </div>
             ) : (
               classes.map((classItem, index) => {
-                // Convert "Basic 7" to "basic7"
                 const classId = classItem.name.toLowerCase().replace(/\s/g, '');
                 return (
-                  <div
+                  <motion.div
                     key={classItem.id}
-                    className="animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
                   >
-                    <ClassCard
-                      classLevel={classId as any}
-                      name={classItem.name}
-                    />
-                  </div>
+                    <ClassCard classLevel={classId as any} name={classItem.name} />
+                  </motion.div>
                 );
               })
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Quick Actions Section */}
-        <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           <QuickActions />
-        </div>
+        </motion.div>
       </div>
     </MainLayout>
   );
