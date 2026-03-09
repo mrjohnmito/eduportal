@@ -9,7 +9,7 @@ import { SubjectScore, CalculatedScore, SUBJECTS } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Sparkles, Users, GraduationCap } from 'lucide-react';
+import { FileText, Sparkles, Users, GraduationCap, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
