@@ -91,6 +91,7 @@ function drawRoundedRect(doc: jsPDF, x: number, y: number, w: number, h: number,
 }
 
 const BulkPDF: React.FC = () => {
+  const navigate = useNavigate();
   const { students, scores, settings } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const [classes, setClasses] = useState<ClassOption[]>([]);
