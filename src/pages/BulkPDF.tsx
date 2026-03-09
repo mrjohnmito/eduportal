@@ -523,6 +523,11 @@ const BulkPDF: React.FC = () => {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
+        {/* Back Button */}
+        <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2 text-muted-foreground hover:text-foreground -ml-2">
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
