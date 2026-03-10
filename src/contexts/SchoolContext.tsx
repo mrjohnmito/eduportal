@@ -62,11 +62,11 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   // Fetch all data from database filtered by school_id
   const fetchData = async () => {
     if (!selectedSchool) {
-      setLoading(false);
+      setDataLoading(false);
       return;
     }
 
-    setLoading(true);
+    setDataLoading(true);
 
     try {
       // Fetch students filtered by school_id
