@@ -47,7 +47,11 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [adminLoading, setAdminLoading] = useState(true);
+
+  // Combined loading: true until BOTH data fetch and admin role check are done
+  const loading = dataLoading || adminLoading;
 
   // Calculate subscription days remaining
   const subscriptionExpiry = selectedSchool?.subscriptionExpiry || null;
