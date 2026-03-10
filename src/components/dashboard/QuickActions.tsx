@@ -31,21 +31,16 @@ interface ActionItem {
 }
 
 export function QuickActions() {
-  const { isAdmin } = useSchool();
+  const { isAdmin, loading } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const { toast } = useToast();
   const [isTeacher, setIsTeacher] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Check multiple sources for teacher authentication for robustness
     const teacherData = sessionStorage.getItem('teacher');
     const teacherId = sessionStorage.getItem('teacherId');
-    const adminSession = sessionStorage.getItem('adminSession');
     setIsTeacher(!!teacherData || !!teacherId);
-    
-    // If there's an admin session in sessionStorage, the isAdmin from context should be true
-    // This is handled by SchoolContext, but we verify here for robustness
   }, [isAdmin]);
 
   const getTeacherPortalLink = () => {
