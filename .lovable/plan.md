@@ -1,41 +1,48 @@
 
 
-## Fix: Quick Actions Disappearing on Refresh & Photo Fitting
+## Rebuild BulkPDF.tsx — Modern Academic Report Card
 
-### Root Cause Analysis
+The entire `src/pages/BulkPDF.tsx` file was accidentally wiped. It needs to be fully rewritten from scratch, restoring and improving the modern report card design.
 
-**Quick Actions disappearing**: Confirmed. The race condition exists in `SchoolContext.tsx`. On page refresh:
-1. `loading` starts as `true`, `isAdmin` starts as `false`
-2. `fetchData()` runs and sets `loading = false` when done
-3. But `isAdmin` is set in a **separate async call** (`checkAdminRole` or `checkSchoolAdminSession`) that may resolve **after** `loading` becomes `false`
-4. QuickActions renders with `isAdmin = false` and `isTeacher = false` → shows nothing
-5. When `isAdmin` finally resolves to `true`, it re-renders — but if navigation already redirected, it's too late
+### What will be rebuilt
 
-**Student photos in PDF**: The `fitImage` helper was added in the previous edit and looks correct. However, `getImageDimensions` relies on `Image.onload` which may silently fail for some image URLs (CORS, network issues), causing fallback to stretched rendering. Need to add error handling and a timeout.
+**Single file: `src/pages/BulkPDF.tsx`** — complete rewrite (~600 lines)
 
-### Changes
+**Page UI:** Class selection dropdown, generate button, progress indicator (same pattern as before using MainLayout, useSchool, Supabase class fetching).
 
-**1. Fix race condition in `src/contexts/SchoolContext.tsx`**
-- Don't set `loading = false` until both data fetch AND admin role check are complete
-- Add an `adminLoading` state that tracks whether the admin check has resolved
-- Expose a combined `loading` that's `true` until both are done
+**PDF Generation per student:**
 
-**2. Fix Dashboard to show loading state properly (`src/pages/Dashboard.tsx`)**
-- Show a loading spinner/skeleton while `loading` is true instead of rendering empty content
+1. **Header** — Deep blue accent bar across top, centered school logo, school name (serif bold, blue), motto (italic), contacts (small gray), rounded "ACADEMIC REPORT CARD" banner with blue gradient, term/year info
 
-**3. Fix QuickActions to respect loading state (`src/components/dashboard/QuickActions.tsx`)**
-- Accept `loading` from SchoolContext and show skeleton while loading
+2. **Colored Photo** — Large photo box at top-right corner with the student's uploaded color photo
 
-**4. Harden `getImageDimensions` in `src/pages/BulkPDF.tsx`**
-- Add error handler and timeout (3s) to prevent hanging on broken images
-- Return default dimensions on failure so `fitImage` still works
+3. **Student Info Card** — Rounded rectangle with shadow effect, light gray fill, two-column grid:
+   - Name, Class, Index Number, Position (badge-style)
+   - Conduct, Next Term Begins
+   - Grayscale version of student photo in a small box inside the card
 
-### Files to edit
+4. **Scores Table** — autoTable with:
+   - Blue header row for Subject column
+   - Yellow tint for Class Score / Exam Score columns
+   - Peach tint for Overall / Grade / Remark columns
+   - Alternating row colors (white / light blue-gray)
+   - Grade color-coded badges: Green (1-3), Amber (4-6), Red (7-9)
 
-| File | Change |
-|---|---|
-| `src/contexts/SchoolContext.tsx` | Merge admin role check into loading state |
-| `src/pages/Dashboard.tsx` | Show loading skeleton while context is loading |
-| `src/components/dashboard/QuickActions.tsx` | Check loading state before rendering |
-| `src/pages/BulkPDF.tsx` | Add error handling + timeout to `getImageDimensions` |
+5. **Grand Total & Aggregate** — Summary bar with gradient, large bold total, pill-shaped aggregate badge
+
+6. **Attendance Row** — Days present / total days
+
+7. **Remarks** — Two side-by-side cards:
+   - Class Teacher: blue left border accent, remark text, signature line
+   - Headteacher: emerald left border accent, remark text, signature line
+
+8. **Footer** — Thin accent line, school contacts, "Generated on" timestamp
+
+### Dependencies used
+- `jspdf` + `jspdf-autotable` for PDF
+- `useSchool()` context for students, scores, settings
+- `gradeUtils.ts` for score calculations
+- Supabase client for fetching classes and student photos
+
+This fixes the build error (missing default export) and restores the full feature.
 

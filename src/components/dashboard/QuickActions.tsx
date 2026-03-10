@@ -31,21 +31,16 @@ interface ActionItem {
 }
 
 export function QuickActions() {
-  const { isAdmin } = useSchool();
+  const { isAdmin, loading } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const { toast } = useToast();
   const [isTeacher, setIsTeacher] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Check multiple sources for teacher authentication for robustness
     const teacherData = sessionStorage.getItem('teacher');
     const teacherId = sessionStorage.getItem('teacherId');
-    const adminSession = sessionStorage.getItem('adminSession');
     setIsTeacher(!!teacherData || !!teacherId);
-    
-    // If there's an admin session in sessionStorage, the isAdmin from context should be true
-    // This is handled by SchoolContext, but we verify here for robustness
   }, [isAdmin]);
 
   const getTeacherPortalLink = () => {
@@ -158,6 +153,20 @@ export function QuickActions() {
 
   // Both admin and teachers see the same actions
   const actions = (isAdmin || isTeacher) ? commonActions : [];
+
+  // Show skeleton while loading to prevent flash of empty content
+  if (loading) {
+    return (
+      <div className="w-full space-y-4">
+        <div className="h-6 w-36 bg-muted animate-pulse rounded" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (actions.length === 0) {
     return null;

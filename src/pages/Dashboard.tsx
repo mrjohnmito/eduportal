@@ -52,6 +52,22 @@ export default function Dashboard() {
 
   const totalStudents = students?.length || 0;
 
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container py-6 space-y-6">
+          <div className="h-24 bg-muted animate-pulse rounded-2xl" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />)}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-xl" />)}
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="container py-6 space-y-6">

@@ -47,7 +47,11 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [adminLoading, setAdminLoading] = useState(true);
+
+  // Combined loading: true until BOTH data fetch and admin role check are done
+  const loading = dataLoading || adminLoading;
 
   // Calculate subscription days remaining
   const subscriptionExpiry = selectedSchool?.subscriptionExpiry || null;
@@ -58,11 +62,11 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   // Fetch all data from database filtered by school_id
   const fetchData = async () => {
     if (!selectedSchool) {
-      setLoading(false);
+      setDataLoading(false);
       return;
     }
 
-    setLoading(true);
+    setDataLoading(true);
 
     try {
       // Fetch students filtered by school_id
@@ -140,7 +144,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
@@ -180,6 +184,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth and data
   useEffect(() => {
+    setAdminLoading(true);
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -188,12 +194,16 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         
         if (session?.user) {
           setTimeout(() => {
-            checkAdminRole(session.user.id).then(setIsAdmin);
+            checkAdminRole(session.user.id).then((result) => {
+              setIsAdmin(result);
+              setAdminLoading(false);
+            });
           }, 0);
         } else {
           // Check for school admin session when no Supabase user
           const isSchoolAdmin = checkSchoolAdminSession();
           setIsAdmin(isSchoolAdmin);
+          setAdminLoading(false);
         }
       }
     );
@@ -204,11 +214,15 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminRole(session.user.id).then(setIsAdmin);
+        checkAdminRole(session.user.id).then((result) => {
+          setIsAdmin(result);
+          setAdminLoading(false);
+        });
       } else {
         // Check for school admin session
         const isSchoolAdmin = checkSchoolAdminSession();
         setIsAdmin(isSchoolAdmin);
+        setAdminLoading(false);
       }
     });
 
