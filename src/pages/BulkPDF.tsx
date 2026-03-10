@@ -44,8 +44,17 @@ async function loadImage(url: string): Promise<string | null> {
 function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve({ width: img.width, height: img.height });
-    img.onerror = () => resolve({ width: 1, height: 1 });
+    const timeout = setTimeout(() => {
+      resolve({ width: 100, height: 100 });
+    }, 3000);
+    img.onload = () => {
+      clearTimeout(timeout);
+      resolve({ width: img.width || 100, height: img.height || 100 });
+    };
+    img.onerror = () => {
+      clearTimeout(timeout);
+      resolve({ width: 100, height: 100 });
+    };
     img.src = dataUrl;
   });
 }
