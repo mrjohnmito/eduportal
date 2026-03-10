@@ -144,7 +144,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
