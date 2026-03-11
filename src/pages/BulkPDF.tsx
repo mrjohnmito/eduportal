@@ -59,8 +59,9 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
   });
 }
 
-function fitImage(imgW: number, imgH: number, boxW: number, boxH: number) {
-  const ratio = Math.min(boxW / imgW, boxH / imgH);
+function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
+  // Use Math.max to FILL/COVER the box (crop overflow), not letterbox
+  const ratio = Math.max(boxW / imgW, boxH / imgH);
   const drawW = imgW * ratio;
   const drawH = imgH * ratio;
   const offsetX = (boxW - drawW) / 2;
@@ -221,7 +222,7 @@ const BulkPDF: React.FC = () => {
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
         if (colorPhoto) {
           const dims = await getImageDimensions(colorPhoto);
-          const fit = fitImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
+          const fit = fillImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
           doc.addImage(colorPhoto, 'JPEG', photoBoxX + 1 + fit.offsetX, photoBoxY + 1 + fit.offsetY, fit.drawW, fit.drawH);
         } else {
           doc.setFontSize(7);
@@ -332,7 +333,7 @@ const BulkPDF: React.FC = () => {
         drawRoundedRect(doc, infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, [235, 235, 235]);
         if (grayPhoto) {
           const gDims = await getImageDimensions(grayPhoto);
-          const gFit = fitImage(gDims.width, gDims.height, infoPhotoW - 2, infoPhotoH - 2);
+          const gFit = fillImage(gDims.width, gDims.height, infoPhotoW - 2, infoPhotoH - 2);
           doc.addImage(grayPhoto, 'JPEG', infoPhotoX + 1 + gFit.offsetX, infoPhotoY + 1 + gFit.offsetY, gFit.drawW, gFit.drawH);
         } else {
           doc.setFontSize(6);
