@@ -59,8 +59,9 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
   });
 }
 
-function fitImage(imgW: number, imgH: number, boxW: number, boxH: number) {
-  const ratio = Math.min(boxW / imgW, boxH / imgH);
+function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
+  // Use Math.max to FILL/COVER the box (crop overflow), not letterbox
+  const ratio = Math.max(boxW / imgW, boxH / imgH);
   const drawW = imgW * ratio;
   const drawH = imgH * ratio;
   const offsetX = (boxW - drawW) / 2;
