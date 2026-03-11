@@ -222,7 +222,7 @@ const BulkPDF: React.FC = () => {
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
         if (colorPhoto) {
           const dims = await getImageDimensions(colorPhoto);
-          const fit = fitImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
+          const fit = fillImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
           doc.addImage(colorPhoto, 'JPEG', photoBoxX + 1 + fit.offsetX, photoBoxY + 1 + fit.offsetY, fit.drawW, fit.drawH);
         } else {
           doc.setFontSize(7);
