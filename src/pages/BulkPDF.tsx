@@ -343,7 +343,7 @@ const BulkPDF: React.FC = () => {
         if (grayPhoto) {
           const gDims = await getImageDimensions(grayPhoto);
           const gFit = fillImage(gDims.width, gDims.height, infoPhotoW - 2, infoPhotoH - 2);
-          doc.addImage(grayPhoto, 'JPEG', infoPhotoX + 1 + gFit.offsetX, infoPhotoY + 1 + gFit.offsetY, gFit.drawW, gFit.drawH);
+          addClippedImage(doc, grayPhoto, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2, infoPhotoX + 1 + gFit.offsetX, infoPhotoY + 1 + gFit.offsetY, gFit.drawW, gFit.drawH);
         } else {
           doc.setFontSize(6);
           doc.setTextColor(150, 150, 150);
