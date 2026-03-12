@@ -60,13 +60,22 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
 }
 
 function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
-  // Use Math.max to FILL/COVER the box (crop overflow), not letterbox
   const ratio = Math.max(boxW / imgW, boxH / imgH);
   const drawW = imgW * ratio;
   const drawH = imgH * ratio;
   const offsetX = (boxW - drawW) / 2;
   const offsetY = (boxH - drawH) / 2;
   return { drawW, drawH, offsetX, offsetY };
+}
+
+// Clip image to box so overflow is hidden (cover/crop behavior)
+function addClippedImage(doc: jsPDF, imgData: string, format: string, clipX: number, clipY: number, clipW: number, clipH: number, drawX: number, drawY: number, drawW: number, drawH: number) {
+  doc.saveGraphicsState();
+  // Set rectangular clipping path
+  doc.rect(clipX, clipY, clipW, clipH, 'S');
+  (doc as any).internal.write('W n'); // apply clip
+  doc.addImage(imgData, format, drawX, drawY, drawW, drawH);
+  doc.restoreGraphicsState();
 }
 
 function makeGrayscale(dataUrl: string): Promise<string | null> {
@@ -223,7 +232,7 @@ const BulkPDF: React.FC = () => {
         if (colorPhoto) {
           const dims = await getImageDimensions(colorPhoto);
           const fit = fillImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
-          doc.addImage(colorPhoto, 'JPEG', photoBoxX + 1 + fit.offsetX, photoBoxY + 1 + fit.offsetY, fit.drawW, fit.drawH);
+          addClippedImage(doc, colorPhoto, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2, photoBoxX + 1 + fit.offsetX, photoBoxY + 1 + fit.offsetY, fit.drawW, fit.drawH);
         } else {
           doc.setFontSize(7);
           doc.setTextColor(150, 150, 150);
@@ -334,7 +343,7 @@ const BulkPDF: React.FC = () => {
         if (grayPhoto) {
           const gDims = await getImageDimensions(grayPhoto);
           const gFit = fillImage(gDims.width, gDims.height, infoPhotoW - 2, infoPhotoH - 2);
-          doc.addImage(grayPhoto, 'JPEG', infoPhotoX + 1 + gFit.offsetX, infoPhotoY + 1 + gFit.offsetY, gFit.drawW, gFit.drawH);
+          addClippedImage(doc, grayPhoto, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2, infoPhotoX + 1 + gFit.offsetX, infoPhotoY + 1 + gFit.offsetY, gFit.drawW, gFit.drawH);
         } else {
           doc.setFontSize(6);
           doc.setTextColor(150, 150, 150);
