@@ -60,13 +60,22 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
 }
 
 function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
-  // Use Math.max to FILL/COVER the box (crop overflow), not letterbox
   const ratio = Math.max(boxW / imgW, boxH / imgH);
   const drawW = imgW * ratio;
   const drawH = imgH * ratio;
   const offsetX = (boxW - drawW) / 2;
   const offsetY = (boxH - drawH) / 2;
   return { drawW, drawH, offsetX, offsetY };
+}
+
+// Clip image to box so overflow is hidden (cover/crop behavior)
+function addClippedImage(doc: jsPDF, imgData: string, format: string, clipX: number, clipY: number, clipW: number, clipH: number, drawX: number, drawY: number, drawW: number, drawH: number) {
+  doc.saveGraphicsState();
+  // Set rectangular clipping path
+  doc.rect(clipX, clipY, clipW, clipH, 'S');
+  (doc as any).internal.write('W n'); // apply clip
+  doc.addImage(imgData, format, drawX, drawY, drawW, drawH);
+  doc.restoreGraphicsState();
 }
 
 function makeGrayscale(dataUrl: string): Promise<string | null> {
