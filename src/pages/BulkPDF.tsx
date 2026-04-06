@@ -71,11 +71,15 @@ function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
 // Clip image to box so overflow is hidden (cover/crop behavior)
 function addClippedImage(doc: jsPDF, imgData: string, format: string, clipX: number, clipY: number, clipW: number, clipH: number, drawX: number, drawY: number, drawW: number, drawH: number) {
   doc.saveGraphicsState();
-  // Set rectangular clipping path
-  doc.rect(clipX, clipY, clipW, clipH, 'S');
-  (doc as any).internal.write('W n'); // apply clip
+  // Use jsPDF rect to define clip path, then apply clipping without stroking
+  // The 'F' fill mode draws the rect invisibly when fill color matches; we use raw PDF clip instead
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pdfY = pageHeight - clipY - clipH;
+  (doc as any).internal.write(
+    `q ${clipX.toFixed(2)} ${pdfY.toFixed(2)} ${clipW.toFixed(2)} ${clipH.toFixed(2)} re W n`
+  );
   doc.addImage(imgData, format, drawX, drawY, drawW, drawH);
-  doc.restoreGraphicsState();
+  (doc as any).internal.write('Q');
 }
 
 function makeGrayscale(dataUrl: string): Promise<string | null> {
