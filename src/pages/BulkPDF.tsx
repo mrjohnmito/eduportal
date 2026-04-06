@@ -75,11 +75,11 @@ function addClippedImage(doc: jsPDF, imgData: string, format: string, clipX: num
   // The 'F' fill mode draws the rect invisibly when fill color matches; we use raw PDF clip instead
   const pageHeight = doc.internal.pageSize.getHeight();
   const pdfY = pageHeight - clipY - clipH;
-  doc.internal.write(
+  (doc as any).internal.write(
     `q ${clipX.toFixed(2)} ${pdfY.toFixed(2)} ${clipW.toFixed(2)} ${clipH.toFixed(2)} re W n`
   );
   doc.addImage(imgData, format, drawX, drawY, drawW, drawH);
-  doc.internal.write('Q');
+  (doc as any).internal.write('Q');
 }
 
 function makeGrayscale(dataUrl: string): Promise<string | null> {
