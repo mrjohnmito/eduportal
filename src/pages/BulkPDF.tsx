@@ -71,9 +71,11 @@ function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
 // Clip image to box so overflow is hidden (cover/crop behavior)
 function addClippedImage(doc: jsPDF, imgData: string, format: string, clipX: number, clipY: number, clipW: number, clipH: number, drawX: number, drawY: number, drawW: number, drawH: number) {
   doc.saveGraphicsState();
-  // Set rectangular clipping path
-  doc.rect(clipX, clipY, clipW, clipH, 'S');
-  (doc as any).internal.write('W n'); // apply clip
+  // Define rectangular clipping path using raw PDF operators (no stroke)
+  const f = (doc as any).internal.f2;
+  (doc as any).internal.write(
+    `${f(clipX)} ${f((doc as any).internal.pageSize.getHeight() - clipY - clipH)} ${f(clipW)} ${f(clipH)} re W n`
+  );
   doc.addImage(imgData, format, drawX, drawY, drawW, drawH);
   doc.restoreGraphicsState();
 }
