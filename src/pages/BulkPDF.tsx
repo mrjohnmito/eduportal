@@ -59,27 +59,58 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
   });
 }
 
-function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
-  const ratio = Math.max(boxW / imgW, boxH / imgH);
-  const drawW = imgW * ratio;
-  const drawH = imgH * ratio;
-  const offsetX = (boxW - drawW) / 2;
-  const offsetY = (boxH - drawH) / 2;
-  return { drawW, drawH, offsetX, offsetY };
-}
+// Pre-crop image on canvas to exact box dimensions with "cover" behavior
+function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, grayscale = false): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const timeout = setTimeout(() => resolve(null), 5000);
+    img.onload = () => {
+      clearTimeout(timeout);
+      try {
+        const canvas = document.createElement('canvas');
+        // Use a reasonable pixel resolution (3x mm to px)
+        const pxW = Math.round(targetW * 3);
+        const pxH = Math.round(targetH * 3);
+        canvas.width = pxW;
+        canvas.height = pxH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(null); return; }
 
-// Clip image to box so overflow is hidden (cover/crop behavior)
-function addClippedImage(doc: jsPDF, imgData: string, format: string, clipX: number, clipY: number, clipW: number, clipH: number, drawX: number, drawY: number, drawW: number, drawH: number) {
-  doc.saveGraphicsState();
-  // Use jsPDF rect to define clip path, then apply clipping without stroking
-  // The 'F' fill mode draws the rect invisibly when fill color matches; we use raw PDF clip instead
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const pdfY = pageHeight - clipY - clipH;
-  (doc as any).internal.write(
-    `q ${clipX.toFixed(2)} ${pdfY.toFixed(2)} ${clipW.toFixed(2)} ${clipH.toFixed(2)} re W n`
-  );
-  doc.addImage(imgData, format, drawX, drawY, drawW, drawH);
-  (doc as any).internal.write('Q');
+        // Calculate source crop for "cover" (center-crop)
+        const imgAspect = img.width / img.height;
+        const boxAspect = pxW / pxH;
+        let sx = 0, sy = 0, sw = img.width, sh = img.height;
+        if (imgAspect > boxAspect) {
+          // Image is wider — crop sides
+          sw = img.height * boxAspect;
+          sx = (img.width - sw) / 2;
+        } else {
+          // Image is taller — crop top/bottom
+          sh = img.width / boxAspect;
+          sy = (img.height - sh) / 2;
+        }
+
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, pxW, pxH);
+
+        if (grayscale) {
+          const imageData = ctx.getImageData(0, 0, pxW, pxH);
+          const d = imageData.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const avg = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+            d[i] = d[i + 1] = d[i + 2] = avg;
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => { clearTimeout(timeout); resolve(null); };
+    img.src = dataUrl;
+  });
 }
 
 function makeGrayscale(dataUrl: string): Promise<string | null> {
