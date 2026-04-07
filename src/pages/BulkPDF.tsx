@@ -59,27 +59,58 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
   });
 }
 
-function fillImage(imgW: number, imgH: number, boxW: number, boxH: number) {
-  const ratio = Math.max(boxW / imgW, boxH / imgH);
-  const drawW = imgW * ratio;
-  const drawH = imgH * ratio;
-  const offsetX = (boxW - drawW) / 2;
-  const offsetY = (boxH - drawH) / 2;
-  return { drawW, drawH, offsetX, offsetY };
-}
+// Pre-crop image on canvas to exact box dimensions with "cover" behavior
+function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, grayscale = false): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const timeout = setTimeout(() => resolve(null), 5000);
+    img.onload = () => {
+      clearTimeout(timeout);
+      try {
+        const canvas = document.createElement('canvas');
+        // Use a reasonable pixel resolution (3x mm to px)
+        const pxW = Math.round(targetW * 3);
+        const pxH = Math.round(targetH * 3);
+        canvas.width = pxW;
+        canvas.height = pxH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(null); return; }
 
-// Clip image to box so overflow is hidden (cover/crop behavior)
-function addClippedImage(doc: jsPDF, imgData: string, format: string, clipX: number, clipY: number, clipW: number, clipH: number, drawX: number, drawY: number, drawW: number, drawH: number) {
-  doc.saveGraphicsState();
-  // Use jsPDF rect to define clip path, then apply clipping without stroking
-  // The 'F' fill mode draws the rect invisibly when fill color matches; we use raw PDF clip instead
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const pdfY = pageHeight - clipY - clipH;
-  (doc as any).internal.write(
-    `q ${clipX.toFixed(2)} ${pdfY.toFixed(2)} ${clipW.toFixed(2)} ${clipH.toFixed(2)} re W n`
-  );
-  doc.addImage(imgData, format, drawX, drawY, drawW, drawH);
-  (doc as any).internal.write('Q');
+        // Calculate source crop for "cover" (center-crop)
+        const imgAspect = img.width / img.height;
+        const boxAspect = pxW / pxH;
+        let sx = 0, sy = 0, sw = img.width, sh = img.height;
+        if (imgAspect > boxAspect) {
+          // Image is wider — crop sides
+          sw = img.height * boxAspect;
+          sx = (img.width - sw) / 2;
+        } else {
+          // Image is taller — crop top/bottom
+          sh = img.width / boxAspect;
+          sy = (img.height - sh) / 2;
+        }
+
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, pxW, pxH);
+
+        if (grayscale) {
+          const imageData = ctx.getImageData(0, 0, pxW, pxH);
+          const d = imageData.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const avg = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+            d[i] = d[i + 1] = d[i + 2] = avg;
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => { clearTimeout(timeout); resolve(null); };
+    img.src = dataUrl;
+  });
 }
 
 function makeGrayscale(dataUrl: string): Promise<string | null> {
@@ -215,13 +246,14 @@ const BulkPDF: React.FC = () => {
         const grandTotal = studentTotals.find(t => t.studentId === student.id)?.total || 0;
         const aggregate = calcScores.length > 0 ? calculateAggregate(calcScores) : { aggregate: 0, subjects: [] };
 
-        // Load student photos
-        let colorPhoto: string | null = null;
-        let grayPhoto: string | null = null;
+        // Load & pre-crop student photos
+        let croppedColor: string | null = null;
+        let croppedGray: string | null = null;
         if (student.photo) {
-          colorPhoto = await loadImage(student.photo);
-          if (colorPhoto) {
-            grayPhoto = await makeGrayscale(colorPhoto);
+          const rawPhoto = await loadImage(student.photo);
+          if (rawPhoto) {
+            croppedColor = await preparePhotoForBox(rawPhoto, 32, 38);
+            croppedGray = await preparePhotoForBox(rawPhoto, 14, 17, true);
           }
         }
 
@@ -233,10 +265,12 @@ const BulkPDF: React.FC = () => {
         const photoBoxX = margin;
         const photoBoxY = y;
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
-        if (colorPhoto) {
-          const dims = await getImageDimensions(colorPhoto);
-          const fit = fillImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
-          addClippedImage(doc, colorPhoto, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2, photoBoxX + 1 + fit.offsetX, photoBoxY + 1 + fit.offsetY, fit.drawW, fit.drawH);
+        if (croppedColor) {
+          doc.addImage(croppedColor, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2);
+          // Redraw border on top to ensure clean edges
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.3);
+          doc.roundedRect(photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, 2, 'S');
         } else {
           doc.setFontSize(7);
           doc.setTextColor(150, 150, 150);
@@ -344,10 +378,11 @@ const BulkPDF: React.FC = () => {
         const infoPhotoX = margin + contentW - infoPhotoW - 5;
         const infoPhotoY = y + 6;
         drawRoundedRect(doc, infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, [235, 235, 235]);
-        if (grayPhoto) {
-          const gDims = await getImageDimensions(grayPhoto);
-          const gFit = fillImage(gDims.width, gDims.height, infoPhotoW - 2, infoPhotoH - 2);
-          addClippedImage(doc, grayPhoto, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2, infoPhotoX + 1 + gFit.offsetX, infoPhotoY + 1 + gFit.offsetY, gFit.drawW, gFit.drawH);
+        if (croppedGray) {
+          doc.addImage(croppedGray, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2);
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.2);
+          doc.roundedRect(infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, 2, 'S');
         } else {
           doc.setFontSize(6);
           doc.setTextColor(150, 150, 150);
