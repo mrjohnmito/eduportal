@@ -246,13 +246,14 @@ const BulkPDF: React.FC = () => {
         const grandTotal = studentTotals.find(t => t.studentId === student.id)?.total || 0;
         const aggregate = calcScores.length > 0 ? calculateAggregate(calcScores) : { aggregate: 0, subjects: [] };
 
-        // Load student photos
-        let colorPhoto: string | null = null;
-        let grayPhoto: string | null = null;
+        // Load & pre-crop student photos
+        let croppedColor: string | null = null;
+        let croppedGray: string | null = null;
         if (student.photo) {
-          colorPhoto = await loadImage(student.photo);
-          if (colorPhoto) {
-            grayPhoto = await makeGrayscale(colorPhoto);
+          const rawPhoto = await loadImage(student.photo);
+          if (rawPhoto) {
+            croppedColor = await preparePhotoForBox(rawPhoto, 32, 38);
+            croppedGray = await preparePhotoForBox(rawPhoto, 14, 17, true);
           }
         }
 
@@ -264,10 +265,12 @@ const BulkPDF: React.FC = () => {
         const photoBoxX = margin;
         const photoBoxY = y;
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
-        if (colorPhoto) {
-          const dims = await getImageDimensions(colorPhoto);
-          const fit = fillImage(dims.width, dims.height, photoBoxW - 2, photoBoxH - 2);
-          addClippedImage(doc, colorPhoto, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2, photoBoxX + 1 + fit.offsetX, photoBoxY + 1 + fit.offsetY, fit.drawW, fit.drawH);
+        if (croppedColor) {
+          doc.addImage(croppedColor, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2);
+          // Redraw border on top to ensure clean edges
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.3);
+          doc.roundedRect(photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, 2, 'S');
         } else {
           doc.setFontSize(7);
           doc.setTextColor(150, 150, 150);
