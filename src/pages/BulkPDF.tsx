@@ -118,7 +118,7 @@ function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, g
           ctx.putImageData(imageData, 0, 0);
         }
 
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        resolve(canvas.toDataURL('image/png'));
       } catch {
         resolve(null);
       }
