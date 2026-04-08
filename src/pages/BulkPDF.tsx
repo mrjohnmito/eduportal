@@ -91,6 +91,21 @@ function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, g
           sy = (img.height - sh) / 2;
         }
 
+        // Clip to rounded rect so corners match the photo box frame
+        const radius = Math.round(Math.min(pxW, pxH) * 0.06); // ~6% corner radius
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(pxW - radius, 0);
+        ctx.quadraticCurveTo(pxW, 0, pxW, radius);
+        ctx.lineTo(pxW, pxH - radius);
+        ctx.quadraticCurveTo(pxW, pxH, pxW - radius, pxH);
+        ctx.lineTo(radius, pxH);
+        ctx.quadraticCurveTo(0, pxH, 0, pxH - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.closePath();
+        ctx.clip();
+
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, pxW, pxH);
 
         if (grayscale) {
@@ -103,7 +118,7 @@ function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, g
           ctx.putImageData(imageData, 0, 0);
         }
 
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        resolve(canvas.toDataURL('image/png'));
       } catch {
         resolve(null);
       }
