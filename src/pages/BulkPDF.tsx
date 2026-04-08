@@ -92,7 +92,7 @@ function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, g
         }
 
         // Clip to rounded rect so corners match the photo box frame
-        const radius = Math.round(Math.min(pxW, pxH) * 0.06); // ~6% corner radius
+        const radius = cornerRadius != null ? Math.round(cornerRadius * 3) : Math.round(Math.min(pxW, pxH) * 0.06);
         ctx.beginPath();
         ctx.moveTo(radius, 0);
         ctx.lineTo(pxW - radius, 0);
