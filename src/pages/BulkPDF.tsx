@@ -281,7 +281,7 @@ const BulkPDF: React.FC = () => {
         const photoBoxY = y;
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
         if (croppedColor) {
-          doc.addImage(croppedColor, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2);
+          doc.addImage(croppedColor, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2);
           // Redraw border on top to ensure clean edges
           doc.setDrawColor(200, 200, 200);
           doc.setLineWidth(0.3);
