@@ -267,8 +267,8 @@ const BulkPDF: React.FC = () => {
         if (student.photo) {
           const rawPhoto = await loadImage(student.photo);
           if (rawPhoto) {
-            croppedColor = await preparePhotoForBox(rawPhoto, 32, 38);
-            croppedGray = await preparePhotoForBox(rawPhoto, 14, 17, true);
+            croppedColor = await preparePhotoForBox(rawPhoto, 30, 36, false, 1);
+            croppedGray = await preparePhotoForBox(rawPhoto, 12, 15, true, 1);
           }
         }
 
