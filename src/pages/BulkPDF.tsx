@@ -60,7 +60,7 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
 }
 
 // Pre-crop image on canvas to exact box dimensions with "cover" behavior
-function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, grayscale = false): Promise<string | null> {
+function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, grayscale = false, cornerRadius?: number): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -92,7 +92,7 @@ function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, g
         }
 
         // Clip to rounded rect so corners match the photo box frame
-        const radius = Math.round(Math.min(pxW, pxH) * 0.06); // ~6% corner radius
+        const radius = cornerRadius != null ? Math.round(cornerRadius * 3) : Math.round(Math.min(pxW, pxH) * 0.06);
         ctx.beginPath();
         ctx.moveTo(radius, 0);
         ctx.lineTo(pxW - radius, 0);
@@ -267,8 +267,8 @@ const BulkPDF: React.FC = () => {
         if (student.photo) {
           const rawPhoto = await loadImage(student.photo);
           if (rawPhoto) {
-            croppedColor = await preparePhotoForBox(rawPhoto, 32, 38);
-            croppedGray = await preparePhotoForBox(rawPhoto, 14, 17, true);
+            croppedColor = await preparePhotoForBox(rawPhoto, 30, 36, false, 1);
+            croppedGray = await preparePhotoForBox(rawPhoto, 12, 15, true, 1);
           }
         }
 
@@ -281,7 +281,7 @@ const BulkPDF: React.FC = () => {
         const photoBoxY = y;
         drawRoundedRect(doc, photoBoxX, photoBoxY, photoBoxW, photoBoxH, 2, [240, 240, 240], [200, 200, 200]);
         if (croppedColor) {
-          doc.addImage(croppedColor, 'JPEG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2);
+          doc.addImage(croppedColor, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxW - 2, photoBoxH - 2);
           // Redraw border on top to ensure clean edges
           doc.setDrawColor(200, 200, 200);
           doc.setLineWidth(0.3);
@@ -394,7 +394,7 @@ const BulkPDF: React.FC = () => {
         const infoPhotoY = y + 6;
         drawRoundedRect(doc, infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, [235, 235, 235]);
         if (croppedGray) {
-          doc.addImage(croppedGray, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2);
+          doc.addImage(croppedGray, 'PNG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2);
           doc.setDrawColor(200, 200, 200);
           doc.setLineWidth(0.2);
           doc.roundedRect(infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, 2, 'S');
