@@ -60,7 +60,7 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
 }
 
 // Pre-crop image on canvas to exact box dimensions with "cover" behavior
-function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, grayscale = false): Promise<string | null> {
+function preparePhotoForBox(dataUrl: string, targetW: number, targetH: number, grayscale = false, cornerRadius?: number): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
