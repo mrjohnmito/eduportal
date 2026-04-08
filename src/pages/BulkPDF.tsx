@@ -394,7 +394,7 @@ const BulkPDF: React.FC = () => {
         const infoPhotoY = y + 6;
         drawRoundedRect(doc, infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, [235, 235, 235]);
         if (croppedGray) {
-          doc.addImage(croppedGray, 'JPEG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2);
+          doc.addImage(croppedGray, 'PNG', infoPhotoX + 1, infoPhotoY + 1, infoPhotoW - 2, infoPhotoH - 2);
           doc.setDrawColor(200, 200, 200);
           doc.setLineWidth(0.2);
           doc.roundedRect(infoPhotoX, infoPhotoY, infoPhotoW, infoPhotoH, 2, 2, 'S');
