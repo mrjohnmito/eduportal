@@ -220,12 +220,27 @@ export default function SuperAdminDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Require admin credentials when creating a new school
+    if (!editingSchool) {
+      const emailTrimmed = formAdminEmail.trim();
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed);
+      if (!emailTrimmed || !emailValid) {
+        toast({ title: 'Admin Email Required', description: 'Enter a valid admin email. This will be used to log into the school.', variant: 'destructive' });
+        return;
+      }
+      if (!formAdminPassword || formAdminPassword.length < 6) {
+        toast({ title: 'Admin Password Required', description: 'Enter a password (min 6 chars). This will be used to log into the school.', variant: 'destructive' });
+        return;
+      }
+    }
+
     setFormLoading(true);
     try {
       const schoolData = {
         name: formName, logo_url: formLogoUrl || null, school_code: formSchoolCode.toUpperCase(),
         subscription_status: formSubscriptionStatus, subscription_expiry: formSubscriptionExpiry || null,
-        theme_color: formThemeColor, admin_email: formAdminEmail || null, is_locked: formIsLocked,
+        theme_color: formThemeColor, admin_email: formAdminEmail.trim() || null, is_locked: formIsLocked,
         admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : (editingSchool?.adminPasswordHash || null),
       };
       if (editingSchool) {
