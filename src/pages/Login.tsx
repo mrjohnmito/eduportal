@@ -92,6 +92,9 @@ export default function Login() {
     setAdminLoading(true);
 
     try {
+      const enteredEmail = adminEmail.trim().toLowerCase();
+      const enteredPassword = adminPassword;
+
       // First, check if credentials match the school's admin credentials
       const { data: schoolData, error: schoolError } = await supabase
         .from('schools')
@@ -101,40 +104,53 @@ export default function Login() {
 
       if (schoolError) throw schoolError;
 
-      // Check if the email matches the school's admin email
-      if (schoolData?.admin_email && 
-          schoolData.admin_email.toLowerCase() === adminEmail.toLowerCase() &&
-          schoolData.admin_password_hash) {
-        
-        // Decode the stored password (base64) and compare
-        try {
-          const storedPassword = atob(schoolData.admin_password_hash);
-          
-          if (storedPassword === adminPassword) {
-            // Credentials match - set admin session in sessionStorage
-            sessionStorage.setItem('adminSession', JSON.stringify({
-              schoolId: selectedSchool.id,
-              email: adminEmail,
-              isAdmin: true,
-              timestamp: Date.now(),
-            }));
-            
-            // Trigger login in context
-            await login(adminEmail, adminPassword, true);
-            
-            toast({
-              title: 'Welcome, Admin!',
-              description: 'You have successfully logged in.',
-            });
-            navigate('/dashboard');
-            return;
-          }
-        } catch {
-          // Password decode failed, continue to Supabase Auth
+      const schoolAdminEmail = schoolData?.admin_email?.trim().toLowerCase();
+
+      // If the email matches this school's admin email, the password MUST match
+      if (schoolAdminEmail && schoolAdminEmail === enteredEmail) {
+        if (!schoolData?.admin_password_hash) {
+          toast({
+            title: 'Login Failed',
+            description: 'No admin password is set for this school. Contact the Super Admin.',
+            variant: 'destructive',
+          });
+          return;
         }
+
+        let storedPassword = '';
+        try {
+          storedPassword = atob(schoolData.admin_password_hash);
+        } catch {
+          storedPassword = '';
+        }
+
+        if (storedPassword === enteredPassword) {
+          sessionStorage.setItem('adminSession', JSON.stringify({
+            schoolId: selectedSchool.id,
+            email: adminEmail,
+            isAdmin: true,
+            timestamp: Date.now(),
+          }));
+
+          await login(adminEmail, adminPassword, true);
+
+          toast({
+            title: 'Welcome, Admin!',
+            description: 'You have successfully logged in.',
+          });
+          navigate('/dashboard');
+          return;
+        }
+
+        toast({
+          title: 'Invalid Password',
+          description: 'The admin password is incorrect for this school.',
+          variant: 'destructive',
+        });
+        return;
       }
 
-      // Fallback to Supabase Auth for super admins or other auth users
+      // Email does not match this school's admin email — try Supabase Auth (e.g. super admin)
       const success = await login(adminEmail, adminPassword);
 
       if (success) {
@@ -146,7 +162,7 @@ export default function Login() {
       } else {
         toast({
           title: 'Login Failed',
-          description: 'Invalid credentials or you do not have admin privileges.',
+          description: 'Invalid credentials for this school.',
           variant: 'destructive',
         });
       }
