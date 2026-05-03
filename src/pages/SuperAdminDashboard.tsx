@@ -220,12 +220,27 @@ export default function SuperAdminDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Require admin credentials when creating a new school
+    if (!editingSchool) {
+      const emailTrimmed = formAdminEmail.trim();
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed);
+      if (!emailTrimmed || !emailValid) {
+        toast({ title: 'Admin Email Required', description: 'Enter a valid admin email. This will be used to log into the school.', variant: 'destructive' });
+        return;
+      }
+      if (!formAdminPassword || formAdminPassword.length < 6) {
+        toast({ title: 'Admin Password Required', description: 'Enter a password (min 6 chars). This will be used to log into the school.', variant: 'destructive' });
+        return;
+      }
+    }
+
     setFormLoading(true);
     try {
       const schoolData = {
         name: formName, logo_url: formLogoUrl || null, school_code: formSchoolCode.toUpperCase(),
         subscription_status: formSubscriptionStatus, subscription_expiry: formSubscriptionExpiry || null,
-        theme_color: formThemeColor, admin_email: formAdminEmail || null, is_locked: formIsLocked,
+        theme_color: formThemeColor, admin_email: formAdminEmail.trim() || null, is_locked: formIsLocked,
         admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : (editingSchool?.adminPasswordHash || null),
       };
       if (editingSchool) {
@@ -439,13 +454,18 @@ export default function SuperAdminDashboard() {
                         <User className="h-4 w-4 text-muted-foreground" />
                         <Label className="text-base font-medium">Admin Credentials</Label>
                       </div>
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        {editingSchool
+                          ? 'These credentials are used by the school to log in as Admin.'
+                          : 'This email and password will be used to log into the school as Admin.'}
+                      </p>
                       <div className="space-y-2">
-                        <Label htmlFor="adminEmail">Admin Email</Label>
-                        <Input id="adminEmail" type="email" value={formAdminEmail} onChange={(e) => setFormAdminEmail(e.target.value)} placeholder="admin@school.com" />
+                        <Label htmlFor="adminEmail">Admin Email{!editingSchool && ' *'}</Label>
+                        <Input id="adminEmail" type="email" value={formAdminEmail} onChange={(e) => setFormAdminEmail(e.target.value)} placeholder="admin@school.com" required={!editingSchool} />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="adminPassword">Admin Password {editingSchool && '(leave blank to keep current)'}</Label>
-                        <Input id="adminPassword" type="password" value={formAdminPassword} onChange={(e) => setFormAdminPassword(e.target.value)} placeholder={editingSchool ? '••••••••' : 'Enter password'} />
+                        <Label htmlFor="adminPassword">Admin Password {editingSchool ? '(leave blank to keep current)' : '*'}</Label>
+                        <Input id="adminPassword" type="password" value={formAdminPassword} onChange={(e) => setFormAdminPassword(e.target.value)} placeholder={editingSchool ? '••••••••' : 'Enter password (min 6 chars)'} required={!editingSchool} minLength={editingSchool ? undefined : 6} />
                       </div>
                     </div>
                     <div className="space-y-2">

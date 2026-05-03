@@ -1,43 +1,48 @@
 
-Fix the photo corners by aligning the processed image to the exact inner photo frame and preserving rounded transparency all the way into the PDF.
+## Goal
+When the Super Admin creates a school and sets an Admin Email + Admin Password, those exact credentials should log into that school via the Admin tab on `/login`.
 
-1. Correct the actual root cause in `src/pages/BulkPDF.tsx`
-- The current helper already clips the photo to rounded corners on canvas and exports a PNG.
-- But the image is still inserted into the PDF as `'JPEG'`, which removes the transparent rounded corners.
-- There is also a size mismatch: the helper prepares the photo for the full outer box, while the PDF draws it inside the inset area (`+1`, `-2`).
+## Current State (already partly built)
+- `SuperAdminDashboard.tsx` saves `admin_email` and `admin_password_hash` (base64) on the `schools` row when creating/editing a school.
+- `Login.tsx` (Admin tab) reads `schools.admin_email` + `schools.admin_password_hash`, decodes and compares, then sets a `sessionStorage` admin session and calls `login(...)`.
 
-2. Make the image match the inner photo box exactly
-- Compute the real drawable photo area first:
-  - main photo: inner width/height = box size minus inset
-  - small grayscale photo: same pattern
-- Pass those exact inner dimensions into `preparePhotoForBox(...)` instead of the outer frame size.
-- Add a corner-radius parameter so the helper uses the same rounding shape as the visible image area.
+So the wiring exists, but a few gaps cause it to feel broken:
 
-3. Preserve rounded corners in the PDF
-- Keep `preparePhotoForBox(...)` output as PNG.
-- Change both `doc.addImage(...)` calls from `'JPEG'` to `'PNG'`.
-- This keeps the transparent clipped corners instead of flattening them.
+1. **Email & password are optional on creation** — Super Admin can save a school with no admin credentials, leaving the school unable to log in.
+2. **No feedback if login fails on the credentials path** — it silently falls through to Supabase Auth and returns the generic “invalid credentials” toast, hiding the real cause.
+3. **Old/edited passwords**: editing a school without typing a new password keeps the old hash (this is fine, but should be made explicit in UI text).
+4. **No way for Super Admin to verify** which email/password is currently set (password is write-only, which is correct, but the email should be clearly visible — it already is in the table).
 
-4. Match the image corner radius to the frame radius
-- Use the outer box radius and inset to derive the inner image radius so the photo corners visually follow the same curve as the photo box.
-- Apply the same logic to:
-  - the large top-left color photo
-  - the small grayscale info-card photo
+## Plan
 
-5. Keep the clean frame finish
-- Draw the processed photo first inside the inner bounds.
-- Redraw the rounded border/frame on top after the image.
-- Keep the placeholder behavior unchanged for missing or failed photos.
+### 1. Make admin credentials required on school create
+File: `src/pages/SuperAdminDashboard.tsx`
+- When `editingSchool` is null (creating a new school), require both `formAdminEmail` and `formAdminPassword` before submit.
+- Validate email format and minimum password length (≥6).
+- Show inline toast error if missing/invalid.
+- Keep current behavior on edit: leaving password blank keeps the existing hash.
 
-Technical details
-- File: `src/pages/BulkPDF.tsx`
-- Update `preparePhotoForBox(...)` to accept exact target size + corner radius.
-- Replace:
-  - `preparePhotoForBox(rawPhoto, 32, 38)`
-  - `preparePhotoForBox(rawPhoto, 14, 17, true)`
-  with calls based on the actual inner draw area.
-- Replace both `doc.addImage(..., 'JPEG', ...)` calls for processed photos with `doc.addImage(..., 'PNG', ...)`.
+### 2. Tighten the login flow
+File: `src/pages/Login.tsx` (Admin tab handler)
+- Keep the existing schools-table credential check as the primary path.
+- If the entered email matches `schools.admin_email` but the password does not match the decoded hash, immediately show “Invalid admin password for this school” instead of falling through to Supabase Auth (which produces a misleading message).
+- Only fall through to Supabase Auth when the entered email does NOT match `schools.admin_email` (so super admins can still sign in if they ever use this screen).
+- Trim email and compare case-insensitively (already done for email; also trim whitespace).
 
-Expected result
-- The photo will still fill the box without distortion.
-- The image corners will visually match the rounded corners of the photo box instead of appearing square or sitting on top of the frame.
+### 3. Small UX clarifications
+File: `src/pages/SuperAdminDashboard.tsx`
+- Update the password field helper text on create to: “This email and password will be used to log into the school as Admin.”
+- On edit, keep: “Leave blank to keep current password.”
+
+### 4. No schema changes
+- `schools.admin_email` and `schools.admin_password_hash` already exist; no migration needed.
+- We continue storing the password as base64 in `admin_password_hash` to stay compatible with the existing login code. (If you later want true hashing, that’s a separate change.)
+
+## Out of scope
+- Migrating to real password hashing (bcrypt/argon2) via an edge function.
+- Changing how Teachers or Super Admins log in.
+
+## Expected result
+- Creating a school in Super Admin requires admin email + password.
+- Those exact credentials log the user into that school on `/login` → Admin tab.
+- Wrong password against a known school email gives a clear, correct error.
