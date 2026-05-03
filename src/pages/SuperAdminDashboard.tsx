@@ -454,13 +454,18 @@ export default function SuperAdminDashboard() {
                         <User className="h-4 w-4 text-muted-foreground" />
                         <Label className="text-base font-medium">Admin Credentials</Label>
                       </div>
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        {editingSchool
+                          ? 'These credentials are used by the school to log in as Admin.'
+                          : 'This email and password will be used to log into the school as Admin.'}
+                      </p>
                       <div className="space-y-2">
-                        <Label htmlFor="adminEmail">Admin Email</Label>
-                        <Input id="adminEmail" type="email" value={formAdminEmail} onChange={(e) => setFormAdminEmail(e.target.value)} placeholder="admin@school.com" />
+                        <Label htmlFor="adminEmail">Admin Email{!editingSchool && ' *'}</Label>
+                        <Input id="adminEmail" type="email" value={formAdminEmail} onChange={(e) => setFormAdminEmail(e.target.value)} placeholder="admin@school.com" required={!editingSchool} />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="adminPassword">Admin Password {editingSchool && '(leave blank to keep current)'}</Label>
-                        <Input id="adminPassword" type="password" value={formAdminPassword} onChange={(e) => setFormAdminPassword(e.target.value)} placeholder={editingSchool ? '••••••••' : 'Enter password'} />
+                        <Label htmlFor="adminPassword">Admin Password {editingSchool ? '(leave blank to keep current)' : '*'}</Label>
+                        <Input id="adminPassword" type="password" value={formAdminPassword} onChange={(e) => setFormAdminPassword(e.target.value)} placeholder={editingSchool ? '••••••••' : 'Enter password (min 6 chars)'} required={!editingSchool} minLength={editingSchool ? undefined : 6} />
                       </div>
                     </div>
                     <div className="space-y-2">
