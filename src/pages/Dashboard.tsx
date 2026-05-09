@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, Calendar, AlertTriangle, Users, BookOpen, Activity } from 'lucide-react';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { motion } from 'framer-motion';
+import { hasValidSchoolAdminSession } from '@/lib/session';
 
 interface ClassItem {
   id: string;
@@ -28,7 +29,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (loading) return;
     const teacherId = sessionStorage.getItem('teacherId');
-    if (!user && !teacherId) { navigate('/'); return; }
+    const schoolAdmin = hasValidSchoolAdminSession(selectedSchool?.id);
+    if (!user && !teacherId && !schoolAdmin) { navigate('/'); return; }
     if (!selectedSchool) navigate('/');
   }, [user, loading, navigate, selectedSchool]);
 
@@ -36,7 +38,8 @@ export default function Dashboard() {
     const fetchClasses = async () => {
       if (!selectedSchool) return;
       const teacherId = sessionStorage.getItem('teacherId');
-      if (!user && !teacherId) return;
+      const schoolAdmin = hasValidSchoolAdminSession(selectedSchool.id);
+      if (!user && !teacherId && !schoolAdmin) return;
       setClassesLoading(true);
       const { data, error } = await supabase
         .from('classes')
