@@ -1,43 +1,45 @@
-## Goal
-Make the school code a one-time, school-wide activation. After any device successfully enters the correct code for a school, every other device will skip the school-code page and go straight to the login page when that school is clicked.
+## Issues to fix
 
-## Root cause
-Right now `SchoolSelection.tsx` checks `localStorage.getItem('school_verified_<id>')`, which only exists on the device that entered the code. So device B has no record and gets sent back to `/school-code`.
+### 1. Class names should accept letters (e.g. Basic 1A, Basic 2B)
+`src/pages/ClassManagement.tsx` currently forces a numeric input with `parseInt` and rejects anything that isn't a number 1–12. Super Admin needs to add classes like `Basic 1A`, `Basic 2B`.
 
-## Approach
-Move the "this school has been activated" flag from per-device localStorage to the database, on the `schools` table itself.
+**Change:**
+- Replace the numeric `<Input type="number">` with a text input that accepts an alphanumeric suffix (e.g. `1`, `1A`, `2B`, `10A`).
+- Validation: regex `^\d{1,2}[A-Za-z]?$` (one or two digits, optional single letter). Letter is uppercased.
+- Final stored name stays in the existing `Basic <suffix>` format so downstream `classLevel` ids (lowercased, stripped of spaces — e.g. `basic1a`) keep working with `Dashboard`, `ClassCard`, `ScoreEntry`, etc.
+- Update the placeholder ("e.g. 1A") and helper text ("Enter a number, optionally followed by a letter, e.g. 1, 1A, 2B").
+- Keep the edit flow: extract suffix from `Basic XYZ` instead of just digits.
 
-### 1. Database
-Add a single column to `public.schools`:
-- `activated_at timestamptz null` — set the first time the correct school code is entered.
+### 2. School admin gets bounced from /dashboard back to "/"
+Root cause: After a successful school-admin login (the credentials set by Super Admin during school creation), `Login.tsx` stores an `adminSession` in `sessionStorage` and navigates to `/dashboard`. But `Dashboard.tsx` redirects to `/` whenever there is **no Supabase `user` and no `teacherId`**:
 
-No new RLS policies are needed (the existing public `SELECT` and the public/admin `UPDATE` paths used during code verification already cover this; we'll only allow setting `activated_at` from null → now via the existing update path used by `SchoolCodeVerification`).
+```ts
+if (!user && !teacherId) { navigate('/'); return; }
+```
 
-### 2. `SchoolCodeVerification.tsx`
-On a successful code match:
-- If `activated_at` is null in the DB, update that school row to set `activated_at = now()`.
-- Then continue with the existing flow (navigate to `/login`).
-- Keep the local `school_verified_<id>` write only as a soft cache; it's no longer the source of truth.
+School admins authenticate via the custom `schools.admin_email`/`admin_password_hash` flow, so `user` is always `null` for them. They have no `teacherId`. Result: instant bounce back to landing.
 
-### 3. `SchoolSelection.tsx`
-Replace `isSchoolVerified(schoolId)` with a check against the school record itself:
-- `const verified = !!school.activated_at;`
-- If `verified && subscriptionValid` → navigate to `/login`.
-- Else → navigate to `/school-code`.
+**Change:** Treat a valid `adminSession` (matching the currently selected school) as a valid login signal in `Dashboard.tsx`.
 
-Remove the localStorage-based 30-day check entirely. Update the `School` type and the row mapper in `fetchSchools` to include `activatedAt`.
+```ts
+const adminSession = sessionStorage.getItem('adminSession');
+const hasSchoolAdmin = adminSession && (() => {
+  try {
+    const s = JSON.parse(adminSession);
+    return s?.isAdmin && s?.schoolId === selectedSchool?.id;
+  } catch { return false; }
+})();
+if (!user && !teacherId && !hasSchoolAdmin) { navigate('/'); return; }
+```
 
-### 4. Super Admin (optional but recommended)
-In `SuperAdminDashboard.tsx`, surface an "Activated" badge per school and a "Reset activation" action that sets `activated_at` back to `null`. This lets the super admin force re-verification if a code is ever rotated.
+Also audit other authenticated pages that use the same `!user && !teacherId` pattern (Settings, StudentManagement, TeacherManagement, ClassManagement, BulkPDF, ClearData, ClassPortal, ScoreEntry, ClassTeacherReport) and apply the same `hasSchoolAdmin` check so school admins aren't bounced from any of them. Extract a small helper `getSchoolAdminSession(selectedSchoolId)` in `src/lib/utils.ts` (or a new `src/lib/session.ts`) and reuse it.
 
-## Result
-- Device A enters the school code → school is marked activated in the DB.
-- Device B (and every future device) clicks the school → goes straight to the login page.
-- Super admin can reset activation if the code is changed.
+### Files to change
+- `src/pages/ClassManagement.tsx` — alphanumeric class suffix input + validation + edit extraction.
+- `src/lib/session.ts` (new, small helper) — `hasValidSchoolAdminSession(schoolId)`.
+- `src/pages/Dashboard.tsx` — use helper in the auth guard.
+- Other gated pages listed above — same helper in their auth guards.
 
-## Files to change
-- `supabase/migrations/<new>.sql` — add `activated_at` column.
-- `src/types/school.ts` — add `activatedAt?: string`.
-- `src/pages/SchoolSelection.tsx` — replace localStorage check with `school.activatedAt`.
-- `src/pages/SchoolCodeVerification.tsx` — write `activated_at` to DB on first success.
-- `src/pages/SuperAdminDashboard.tsx` — show activation status + reset button (optional).
+### Out of scope
+- No DB schema changes. No changes to login credential handling itself (that flow already works — only the post-login redirect is broken).
+- No changes to teacher login.
