@@ -12,6 +12,7 @@ export interface School {
   adminEmail?: string;
   adminPasswordHash?: string;
   isLocked?: boolean;
+  activatedAt?: string;
 }
 
 export interface Student {
