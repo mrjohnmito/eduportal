@@ -212,6 +212,7 @@ export type Database = {
       }
       schools: {
         Row: {
+          activated_at: string | null
           admin_email: string | null
           admin_password_hash: string | null
           created_at: string
@@ -225,6 +226,7 @@ export type Database = {
           theme_color: string | null
         }
         Insert: {
+          activated_at?: string | null
           admin_email?: string | null
           admin_password_hash?: string | null
           created_at?: string
@@ -238,6 +240,7 @@ export type Database = {
           theme_color?: string | null
         }
         Update: {
+          activated_at?: string | null
           admin_email?: string | null
           admin_password_hash?: string | null
           created_at?: string
