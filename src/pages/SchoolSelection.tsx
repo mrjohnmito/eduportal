@@ -37,7 +37,8 @@ export default function SchoolSelection() {
         createdAt: s.created_at,
         adminEmail: s.admin_email || undefined,
         adminPasswordHash: s.admin_password_hash || undefined,
-        isLocked: s.is_locked || false
+        isLocked: s.is_locked || false,
+        activatedAt: (s as any).activated_at || undefined
       })) || []);
     } catch (error) {
       console.error('Error fetching schools:', error);
