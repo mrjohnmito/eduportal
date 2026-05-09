@@ -51,20 +51,8 @@ export default function SchoolSelection() {
       setLoading(false);
     }
   };
-  const isSchoolVerified = (schoolId: string): boolean => {
-    const verified = localStorage.getItem(`school_verified_${schoolId}`);
-    if (!verified) return false;
-    try {
-      const {
-        timestamp,
-        schoolCode
-      } = JSON.parse(verified);
-      const school = schools.find(s => s.id === schoolId);
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      return timestamp > thirtyDaysAgo && school?.schoolCode === schoolCode;
-    } catch {
-      return false;
-    }
+  const isSchoolVerified = (school: School): boolean => {
+    return !!school.activatedAt;
   };
   const isSubscriptionValid = (school: School): boolean => {
     if (!school.subscriptionStatus) return false;
