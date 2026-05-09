@@ -72,7 +72,7 @@ export default function SchoolSelection() {
     }
     setSelectedId(school.id);
     setSelectedSchool(school);
-    const verified = isSchoolVerified(school.id);
+    const verified = isSchoolVerified(school);
     const subscriptionValid = isSubscriptionValid(school);
     if (verified && subscriptionValid) {
       navigate('/login');
@@ -172,7 +172,7 @@ export default function SchoolSelection() {
               </p>
             </div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {schools.map(school => {
-            const verified = isSchoolVerified(school.id);
+            const verified = isSchoolVerified(school);
             const subscriptionValid = isSubscriptionValid(school);
             const isLocked = school.isLocked;
             return <button key={school.id} onClick={() => handleSchoolClick(school)} disabled={isLocked} className={`
