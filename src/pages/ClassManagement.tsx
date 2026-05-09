@@ -139,8 +139,8 @@ export default function ClassManagement() {
   const handleOpenDialog = (classItem?: ClassItem) => {
     if (classItem) {
       setEditingClass(classItem);
-      // Extract number from "Basic X"
-      const match = classItem.name.match(/Basic (\d+)/);
+      // Extract suffix from "Basic XYZ" (digits + optional letter)
+      const match = classItem.name.match(/^Basic\s+(.+)$/i);
       setClassNumber(match ? match[1] : '');
     } else {
       setEditingClass(null);
@@ -150,11 +150,20 @@ export default function ClassManagement() {
   };
 
   const handleSave = async () => {
-    const num = parseInt(classNumber);
-    if (isNaN(num) || num < 1 || num > 12) {
+    const raw = classNumber.trim().toUpperCase();
+    if (!/^\d{1,2}[A-Z]?$/.test(raw)) {
+      toast({
+        title: 'Invalid Class',
+        description: 'Enter a number (1-12) optionally followed by a letter, e.g. 1, 1A, 2B.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const numPart = parseInt(raw);
+    if (numPart < 1 || numPart > 12) {
       toast({
         title: 'Invalid Class Number',
-        description: 'Please enter a valid class number (1-12).',
+        description: 'Number portion must be between 1 and 12.',
         variant: 'destructive',
       });
       return;
@@ -169,7 +178,7 @@ export default function ClassManagement() {
       return;
     }
 
-    const className = `Basic ${num}`;
+    const className = `Basic ${raw}`;
     setSaving(true);
 
     try {
@@ -355,22 +364,21 @@ export default function ClassManagement() {
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="classNumber">Class Number</Label>
+                    <Label htmlFor="classNumber">Class</Label>
                     <div className="flex items-center gap-3">
                       <span className="text-muted-foreground font-medium">Basic</span>
                       <Input
                         id="classNumber"
-                        type="number"
-                        min="1"
-                        max="12"
-                        placeholder="e.g., 10"
+                        type="text"
+                        maxLength={3}
+                        placeholder="e.g. 1A"
                         value={classNumber}
-                        onChange={(e) => setClassNumber(e.target.value)}
-                        className="w-24"
+                        onChange={(e) => setClassNumber(e.target.value.toUpperCase())}
+                        className="w-28"
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Enter a number between 1 and 12
+                      Number 1-12, optionally followed by a letter (e.g. 1, 1A, 2B)
                     </p>
                   </div>
                   <Button
