@@ -37,7 +37,8 @@ export default function SchoolSelection() {
         createdAt: s.created_at,
         adminEmail: s.admin_email || undefined,
         adminPasswordHash: s.admin_password_hash || undefined,
-        isLocked: s.is_locked || false
+        isLocked: s.is_locked || false,
+        activatedAt: (s as any).activated_at || undefined
       })) || []);
     } catch (error) {
       console.error('Error fetching schools:', error);
@@ -50,20 +51,8 @@ export default function SchoolSelection() {
       setLoading(false);
     }
   };
-  const isSchoolVerified = (schoolId: string): boolean => {
-    const verified = localStorage.getItem(`school_verified_${schoolId}`);
-    if (!verified) return false;
-    try {
-      const {
-        timestamp,
-        schoolCode
-      } = JSON.parse(verified);
-      const school = schools.find(s => s.id === schoolId);
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      return timestamp > thirtyDaysAgo && school?.schoolCode === schoolCode;
-    } catch {
-      return false;
-    }
+  const isSchoolVerified = (school: School): boolean => {
+    return !!school.activatedAt;
   };
   const isSubscriptionValid = (school: School): boolean => {
     if (!school.subscriptionStatus) return false;
@@ -83,7 +72,7 @@ export default function SchoolSelection() {
     }
     setSelectedId(school.id);
     setSelectedSchool(school);
-    const verified = isSchoolVerified(school.id);
+    const verified = isSchoolVerified(school);
     const subscriptionValid = isSubscriptionValid(school);
     if (verified && subscriptionValid) {
       navigate('/login');
@@ -183,7 +172,7 @@ export default function SchoolSelection() {
               </p>
             </div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {schools.map(school => {
-            const verified = isSchoolVerified(school.id);
+            const verified = isSchoolVerified(school);
             const subscriptionValid = isSubscriptionValid(school);
             const isLocked = school.isLocked;
             return <button key={school.id} onClick={() => handleSchoolClick(school)} disabled={isLocked} className={`

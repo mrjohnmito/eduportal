@@ -181,7 +181,21 @@ export default function SchoolCodeVerification() {
           }
         }
 
-        // Save verification to localStorage
+        // Mark school as activated globally (one-time, all devices skip code from now on)
+        if (!selectedSchool.activatedAt) {
+          const { error: activateError } = await supabase
+            .from('schools')
+            .update({ activated_at: new Date().toISOString() } as any)
+            .eq('id', selectedSchool.id)
+            .is('activated_at', null);
+          if (activateError) {
+            console.error('Failed to mark school activated:', activateError);
+          } else {
+            setSelectedSchool({ ...selectedSchool, activatedAt: new Date().toISOString() });
+          }
+        }
+
+        // Soft device cache (no longer source of truth)
         localStorage.setItem(`school_verified_${selectedSchool.id}`, JSON.stringify({
           timestamp: Date.now(),
           schoolCode: selectedSchool.schoolCode,
