@@ -746,6 +746,59 @@ export default function SuperAdminDashboard() {
               </div>
             )}
           </TabsContent>
+
+          {/* Help Contact Tab */}
+          <TabsContent value="contact">
+            <div className="max-w-xl">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Help Contact</h2>
+                <p className="text-muted-foreground">
+                  These details power the blinking "Contact admin for help" banner shown on the homepage and every school admin dashboard.
+                </p>
+              </div>
+
+              <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contact-name">Display Name</Label>
+                  <Input
+                    id="contact-name"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="e.g. Edu Pro Support"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-whatsapp">WhatsApp Number</Label>
+                  <Input
+                    id="contact-whatsapp"
+                    value={contactWhatsapp}
+                    onChange={(e) => setContactWhatsapp(e.target.value)}
+                    placeholder="e.g. 233557387992"
+                    inputMode="tel"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Include country code, digits only — no <code>+</code> or spaces.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-email">Email</Label>
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="support@example.com"
+                  />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={saveContact} disabled={savingContact} className="gap-2">
+                    <Check className="h-4 w-4" />
+                    {savingContact ? 'Saving...' : 'Save Contact'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
     </div>
