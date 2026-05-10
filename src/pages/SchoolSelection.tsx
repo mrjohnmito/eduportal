@@ -163,6 +163,10 @@ export default function SchoolSelection() {
             </p>
           </div>
 
+          <div className="max-w-2xl mx-auto mb-8">
+            <ContactAdminBanner />
+          </div>
+
           {schools.length === 0 ? <div className="rounded-2xl border border-border bg-card p-12 text-center max-w-md mx-auto shadow-sm">
               <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
                 <Building2 className="h-8 w-8 text-muted-foreground" />
