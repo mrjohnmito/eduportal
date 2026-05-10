@@ -11,6 +11,7 @@ import { GraduationCap, Calendar, AlertTriangle, Users, BookOpen, Activity } fro
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { motion } from 'framer-motion';
 import { hasValidSchoolAdminSession } from '@/lib/session';
+import { ContactAdminBanner } from '@/components/ContactAdminBanner';
 
 interface ClassItem {
   id: string;
