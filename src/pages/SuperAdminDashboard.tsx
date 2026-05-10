@@ -95,11 +95,19 @@ export default function SuperAdminDashboard() {
   const [formIsLocked, setFormIsLocked] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
+  // Super admin contact info state
+  const [contactId, setContactId] = useState<string | null>(null);
+  const [contactName, setContactName] = useState('');
+  const [contactWhatsapp, setContactWhatsapp] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
+
   useEffect(() => {
     document.title = 'Super Admin Dashboard | Edu Pro';
     checkAccess();
     fetchSchools();
     fetchSentMessages();
+    fetchContact();
   }, []);
 
   const checkAccess = async () => {
