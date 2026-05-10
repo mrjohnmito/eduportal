@@ -156,6 +156,53 @@ export default function SuperAdminDashboard() {
     if (data) setSentMessages(data);
   };
 
+  const fetchContact = async () => {
+    const { data } = await supabase
+      .from('super_admin_contact')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setContactId(data.id);
+      setContactName(data.name || '');
+      setContactWhatsapp(data.whatsapp || '');
+      setContactEmail(data.email || '');
+    }
+  };
+
+  const saveContact = async () => {
+    const digits = contactWhatsapp.replace(/\D/g, '');
+    if (digits && (digits.length < 8 || digits.length > 15)) {
+      toast({ title: 'Invalid WhatsApp', description: 'Use 8–15 digits including country code (no + or spaces).', variant: 'destructive' });
+      return;
+    }
+    if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) {
+      toast({ title: 'Invalid Email', description: 'Enter a valid email address.', variant: 'destructive' });
+      return;
+    }
+    setSavingContact(true);
+    try {
+      const payload = {
+        name: contactName.trim() || null,
+        whatsapp: digits || null,
+        email: contactEmail.trim() || null,
+      };
+      if (contactId) {
+        const { error } = await supabase.from('super_admin_contact').update(payload).eq('id', contactId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from('super_admin_contact').insert(payload).select().single();
+        if (error) throw error;
+        if (data) setContactId(data.id);
+      }
+      toast({ title: 'Contact Saved', description: 'The help contact will now appear on the homepage and school dashboards.' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to save contact.', variant: 'destructive' });
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (!msgSubject.trim() || !msgBody.trim()) {
       toast({ title: 'Error', description: 'Subject and message are required.', variant: 'destructive' });
