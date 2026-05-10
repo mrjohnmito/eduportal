@@ -50,6 +50,7 @@ import {
   Send,
   Mail,
   MessageSquare,
+  Phone,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -94,11 +95,19 @@ export default function SuperAdminDashboard() {
   const [formIsLocked, setFormIsLocked] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
+  // Super admin contact info state
+  const [contactId, setContactId] = useState<string | null>(null);
+  const [contactName, setContactName] = useState('');
+  const [contactWhatsapp, setContactWhatsapp] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
+
   useEffect(() => {
     document.title = 'Super Admin Dashboard | Edu Pro';
     checkAccess();
     fetchSchools();
     fetchSentMessages();
+    fetchContact();
   }, []);
 
   const checkAccess = async () => {
@@ -145,6 +154,53 @@ export default function SuperAdminDashboard() {
       .order('created_at', { ascending: false })
       .limit(50);
     if (data) setSentMessages(data);
+  };
+
+  const fetchContact = async () => {
+    const { data } = await supabase
+      .from('super_admin_contact')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setContactId(data.id);
+      setContactName(data.name || '');
+      setContactWhatsapp(data.whatsapp || '');
+      setContactEmail(data.email || '');
+    }
+  };
+
+  const saveContact = async () => {
+    const digits = contactWhatsapp.replace(/\D/g, '');
+    if (digits && (digits.length < 8 || digits.length > 15)) {
+      toast({ title: 'Invalid WhatsApp', description: 'Use 8–15 digits including country code (no + or spaces).', variant: 'destructive' });
+      return;
+    }
+    if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) {
+      toast({ title: 'Invalid Email', description: 'Enter a valid email address.', variant: 'destructive' });
+      return;
+    }
+    setSavingContact(true);
+    try {
+      const payload = {
+        name: contactName.trim() || null,
+        whatsapp: digits || null,
+        email: contactEmail.trim() || null,
+      };
+      if (contactId) {
+        const { error } = await supabase.from('super_admin_contact').update(payload).eq('id', contactId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from('super_admin_contact').insert(payload).select().single();
+        if (error) throw error;
+        if (data) setContactId(data.id);
+      }
+      toast({ title: 'Contact Saved', description: 'The help contact will now appear on the homepage and school dashboards.' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to save contact.', variant: 'destructive' });
+    } finally {
+      setSavingContact(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -392,6 +448,10 @@ export default function SuperAdminDashboard() {
             <TabsTrigger value="messages" className="gap-2">
               <Mail className="h-4 w-4" />
               Messages
+            </TabsTrigger>
+            <TabsTrigger value="contact" className="gap-2">
+              <Phone className="h-4 w-4" />
+              Help Contact
             </TabsTrigger>
           </TabsList>
 
@@ -685,6 +745,59 @@ export default function SuperAdminDashboard() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* Help Contact Tab */}
+          <TabsContent value="contact">
+            <div className="max-w-xl">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Help Contact</h2>
+                <p className="text-muted-foreground">
+                  These details power the blinking "Contact admin for help" banner shown on the homepage and every school admin dashboard.
+                </p>
+              </div>
+
+              <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contact-name">Display Name</Label>
+                  <Input
+                    id="contact-name"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="e.g. Edu Pro Support"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-whatsapp">WhatsApp Number</Label>
+                  <Input
+                    id="contact-whatsapp"
+                    value={contactWhatsapp}
+                    onChange={(e) => setContactWhatsapp(e.target.value)}
+                    placeholder="e.g. 233557387992"
+                    inputMode="tel"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Include country code, digits only — no <code>+</code> or spaces.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-email">Email</Label>
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="support@example.com"
+                  />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={saveContact} disabled={savingContact} className="gap-2">
+                    <Check className="h-4 w-4" />
+                    {savingContact ? 'Saving...' : 'Save Contact'}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

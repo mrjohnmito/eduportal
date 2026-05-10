@@ -5,6 +5,7 @@ import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { School } from '@/types/school';
 import { GraduationCap, Building2, Lock, AlertTriangle, CheckCircle, BookOpen, Users, BarChart3, FileText, ArrowRight, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ContactAdminBanner } from '@/components/ContactAdminBanner';
 export default function SchoolSelection() {
   const navigate = useNavigate();
   const {
@@ -160,6 +161,10 @@ export default function SchoolSelection() {
             <p className="text-muted-foreground">
               Choose your institution to access the management portal
             </p>
+          </div>
+
+          <div className="max-w-2xl mx-auto mb-8">
+            <ContactAdminBanner />
           </div>
 
           {schools.length === 0 ? <div className="rounded-2xl border border-border bg-card p-12 text-center max-w-md mx-auto shadow-sm">
