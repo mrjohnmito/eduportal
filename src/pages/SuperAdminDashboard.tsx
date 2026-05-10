@@ -449,6 +449,10 @@ export default function SuperAdminDashboard() {
               <Mail className="h-4 w-4" />
               Messages
             </TabsTrigger>
+            <TabsTrigger value="contact" className="gap-2">
+              <Phone className="h-4 w-4" />
+              Help Contact
+            </TabsTrigger>
           </TabsList>
 
           {/* Schools Tab */}
