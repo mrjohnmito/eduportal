@@ -50,6 +50,7 @@ import {
   Send,
   Mail,
   MessageSquare,
+  Phone,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
