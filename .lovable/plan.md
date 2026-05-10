@@ -1,45 +1,109 @@
-## Issues to fix
+## Goal
 
-### 1. Class names should accept letters (e.g. Basic 1A, Basic 2B)
-`src/pages/ClassManagement.tsx` currently forces a numeric input with `parseInt` and rejects anything that isn't a number 1–12. Super Admin needs to add classes like `Basic 1A`, `Basic 2B`.
+Let the Super Admin save their contact details (name, WhatsApp number, email) once. Show a blinking "Contact admin for help" banner on:
 
-**Change:**
-- Replace the numeric `<Input type="number">` with a text input that accepts an alphanumeric suffix (e.g. `1`, `1A`, `2B`, `10A`).
-- Validation: regex `^\d{1,2}[A-Za-z]?$` (one or two digits, optional single letter). Letter is uppercased.
-- Final stored name stays in the existing `Basic <suffix>` format so downstream `classLevel` ids (lowercased, stripped of spaces — e.g. `basic1a`) keep working with `Dashboard`, `ClassCard`, `ScoreEntry`, etc.
-- Update the placeholder ("e.g. 1A") and helper text ("Enter a number, optionally followed by a letter, e.g. 1, 1A, 2B").
-- Keep the edit flow: extract suffix from `Basic XYZ` instead of just digits.
+1. The public landing page (school selection / homepage)
+2. Every school admin dashboard (existing and future schools)
 
-### 2. School admin gets bounced from /dashboard back to "/"
-Root cause: After a successful school-admin login (the credentials set by Super Admin during school creation), `Login.tsx` stores an `adminSession` in `sessionStorage` and navigates to `/dashboard`. But `Dashboard.tsx` redirects to `/` whenever there is **no Supabase `user` and no `teacherId`**:
+Clicking the banner opens a WhatsApp chat (`https://wa.me/<number>`) with the Super Admin.
 
-```ts
-if (!user && !teacherId) { navigate('/'); return; }
+## What gets built
+
+### 1. Database — new `super_admin_contact` table
+
+A single-row settings table (singleton pattern)
+
+- `whatsapp` (text, digits only, used to build `wa.me` link)
+- `email` (text)
+- standard timestamps
+
+RLS:
+
+- Public SELECT (everyone needs to read it to render the banner — landing page has no auth)
+- INSERT/UPDATE only allowed for users with the `super_admin` role
+- No DELETE
+
+Seed an empty default row so the UI always has something to update.
+
+### 2. Super Admin dashboard — Contact Info card
+
+In `src/pages/SuperAdminDashboard.tsx`, add a new section "Help / Contact Info" with a small form:
+
+- WhatsApp Number (with hint: include country code, no `+` or spaces, e.g. `233557387992`)
+- Email
+- Save button → upserts the singleton row
+
+Light validation: WhatsApp must be 8–15 digits; email must look like an email.
+
+### 3. Reusable component — `ContactAdminBanner`
+
+New file `src/components/ContactAdminBanner.tsx`:
+
+- Fetches the singleton `super_admin_contact` row once (light, public read)
+- Renders a pill/banner with blinking text "Contact admin for help" + small WhatsApp icon
+- On click → `window.open('https://wa.me/<digits>?text=Hello%20Admin', '_blank')`
+- Falls back to `mailto:` if WhatsApp is empty
+- Hides itself entirely if no contact row exists or both fields are empty
+- Blink effect via a small Tailwind keyframe added to `tailwind.config.ts` (`animate-blink`) so we don't hard-code colors; banner uses semantic tokens (`bg-primary/10`, `text-primary`, `ring-primary/30`)
+
+### 4. Placement
+
+- `src/pages/SchoolSelection.tsx` (the homepage at `/`) — render `<ContactAdminBanner />` near the top of the content, above or below the school grid
+- `src/pages/Dashboard.tsx` — render `<ContactAdminBanner />` inside the school admin dashboard, just under the hero header
+
+That's it — no other dashboards/pages per the user's choice.
+
+## Out of scope
+
+- Floating bubble version, teacher-portal placement, multiple super admin contacts, in-app chat, message history.
+- No changes to existing auth, school code activation, classes, or scoring flows.
+
+## Technical details
+
+**Table**
+
+```sql
+create table public.super_admin_contact (
+  id uuid primary key default gen_random_uuid(),
+  name text,
+  whatsapp text,
+  email text,
+  updated_at timestamptz not null default now()
+);
+alter table public.super_admin_contact enable row level security;
+-- Public read
+create policy "Anyone can read super admin contact"
+  on public.super_admin_contact for select using (true);
+-- Super admin write
+create policy "Super admins can insert"
+  on public.super_admin_contact for insert to authenticated
+  with check (has_role(auth.uid(), 'super_admin'::app_role));
+create policy "Super admins can update"
+  on public.super_admin_contact for update to authenticated
+  using (has_role(auth.uid(), 'super_admin'::app_role));
+-- Seed singleton
+insert into public.super_admin_contact (name, whatsapp, email) values (null, null, null);
 ```
 
-School admins authenticate via the custom `schools.admin_email`/`admin_password_hash` flow, so `user` is always `null` for them. They have no `teacherId`. Result: instant bounce back to landing.
-
-**Change:** Treat a valid `adminSession` (matching the currently selected school) as a valid login signal in `Dashboard.tsx`.
+**WhatsApp link helper**
 
 ```ts
-const adminSession = sessionStorage.getItem('adminSession');
-const hasSchoolAdmin = adminSession && (() => {
-  try {
-    const s = JSON.parse(adminSession);
-    return s?.isAdmin && s?.schoolId === selectedSchool?.id;
-  } catch { return false; }
-})();
-if (!user && !teacherId && !hasSchoolAdmin) { navigate('/'); return; }
+const digits = (whatsapp ?? '').replace(/\D/g, '');
+const href = digits ? `https://wa.me/${digits}?text=${encodeURIComponent('Hello Admin, I need help with Edu Pro')}` : null;
 ```
 
-Also audit other authenticated pages that use the same `!user && !teacherId` pattern (Settings, StudentManagement, TeacherManagement, ClassManagement, BulkPDF, ClearData, ClassPortal, ScoreEntry, ClassTeacherReport) and apply the same `hasSchoolAdmin` check so school admins aren't bounced from any of them. Extract a small helper `getSchoolAdminSession(selectedSchoolId)` in `src/lib/utils.ts` (or a new `src/lib/session.ts`) and reuse it.
+**Blink animation** (tailwind.config.ts → `theme.extend.keyframes` + `animation`):
 
-### Files to change
-- `src/pages/ClassManagement.tsx` — alphanumeric class suffix input + validation + edit extraction.
-- `src/lib/session.ts` (new, small helper) — `hasValidSchoolAdminSession(schoolId)`.
-- `src/pages/Dashboard.tsx` — use helper in the auth guard.
-- Other gated pages listed above — same helper in their auth guards.
+```ts
+keyframes: { blink: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.45' } } },
+animation: { blink: 'blink 1.2s ease-in-out infinite' },
+```
 
-### Out of scope
-- No DB schema changes. No changes to login credential handling itself (that flow already works — only the post-login redirect is broken).
-- No changes to teacher login.
+**Files touched**
+
+- New migration (table + RLS + seed)
+- New `src/components/ContactAdminBanner.tsx`
+- Edit `src/pages/SuperAdminDashboard.tsx` — add contact form section
+- Edit `src/pages/SchoolSelection.tsx` — mount banner
+- Edit `src/pages/Dashboard.tsx` — mount banner
+- Edit `tailwind.config.ts` — add `blink` animation

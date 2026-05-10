@@ -356,6 +356,30 @@ export type Database = {
           },
         ]
       }
+      super_admin_contact: {
+        Row: {
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       teacher_class_assignments: {
         Row: {
           class_id: string
