@@ -131,6 +131,9 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
+        {/* Help Contact Banner */}
+        <ContactAdminBanner />
+
         {/* Quick Stats */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
