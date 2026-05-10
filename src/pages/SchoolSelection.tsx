@@ -5,6 +5,7 @@ import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { School } from '@/types/school';
 import { GraduationCap, Building2, Lock, AlertTriangle, CheckCircle, BookOpen, Users, BarChart3, FileText, ArrowRight, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ContactAdminBanner } from '@/components/ContactAdminBanner';
 export default function SchoolSelection() {
   const navigate = useNavigate();
   const {
