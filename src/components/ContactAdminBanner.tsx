@@ -44,8 +44,8 @@ export function ContactAdminBanner() {
       rel="noopener noreferrer"
       className="group inline-flex items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs sm:text-sm font-semibold text-primary shadow-sm transition-all hover:bg-primary/15 hover:shadow-md"
     >
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-        <Icon className="h-4 w-4" />
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <Icon className="h-3 w-3" />
       </span>
       <span className="animate-blink">
         Contact admin for help
