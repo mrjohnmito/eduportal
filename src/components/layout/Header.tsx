@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, GraduationCap, Calendar, Mail } from 'lucide-react';
+import { LogOut, Settings, GraduationCap, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import {
