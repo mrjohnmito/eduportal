@@ -42,7 +42,7 @@ export function ContactAdminBanner() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary shadow-sm transition-all hover:bg-primary/15 hover:shadow-md"
+      className="group inline-flex items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs sm:text-sm font-semibold text-primary shadow-sm transition-all hover:bg-primary/15 hover:shadow-md"
     >
       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
         <Icon className="h-4 w-4" />
