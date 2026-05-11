@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, GraduationCap, Calendar, Mail } from 'lucide-react';
+import { LogOut, Settings, GraduationCap, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
+import { ContactAdminBanner } from '@/components/ContactAdminBanner';
 
 interface AdminMessage {
   id: string;
@@ -109,21 +110,10 @@ export function Header() {
           </Link>
 
           <div className="flex items-center gap-2">
-            {/* Subscription indicator for admins */}
-            {isAdmin && subscriptionDaysRemaining !== null && (
-              <div className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                subscriptionDaysRemaining <= 0
-                  ? 'bg-destructive/10 text-destructive'
-                  : subscriptionDaysRemaining <= 7 
-                    ? 'bg-destructive/10 text-destructive' 
-                    : subscriptionDaysRemaining <= 30
-                      ? 'bg-amber-500/10 text-amber-600'
-                      : 'bg-emerald-500/10 text-emerald-600'
-              }`}>
-                <Calendar className="h-3.5 w-3.5" />
-                {subscriptionDaysRemaining <= 0 ? 'Expired' : `${subscriptionDaysRemaining} days left`}
-              </div>
-            )}
+            {/* Contact admin banner (replaces subscription days indicator) */}
+            <div className="hidden md:block">
+              <ContactAdminBanner />
+            </div>
 
             {/* Inbox for admins */}
             {isAdmin && (

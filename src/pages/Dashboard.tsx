@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ClassCard } from '@/components/dashboard/ClassCard';
-import { TotalStudentsCard } from '@/components/dashboard/TotalStudentsCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
@@ -11,7 +10,6 @@ import { GraduationCap, Calendar, AlertTriangle, Users, BookOpen, Activity } fro
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { motion } from 'framer-motion';
 import { hasValidSchoolAdminSession } from '@/lib/session';
-import { ContactAdminBanner } from '@/components/ContactAdminBanner';
 
 interface ClassItem {
   id: string;
@@ -131,8 +129,6 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Help Contact Banner */}
-        <ContactAdminBanner />
 
         {/* Quick Stats */}
         <motion.div
@@ -171,7 +167,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-xl font-bold text-foreground">
                   {isAdmin && subscriptionDaysRemaining !== null
-                    ? subscriptionDaysRemaining <= 0 ? 'Expired' : `${subscriptionDaysRemaining}d`
+                    ? subscriptionDaysRemaining <= 0 ? 'Expired' : `${subscriptionDaysRemaining} Days Left`
                     : 'Active'}
                 </p>
                 <p className="text-xs text-muted-foreground">Subscription</p>
@@ -186,12 +182,9 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">Select a Class</h2>
-            </div>
-            <TotalStudentsCard />
+          <div className="flex items-center gap-2 mb-4">
+            <GraduationCap className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">Select a Class</h2>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
