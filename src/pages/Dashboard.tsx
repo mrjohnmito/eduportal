@@ -169,7 +169,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-xl font-bold text-foreground">
                   {isAdmin && subscriptionDaysRemaining !== null
-                    ? subscriptionDaysRemaining <= 0 ? 'Expired' : `${subscriptionDaysRemaining}d`
+                    ? subscriptionDaysRemaining <= 0 ? 'Expired' : `${subscriptionDaysRemaining} Days Left`
                     : 'Active'}
                 </p>
                 <p className="text-xs text-muted-foreground">Subscription</p>
