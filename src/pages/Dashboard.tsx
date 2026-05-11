@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ClassCard } from '@/components/dashboard/ClassCard';
-import { TotalStudentsCard } from '@/components/dashboard/TotalStudentsCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
@@ -11,7 +10,6 @@ import { GraduationCap, Calendar, AlertTriangle, Users, BookOpen, Activity } fro
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { motion } from 'framer-motion';
 import { hasValidSchoolAdminSession } from '@/lib/session';
-import { ContactAdminBanner } from '@/components/ContactAdminBanner';
 
 interface ClassItem {
   id: string;
