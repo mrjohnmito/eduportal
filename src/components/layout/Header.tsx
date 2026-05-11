@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
+import { ContactAdminBanner } from '@/components/ContactAdminBanner';
 
 interface AdminMessage {
   id: string;
