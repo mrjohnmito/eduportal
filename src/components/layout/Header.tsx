@@ -109,21 +109,10 @@ export function Header() {
           </Link>
 
           <div className="flex items-center gap-2">
-            {/* Subscription indicator for admins */}
-            {isAdmin && subscriptionDaysRemaining !== null && (
-              <div className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                subscriptionDaysRemaining <= 0
-                  ? 'bg-destructive/10 text-destructive'
-                  : subscriptionDaysRemaining <= 7 
-                    ? 'bg-destructive/10 text-destructive' 
-                    : subscriptionDaysRemaining <= 30
-                      ? 'bg-amber-500/10 text-amber-600'
-                      : 'bg-emerald-500/10 text-emerald-600'
-              }`}>
-                <Calendar className="h-3.5 w-3.5" />
-                {subscriptionDaysRemaining <= 0 ? 'Expired' : `${subscriptionDaysRemaining} days left`}
-              </div>
-            )}
+            {/* Contact admin banner (replaces subscription days indicator) */}
+            <div className="hidden md:block">
+              <ContactAdminBanner />
+            </div>
 
             {/* Inbox for admins */}
             {isAdmin && (
