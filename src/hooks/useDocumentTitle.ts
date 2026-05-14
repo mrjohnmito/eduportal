@@ -10,11 +10,11 @@ export function useDocumentTitle(suffix?: string) {
     if (schoolName) {
       document.title = suffix ? `${suffix} | ${schoolName}` : schoolName;
     } else {
-      document.title = suffix ? `${suffix} | Edu Pro` : 'Edu Pro - School Management System';
+      document.title = suffix ? `${suffix} | Edu Portal` : 'Edu Portal - School Management System';
     }
 
     return () => {
-      document.title = 'Edu Pro - School Management System';
+      document.title = 'Edu Portal - School Management System';
     };
   }, [settings?.schoolName, suffix]);
 }

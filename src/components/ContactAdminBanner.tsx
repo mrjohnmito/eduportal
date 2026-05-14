@@ -32,8 +32,8 @@ export function ContactAdminBanner() {
   if (!hasWhatsapp && !hasEmail) return null;
 
   const href = hasWhatsapp
-    ? `https://wa.me/${digits}?text=${encodeURIComponent('Hello Admin, I need help with Edu Pro')}`
-    : `mailto:${contact.email}?subject=${encodeURIComponent('Edu Pro — Help Request')}`;
+    ? `https://wa.me/${digits}?text=${encodeURIComponent('Hello Admin, I need help with Edu Portal')}`
+    : `mailto:${contact.email}?subject=${encodeURIComponent('Edu Portal — Help Request')}`;
 
   const Icon = hasWhatsapp ? MessageCircle : Mail;
 

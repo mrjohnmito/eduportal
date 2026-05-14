@@ -7,7 +7,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = 'Edu Pro - School Management System';
+    document.title = 'Edu Portal - School Management System';
   }, []);
 
   const features = [
@@ -208,7 +208,7 @@ const Index = () => {
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto max-w-6xl text-center">
           <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} Edu Pro. All rights reserved.
+            © {new Date().getFullYear()} Edu Portal. All rights reserved.
           </p>
         </div>
       </footer>
