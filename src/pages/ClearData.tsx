@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CLASS_LEVELS, SUBJECTS, ClassLevel } from '@/types/school';
+import { CLASS_LEVELS, ClassLevel } from '@/types/school';
+import { useSchoolSubjects } from '@/hooks/useSchoolSubjects';
 import { ChevronLeft, Trash2, AlertTriangle } from 'lucide-react';
 import {
   AlertDialog,
