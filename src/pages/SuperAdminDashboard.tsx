@@ -51,6 +51,8 @@ import {
   Mail,
   MessageSquare,
   Phone,
+  BookOpen,
+  X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -62,6 +64,12 @@ interface SentMessage {
   message: string;
   is_read: boolean;
   created_at: string;
+}
+
+interface LevelSubject {
+  id: string;
+  level: 'primary' | 'jhs';
+  name: string;
 }
 
 export default function SuperAdminDashboard() {
@@ -93,6 +101,7 @@ export default function SuperAdminDashboard() {
   const [formAdminEmail, setFormAdminEmail] = useState('');
   const [formAdminPassword, setFormAdminPassword] = useState('');
   const [formIsLocked, setFormIsLocked] = useState(false);
+  const [formSchoolLevel, setFormSchoolLevel] = useState<'primary' | 'jhs' | 'both'>('jhs');
   const [formLoading, setFormLoading] = useState(false);
 
   // Super admin contact info state
@@ -102,12 +111,18 @@ export default function SuperAdminDashboard() {
   const [contactEmail, setContactEmail] = useState('');
   const [savingContact, setSavingContact] = useState(false);
 
+  // Level subjects state
+  const [levelSubjects, setLevelSubjects] = useState<LevelSubject[]>([]);
+  const [newPrimarySubject, setNewPrimarySubject] = useState('');
+  const [newJhsSubject, setNewJhsSubject] = useState('');
+
   useEffect(() => {
     document.title = 'Super Admin Dashboard | Edu Portal';
     checkAccess();
     fetchSchools();
     fetchSentMessages();
     fetchContact();
+    fetchLevelSubjects();
   }, []);
 
   const checkAccess = async () => {
@@ -167,6 +182,43 @@ export default function SuperAdminDashboard() {
       setContactName(data.name || '');
       setContactWhatsapp(data.whatsapp || '');
       setContactEmail(data.email || '');
+    }
+  };
+
+  const fetchLevelSubjects = async () => {
+    const { data } = await supabase
+      .from('level_subjects' as any)
+      .select('*')
+      .order('name');
+    if (data) setLevelSubjects(data as any);
+  };
+
+  const addLevelSubject = async (level: 'primary' | 'jhs', name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const { error } = await supabase
+        .from('level_subjects' as any)
+        .insert([{ level, name: trimmed }]);
+      if (error) throw error;
+      toast({ title: 'Subject Added', description: `${trimmed} added to ${level.toUpperCase()} subjects.` });
+      if (level === 'primary') setNewPrimarySubject('');
+      else setNewJhsSubject('');
+      fetchLevelSubjects();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to add subject.', variant: 'destructive' });
+    }
+  };
+
+  const deleteLevelSubject = async (id: string) => {
+    if (!confirm('Remove this subject?')) return;
+    try {
+      const { error } = await supabase.from('level_subjects' as any).delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Subject Removed' });
+      fetchLevelSubjects();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to remove subject.', variant: 'destructive' });
     }
   };
 
@@ -235,7 +287,7 @@ export default function SuperAdminDashboard() {
     setFormName(''); setFormLogoUrl(''); setFormSchoolCode('');
     setFormSubscriptionStatus(true); setFormSubscriptionExpiry('');
     setFormThemeColor('#3B82F6'); setFormAdminEmail(''); setFormAdminPassword('');
-    setFormIsLocked(false); setEditingSchool(null);
+    setFormIsLocked(false); setFormSchoolLevel('jhs'); setEditingSchool(null);
   };
 
   const openAddDialog = () => { resetForm(); setFormSchoolCode(generateSchoolCode()); setDialogOpen(true); };
@@ -245,6 +297,7 @@ export default function SuperAdminDashboard() {
     setFormSchoolCode(school.schoolCode); setFormSubscriptionStatus(school.subscriptionStatus);
     setFormSubscriptionExpiry(school.subscriptionExpiry || ''); setFormThemeColor(school.themeColor || '#3B82F6');
     setFormAdminEmail(school.adminEmail || ''); setFormAdminPassword(''); setFormIsLocked(school.isLocked || false);
+    setFormSchoolLevel(((school as any).schoolLevel as any) || 'jhs');
     setDialogOpen(true);
   };
 
@@ -298,6 +351,7 @@ export default function SuperAdminDashboard() {
         subscription_status: formSubscriptionStatus, subscription_expiry: formSubscriptionExpiry || null,
         theme_color: formThemeColor, admin_email: formAdminEmail.trim() || null, is_locked: formIsLocked,
         admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : (editingSchool?.adminPasswordHash || null),
+        school_level: formSchoolLevel,
       };
       if (editingSchool) {
         const { error } = await supabase.from('schools').update(schoolData).eq('id', editingSchool.id);
