@@ -18,16 +18,16 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 217 91% 40%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 35 91% 55%;
+    --secondary: 24 95% 53%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 210 20% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 142 71% 45%;
+    --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -35,34 +35,39 @@
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 217 91% 40%;
+    --ring: 221 83% 53%;
 
     --radius: 0.75rem;
 
     /* Custom school colors */
-    --basic7: 217 91% 40%;
-    --basic7-light: 217 91% 95%;
-    --basic8: 142 71% 45%;
-    --basic8-light: 142 71% 95%;
-    --basic9: 35 91% 55%;
-    --basic9-light: 35 91% 95%;
+    --basic7: 221 83% 53%;
+    --basic7-light: 221 83% 95%;
+    --basic8: 160 84% 39%;
+    --basic8-light: 160 84% 95%;
+    --basic9: 24 95% 53%;
+    --basic9-light: 24 95% 95%;
     
-    --success: 142 71% 45%;
-    --warning: 35 91% 55%;
+    --success: 160 84% 39%;
+    --warning: 24 95% 53%;
     --error: 0 84% 60%;
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217, 91%, 40%) 0%, hsl(217, 91%, 55%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(35, 91%, 55%) 0%, hsl(35, 91%, 65%) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(142, 71%, 55%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(217, 91%, 35%) 0%, hsl(217, 91%, 50%) 50%, hsl(35, 91%, 55%) 100%);
+    /* Gradients - Modern Mesh */
+    --gradient-primary: linear-gradient(135deg, hsl(221, 83%, 53%) 0%, hsl(199, 89%, 48%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(43, 96%, 56%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(160, 84%, 39%) 0%, hsl(173, 80%, 40%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(221, 83%, 53%) 0%, hsl(280, 75%, 60%) 50%, hsl(24, 95%, 53%) 100%);
+    --gradient-mesh: radial-gradient(at 20% 20%, hsl(221 83% 53% / 0.18) 0px, transparent 50%),
+                     radial-gradient(at 80% 10%, hsl(24 95% 53% / 0.18) 0px, transparent 50%),
+                     radial-gradient(at 70% 80%, hsl(160 84% 39% / 0.18) 0px, transparent 50%),
+                     radial-gradient(at 10% 80%, hsl(280 75% 60% / 0.15) 0px, transparent 50%);
     
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(217 91% 40% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(217 91% 40% / 0.1), 0 2px 4px -2px hsl(217 91% 40% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(217 91% 40% / 0.1), 0 4px 6px -4px hsl(217 91% 40% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(217 91% 40% / 0.1), 0 8px 10px -6px hsl(217 91% 40% / 0.1);
-    --shadow-glow: 0 0 20px hsl(217 91% 40% / 0.3);
+    --shadow-sm: 0 1px 2px 0 hsl(221 83% 53% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(221 83% 53% / 0.1), 0 2px 4px -2px hsl(221 83% 53% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(221 83% 53% / 0.12), 0 4px 6px -4px hsl(221 83% 53% / 0.12);
+    --shadow-xl: 0 20px 25px -5px hsl(221 83% 53% / 0.15), 0 8px 10px -6px hsl(221 83% 53% / 0.12);
+    --shadow-glow: 0 0 30px hsl(221 83% 53% / 0.35);
+    --shadow-mesh: 0 30px 60px -15px hsl(221 83% 53% / 0.25);
     
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -145,6 +150,23 @@
   .gradient-hero {
     background: var(--gradient-hero);
   }
+
+  .gradient-mesh {
+    background: var(--gradient-mesh);
+  }
+
+  .shadow-mesh {
+    box-shadow: var(--shadow-mesh);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(60px);
+    opacity: 0.55;
+    animation: blob-drift 18s ease-in-out infinite;
+    pointer-events: none;
+  }
   
   .shadow-glow {
     box-shadow: var(--shadow-glow);
@@ -158,43 +180,14 @@
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  .shooting-star {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    background: hsl(var(--primary));
-    border-radius: 50%;
-    animation: shoot linear infinite;
-    opacity: 0;
-  }
-
-  .shooting-star::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: 0;
-    width: 60px;
-    height: 1.5px;
-    background: linear-gradient(to left, hsl(var(--primary) / 0.6), transparent);
-    transform: translateY(-50%);
-  }
+  /* Legacy: keep no-op so any stale references render nothing visible */
+  .shooting-star { display: none; }
 }
 
-@keyframes shoot {
-  0% {
-    transform: translate(0, 0) rotate(-35deg);
-    opacity: 0;
-  }
-  5% {
-    opacity: 1;
-  }
-  70% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-500px, 300px) rotate(-35deg);
-    opacity: 0;
-  }
+@keyframes blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.08); }
+  66% { transform: translate(-25px, 30px) scale(0.95); }
 }
 
 @keyframes float {
