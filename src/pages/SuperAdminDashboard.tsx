@@ -564,6 +564,20 @@ export default function SuperAdminDashboard() {
                         <Button type="button" variant="outline" onClick={() => setFormSchoolCode(generateSchoolCode())}>Generate</Button>
                       </div>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="schoolLevel">School Level *</Label>
+                      <Select value={formSchoolLevel} onValueChange={(v) => setFormSchoolLevel(v as any)}>
+                        <SelectTrigger id="schoolLevel">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="primary">Primary</SelectItem>
+                          <SelectItem value="jhs">Junior High (JHS)</SelectItem>
+                          <SelectItem value="both">Both Primary &amp; JHS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Determines which subjects this school uses.</p>
+                    </div>
                     <div className="border-t border-border pt-4 space-y-4">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
