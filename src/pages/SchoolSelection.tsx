@@ -108,51 +108,46 @@ export default function SchoolSelection() {
   }
   return <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-background">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-secondary/10 blur-3xl" />
-          {/* Shooting stars */}
-          <div className="shooting-star" style={{ top: '10%', right: '-5%', animationDuration: '3s', animationDelay: '0s' }} />
-          <div className="shooting-star" style={{ top: '25%', right: '-10%', animationDuration: '2.5s', animationDelay: '1.2s' }} />
-          <div className="shooting-star" style={{ top: '5%', right: '10%', animationDuration: '3.5s', animationDelay: '2.5s' }} />
-          <div className="shooting-star" style={{ top: '40%', right: '-3%', animationDuration: '2.8s', animationDelay: '4s' }} />
-          <div className="shooting-star" style={{ top: '15%', right: '20%', animationDuration: '3.2s', animationDelay: '5.5s' }} />
+      <header className="relative overflow-hidden gradient-mesh">
+        {/* Animated mesh blobs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="blob h-72 w-72 bg-primary/40" style={{ top: '-4rem', left: '-3rem' }} />
+          <div className="blob h-80 w-80 bg-secondary/40" style={{ top: '20%', right: '-5rem', animationDelay: '4s' }} />
+          <div className="blob h-72 w-72 bg-accent/40" style={{ bottom: '-4rem', left: '30%', animationDelay: '8s' }} />
         </div>
 
         <div className="relative container mx-auto px-4 py-6">
           {/* Navigation */}
           <nav className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
+              <div className="h-11 w-11 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
                 <GraduationCap className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Edu Portal</span>
+              <span className="text-xl font-bold tracking-tight text-foreground">Edu Portal</span>
             </div>
           </nav>
 
           {/* Hero Content */}
-          <div className="max-w-3xl mx-auto text-center pb-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm text-primary mb-6">
+          <div className="max-w-3xl mx-auto text-center pb-12 pt-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card/70 backdrop-blur px-4 py-1.5 text-sm text-primary mb-6 shadow-sm">
               <Sparkles className="h-4 w-4" />
-              <span>Streamlined School Management</span>
+              <span className="font-medium">Streamlined School Management</span>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Modern School
-              <span className="text-primary"> Report Card</span>
-              <br />Management System
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-[1.05] tracking-tight">
+              Where great schools
+              <span className="block bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+                manage everything
+              </span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Simplify academic record-keeping, generate professional report cards, 
-              and track student performance with our comprehensive school management platform.
+              Pick your school below to sign in. One portal for admins, teachers and reports.
             </p>
           </div>
         </div>
       </header>
 
       {/* Schools Section */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
