@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
-import { SUBJECTS } from '@/types/school';
+import { useSchoolSubjects } from '@/hooks/useSchoolSubjects';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, BookOpen, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,7 @@ export default function ClassPortal() {
   const { selectedSchool } = useSelectedSchool();
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const { subjects } = useSchoolSubjects();
 
   useEffect(() => {
     const fetchClass = async () => {
@@ -141,7 +142,7 @@ export default function ClassPortal() {
 
           {/* Subjects Grid - Colorful Cards */}
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {SUBJECTS.map((subject, index) => {
+            {subjects.map((subject, index) => {
               const gradient = subjectColors[subject] || 'from-gray-500 to-gray-600';
               const icon = subjectIcons[subject] || '📚';
               const isTextIcon = icon.length <= 2 && !icon.match(/[\u{1F300}-\u{1F9FF}]/u);

@@ -90,7 +90,7 @@ export default function SuperAdminLogin() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-[radial-gradient(ellipse_at_top_left,hsl(var(--primary)/0.25),transparent_55%),radial-gradient(ellipse_at_bottom_right,hsl(280_90%_60%/0.25),transparent_55%),linear-gradient(135deg,hsl(var(--background)),hsl(var(--muted)/0.4))]">
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden gradient-mesh">
       {/* animated blobs */}
       <motion.div
         aria-hidden
@@ -100,7 +100,7 @@ export default function SuperAdminLogin() {
       />
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-fuchsia-500/30 blur-3xl"
+        className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-accent/40 blur-3xl"
         animate={{ x: [0, -40, 0], y: [0, -30, 0], scale: [1, 1.15, 1] }}
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
       />

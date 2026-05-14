@@ -22,35 +22,56 @@ export default function Dashboard() {
   const { selectedSchool } = useSelectedSchool();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
+  const [allowedClassIds, setAllowedClassIds] = useState<Set<string> | null>(null);
 
   useDocumentTitle('Dashboard');
 
   useEffect(() => {
     if (loading) return;
-    const teacherId = sessionStorage.getItem('teacherId');
+    const tId = sessionStorage.getItem('teacherId');
+    setTeacherId(tId);
     const schoolAdmin = hasValidSchoolAdminSession(selectedSchool?.id);
-    if (!user && !teacherId && !schoolAdmin) { navigate('/'); return; }
+    if (!user && !tId && !schoolAdmin) { navigate('/'); return; }
     if (!selectedSchool) navigate('/');
   }, [user, loading, navigate, selectedSchool]);
 
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedSchool) return;
-      const teacherId = sessionStorage.getItem('teacherId');
+      const tId = sessionStorage.getItem('teacherId');
       const schoolAdmin = hasValidSchoolAdminSession(selectedSchool.id);
-      if (!user && !teacherId && !schoolAdmin) return;
+      if (!user && !tId && !schoolAdmin) return;
       setClassesLoading(true);
+
+      // If a teacher is logged in, fetch their assigned class IDs first
+      let assigned: Set<string> | null = null;
+      if (tId && !user && !schoolAdmin) {
+        const { data: assignments } = await supabase
+          .from('teacher_class_assignments')
+          .select('class_id')
+          .eq('teacher_id', tId)
+          .eq('school_id', selectedSchool.id);
+        assigned = new Set((assignments || []).map((a: any) => a.class_id));
+      }
+      setAllowedClassIds(assigned);
+
       const { data, error } = await supabase
         .from('classes')
         .select('*')
         .eq('school_id', selectedSchool.id)
         .order('name');
       if (error) { console.error('Error fetching classes:', error); setClasses([]); }
-      else setClasses(data || []);
+      else {
+        const all = data || [];
+        setClasses(assigned ? all.filter(c => assigned!.has(c.id)) : all);
+      }
       setClassesLoading(false);
     };
     fetchClasses();
   }, [selectedSchool?.id, user?.id]);
+
+  const isTeacher = !!teacherId && !user && !hasValidSchoolAdminSession(selectedSchool?.id);
 
   const totalStudents = students?.length || 0;
 
@@ -73,6 +94,11 @@ export default function Dashboard() {
   return (
     <MainLayout>
       <div className="container py-6 space-y-6">
+        {isTeacher && allowedClassIds && allowedClassIds.size === 0 && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-700 text-sm">
+            You haven't been assigned to any class yet. Please contact your school admin.
+          </div>
+        )}
         {/* Subscription Warning */}
         {isAdmin && subscriptionDaysRemaining !== null && subscriptionDaysRemaining <= 30 && (
           <motion.div

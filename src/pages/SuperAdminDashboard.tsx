@@ -51,6 +51,8 @@ import {
   Mail,
   MessageSquare,
   Phone,
+  BookOpen,
+  X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -62,6 +64,12 @@ interface SentMessage {
   message: string;
   is_read: boolean;
   created_at: string;
+}
+
+interface LevelSubject {
+  id: string;
+  level: 'primary' | 'jhs';
+  name: string;
 }
 
 export default function SuperAdminDashboard() {
@@ -93,6 +101,7 @@ export default function SuperAdminDashboard() {
   const [formAdminEmail, setFormAdminEmail] = useState('');
   const [formAdminPassword, setFormAdminPassword] = useState('');
   const [formIsLocked, setFormIsLocked] = useState(false);
+  const [formSchoolLevel, setFormSchoolLevel] = useState<'primary' | 'jhs' | 'both'>('jhs');
   const [formLoading, setFormLoading] = useState(false);
 
   // Super admin contact info state
@@ -102,12 +111,18 @@ export default function SuperAdminDashboard() {
   const [contactEmail, setContactEmail] = useState('');
   const [savingContact, setSavingContact] = useState(false);
 
+  // Level subjects state
+  const [levelSubjects, setLevelSubjects] = useState<LevelSubject[]>([]);
+  const [newPrimarySubject, setNewPrimarySubject] = useState('');
+  const [newJhsSubject, setNewJhsSubject] = useState('');
+
   useEffect(() => {
     document.title = 'Super Admin Dashboard | Edu Portal';
     checkAccess();
     fetchSchools();
     fetchSentMessages();
     fetchContact();
+    fetchLevelSubjects();
   }, []);
 
   const checkAccess = async () => {
@@ -137,6 +152,7 @@ export default function SuperAdminDashboard() {
           themeColor: s.theme_color || undefined, createdAt: s.created_at,
           adminEmail: s.admin_email || undefined, adminPasswordHash: s.admin_password_hash || undefined,
           isLocked: s.is_locked || false,
+          ...( { schoolLevel: (s as any).school_level || 'jhs' } as any ),
         })) || []
       );
     } catch (error) {
@@ -167,6 +183,43 @@ export default function SuperAdminDashboard() {
       setContactName(data.name || '');
       setContactWhatsapp(data.whatsapp || '');
       setContactEmail(data.email || '');
+    }
+  };
+
+  const fetchLevelSubjects = async () => {
+    const { data } = await supabase
+      .from('level_subjects' as any)
+      .select('*')
+      .order('name');
+    if (data) setLevelSubjects(data as any);
+  };
+
+  const addLevelSubject = async (level: 'primary' | 'jhs', name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const { error } = await supabase
+        .from('level_subjects' as any)
+        .insert([{ level, name: trimmed }]);
+      if (error) throw error;
+      toast({ title: 'Subject Added', description: `${trimmed} added to ${level.toUpperCase()} subjects.` });
+      if (level === 'primary') setNewPrimarySubject('');
+      else setNewJhsSubject('');
+      fetchLevelSubjects();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to add subject.', variant: 'destructive' });
+    }
+  };
+
+  const deleteLevelSubject = async (id: string) => {
+    if (!confirm('Remove this subject?')) return;
+    try {
+      const { error } = await supabase.from('level_subjects' as any).delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Subject Removed' });
+      fetchLevelSubjects();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to remove subject.', variant: 'destructive' });
     }
   };
 
@@ -235,7 +288,7 @@ export default function SuperAdminDashboard() {
     setFormName(''); setFormLogoUrl(''); setFormSchoolCode('');
     setFormSubscriptionStatus(true); setFormSubscriptionExpiry('');
     setFormThemeColor('#3B82F6'); setFormAdminEmail(''); setFormAdminPassword('');
-    setFormIsLocked(false); setEditingSchool(null);
+    setFormIsLocked(false); setFormSchoolLevel('jhs'); setEditingSchool(null);
   };
 
   const openAddDialog = () => { resetForm(); setFormSchoolCode(generateSchoolCode()); setDialogOpen(true); };
@@ -245,6 +298,7 @@ export default function SuperAdminDashboard() {
     setFormSchoolCode(school.schoolCode); setFormSubscriptionStatus(school.subscriptionStatus);
     setFormSubscriptionExpiry(school.subscriptionExpiry || ''); setFormThemeColor(school.themeColor || '#3B82F6');
     setFormAdminEmail(school.adminEmail || ''); setFormAdminPassword(''); setFormIsLocked(school.isLocked || false);
+    setFormSchoolLevel(((school as any).schoolLevel as any) || 'jhs');
     setDialogOpen(true);
   };
 
@@ -298,6 +352,7 @@ export default function SuperAdminDashboard() {
         subscription_status: formSubscriptionStatus, subscription_expiry: formSubscriptionExpiry || null,
         theme_color: formThemeColor, admin_email: formAdminEmail.trim() || null, is_locked: formIsLocked,
         admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : (editingSchool?.adminPasswordHash || null),
+        school_level: formSchoolLevel,
       };
       if (editingSchool) {
         const { error } = await supabase.from('schools').update(schoolData).eq('id', editingSchool.id);
@@ -453,6 +508,10 @@ export default function SuperAdminDashboard() {
               <Phone className="h-4 w-4" />
               Help Contact
             </TabsTrigger>
+            <TabsTrigger value="subjects" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Subjects
+            </TabsTrigger>
           </TabsList>
 
           {/* Schools Tab */}
@@ -508,6 +567,20 @@ export default function SuperAdminDashboard() {
                         <Input id="schoolCode" value={formSchoolCode} onChange={(e) => setFormSchoolCode(e.target.value.toUpperCase())} placeholder="SCHOOL123" className="uppercase" required />
                         <Button type="button" variant="outline" onClick={() => setFormSchoolCode(generateSchoolCode())}>Generate</Button>
                       </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="schoolLevel">School Level *</Label>
+                      <Select value={formSchoolLevel} onValueChange={(v) => setFormSchoolLevel(v as any)}>
+                        <SelectTrigger id="schoolLevel">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="primary">Primary</SelectItem>
+                          <SelectItem value="jhs">Junior High (JHS)</SelectItem>
+                          <SelectItem value="both">Both Primary &amp; JHS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Determines which subjects this school uses.</p>
                     </div>
                     <div className="border-t border-border pt-4 space-y-4">
                       <div className="flex items-center gap-2">
@@ -797,6 +870,67 @@ export default function SuperAdminDashboard() {
                   </Button>
                 </div>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Subjects Tab */}
+          <TabsContent value="subjects">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground">Subjects by School Level</h2>
+              <p className="text-muted-foreground">
+                Set the master subject list for Primary and JHS. Schools automatically use the list matching their level.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {(['primary','jhs'] as const).map((lvl) => {
+                const items = levelSubjects.filter(s => s.level === lvl);
+                const value = lvl === 'primary' ? newPrimarySubject : newJhsSubject;
+                const setValue = lvl === 'primary' ? setNewPrimarySubject : setNewJhsSubject;
+                const heading = lvl === 'primary' ? 'Primary Subjects' : 'JHS Subjects';
+                return (
+                  <div key={lvl} className="rounded-xl border bg-card p-5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-foreground">{heading}</h3>
+                      <span className="ml-auto text-xs text-muted-foreground">{items.length} total</span>
+                    </div>
+                    <form
+                      onSubmit={(e) => { e.preventDefault(); addLevelSubject(lvl, value); }}
+                      className="flex gap-2 mb-4"
+                    >
+                      <Input
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        placeholder={`Add ${lvl} subject...`}
+                      />
+                      <Button type="submit" size="sm" className="gap-1">
+                        <Plus className="h-4 w-4" /> Add
+                      </Button>
+                    </form>
+                    <div className="flex flex-wrap gap-2">
+                      {items.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No subjects yet.</p>
+                      ) : items.map(s => (
+                        <span
+                          key={s.id}
+                          className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3 py-1 text-sm"
+                        >
+                          {s.name}
+                          <button
+                            type="button"
+                            onClick={() => deleteLevelSubject(s.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            aria-label={`Remove ${s.name}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>

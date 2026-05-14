@@ -249,18 +249,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-[radial-gradient(ellipse_at_top_left,hsl(var(--primary)/0.25),transparent_55%),radial-gradient(ellipse_at_bottom_right,hsl(190_90%_55%/0.25),transparent_55%),linear-gradient(135deg,hsl(var(--background)),hsl(var(--muted)/0.4))]">
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden gradient-mesh">
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/30 blur-3xl"
+        className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/40 blur-3xl"
         animate={{ x: [0, 40, 0], y: [0, 30, 0], scale: [1, 1.1, 1] }}
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-cyan-500/30 blur-3xl"
+        className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-secondary/40 blur-3xl"
         animate={{ x: [0, -40, 0], y: [0, -30, 0], scale: [1, 1.15, 1] }}
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute top-1/3 right-1/4 h-72 w-72 rounded-full bg-accent/30 blur-3xl"
+        animate={{ x: [0, 20, -20, 0], y: [0, -20, 20, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div 
         className="w-full max-w-md"
