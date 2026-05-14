@@ -145,6 +145,27 @@ export type Database = {
           },
         ]
       }
+      level_subjects: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          name?: string
+        }
+        Relationships: []
+      }
       school_settings: {
         Row: {
           academic_year: string | null
@@ -221,6 +242,7 @@ export type Database = {
           logo_url: string | null
           name: string
           school_code: string
+          school_level: string
           subscription_expiry: string | null
           subscription_status: boolean
           theme_color: string | null
@@ -235,6 +257,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           school_code: string
+          school_level?: string
           subscription_expiry?: string | null
           subscription_status?: boolean
           theme_color?: string | null
@@ -249,6 +272,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           school_code?: string
+          school_level?: string
           subscription_expiry?: string | null
           subscription_status?: boolean
           theme_color?: string | null

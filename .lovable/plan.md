@@ -1,109 +1,36 @@
-## Goal
+# Plan
 
-Let the Super Admin save their contact details (name, WhatsApp number, email) once. Show a blinking "Contact admin for help" banner on:
+I'll proceed with these defaults (since you let me decide):
+- **Visual direction:** Modern Mesh — vibrant blue/orange/emerald gradient orbs on white, bold sans-serif. Replaces all space/shooting-star theming.
+- **Subjects scope:** Per school level (Primary vs JHS). Super admin maintains two global subject lists.
+- **School level field:** Added to schools table; super admin picks Primary, JHS, or Both when creating a school.
 
-1. The public landing page (school selection / homepage)
-2. Every school admin dashboard (existing and future schools)
+## 1. Visual redesign (Modern Mesh)
+- Update `src/index.css` design tokens: new gradients (`--gradient-mesh`, `--gradient-primary`), new shadow tokens, brighter primary (#3b82f6), accents orange (#f97316) + emerald (#10b981).
+- Rewrite `src/pages/Index.tsx` (homepage) — animated mesh blobs, bold hero, feature bento grid. No shooting stars.
+- Rewrite `src/pages/SchoolSelection.tsx` — light mesh background, clean school cards.
+- Update `src/pages/SuperAdminLogin.tsx` and `src/pages/Login.tsx` — mesh-style backdrop instead of dark blobs.
+- Refresh `src/pages/Dashboard.tsx` and `src/pages/SuperAdminDashboard.tsx` headers/cards to the new tokens.
 
-Clicking the banner opens a WhatsApp chat (`https://wa.me/<number>`) with the Super Admin.
+## 2. Teacher sees only their assigned class(es)
+- `src/pages/Dashboard.tsx`: when `teacherSession` exists, fetch the teacher's `teacher_class_assignments` and filter the rendered class cards to only those classes.
+- All other dashboard widgets (students, subscription, etc.) hidden or scoped for teachers.
 
-## What gets built
+## 3. Super Admin Subjects by School Level
+- **Migration:**
+  - Add `school_level text` (`primary` | `jhs` | `both`) to `schools`.
+  - New table `level_subjects(id, level, name, created_at)` with RLS: public SELECT, super_admin INSERT/UPDATE/DELETE.
+- **Super Admin UI:** new "Subjects" tab in `SuperAdminDashboard.tsx` — two columns (Primary / JHS), add/remove subjects.
+- **School creation form:** add Primary/JHS/Both selector.
+- **ScoreEntry / ClassPortal:** replace hardcoded `SUBJECTS` constant with a hook `useSchoolSubjects()` that reads the school's level and pulls the matching `level_subjects`.
 
-### 1. Database — new `super_admin_contact` table
-
-A single-row settings table (singleton pattern)
-
-- `whatsapp` (text, digits only, used to build `wa.me` link)
-- `email` (text)
-- standard timestamps
-
-RLS:
-
-- Public SELECT (everyone needs to read it to render the banner — landing page has no auth)
-- INSERT/UPDATE only allowed for users with the `super_admin` role
-- No DELETE
-
-Seed an empty default row so the UI always has something to update.
-
-### 2. Super Admin dashboard — Contact Info card
-
-In `src/pages/SuperAdminDashboard.tsx`, add a new section "Help / Contact Info" with a small form:
-
-- WhatsApp Number (with hint: include country code, no `+` or spaces, e.g. `233557387992`)
-- Email
-- Save button → upserts the singleton row
-
-Light validation: WhatsApp must be 8–15 digits; email must look like an email.
-
-### 3. Reusable component — `ContactAdminBanner`
-
-New file `src/components/ContactAdminBanner.tsx`:
-
-- Fetches the singleton `super_admin_contact` row once (light, public read)
-- Renders a pill/banner with blinking text "Contact admin for help" + small WhatsApp icon
-- On click → `window.open('https://wa.me/<digits>?text=Hello%20Admin', '_blank')`
-- Falls back to `mailto:` if WhatsApp is empty
-- Hides itself entirely if no contact row exists or both fields are empty
-- Blink effect via a small Tailwind keyframe added to `tailwind.config.ts` (`animate-blink`) so we don't hard-code colors; banner uses semantic tokens (`bg-primary/10`, `text-primary`, `ring-primary/30`)
-
-### 4. Placement
-
-- `src/pages/SchoolSelection.tsx` (the homepage at `/`) — render `<ContactAdminBanner />` near the top of the content, above or below the school grid
-- `src/pages/Dashboard.tsx` — render `<ContactAdminBanner />` inside the school admin dashboard, just under the hero header
-
-That's it — no other dashboards/pages per the user's choice.
+## Technical notes
+- Keep existing teacher access-code auth (sessionStorage) — no changes to auth flow.
+- Subject hook returns array of strings; falls back to current `SUBJECTS` constant if no rows yet (so existing schools keep working).
+- Homepage uses Tailwind semantic tokens only (no hardcoded colors in JSX).
 
 ## Out of scope
+- No data migration of existing scores (subject names stay as-is).
+- No changes to PDF report layout.
 
-- Floating bubble version, teacher-portal placement, multiple super admin contacts, in-app chat, message history.
-- No changes to existing auth, school code activation, classes, or scoring flows.
-
-## Technical details
-
-**Table**
-
-```sql
-create table public.super_admin_contact (
-  id uuid primary key default gen_random_uuid(),
-  name text,
-  whatsapp text,
-  email text,
-  updated_at timestamptz not null default now()
-);
-alter table public.super_admin_contact enable row level security;
--- Public read
-create policy "Anyone can read super admin contact"
-  on public.super_admin_contact for select using (true);
--- Super admin write
-create policy "Super admins can insert"
-  on public.super_admin_contact for insert to authenticated
-  with check (has_role(auth.uid(), 'super_admin'::app_role));
-create policy "Super admins can update"
-  on public.super_admin_contact for update to authenticated
-  using (has_role(auth.uid(), 'super_admin'::app_role));
--- Seed singleton
-insert into public.super_admin_contact (name, whatsapp, email) values (null, null, null);
-```
-
-**WhatsApp link helper**
-
-```ts
-const digits = (whatsapp ?? '').replace(/\D/g, '');
-const href = digits ? `https://wa.me/${digits}?text=${encodeURIComponent('Hello Admin, I need help with Edu Pro')}` : null;
-```
-
-**Blink animation** (tailwind.config.ts → `theme.extend.keyframes` + `animation`):
-
-```ts
-keyframes: { blink: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.45' } } },
-animation: { blink: 'blink 1.2s ease-in-out infinite' },
-```
-
-**Files touched**
-
-- New migration (table + RLS + seed)
-- New `src/components/ContactAdminBanner.tsx`
-- Edit `src/pages/SuperAdminDashboard.tsx` — add contact form section
-- Edit `src/pages/SchoolSelection.tsx` — mount banner
-- Edit `src/pages/Dashboard.tsx` — mount banner
-- Edit `tailwind.config.ts` — add `blink` animation
+Shall I proceed?
