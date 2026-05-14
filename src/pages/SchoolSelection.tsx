@@ -128,7 +128,7 @@ export default function SchoolSelection() {
               <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
                 <GraduationCap className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Edu Pro</span>
+              <span className="text-xl font-bold text-foreground">Edu Portal</span>
             </div>
           </nav>
 
@@ -256,10 +256,10 @@ export default function SchoolSelection() {
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <GraduationCap className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">Edu Pro</span>
+              <span className="font-semibold text-foreground">Edu Portal</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Edu Pro. All rights reserved.
+              © {new Date().getFullYear()} Edu Portal. All rights reserved.
             </p>
           </div>
         </div>

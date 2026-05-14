@@ -103,7 +103,7 @@ export default function SuperAdminDashboard() {
   const [savingContact, setSavingContact] = useState(false);
 
   useEffect(() => {
-    document.title = 'Super Admin Dashboard | Edu Pro';
+    document.title = 'Super Admin Dashboard | Edu Portal';
     checkAccess();
     fetchSchools();
     fetchSentMessages();
@@ -764,7 +764,7 @@ export default function SuperAdminDashboard() {
                     id="contact-name"
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
-                    placeholder="e.g. Edu Pro Support"
+                    placeholder="e.g. Edu Portal Support"
                   />
                 </div>
                 <div className="space-y-2">
