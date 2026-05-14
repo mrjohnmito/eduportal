@@ -872,6 +872,67 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Subjects Tab */}
+          <TabsContent value="subjects">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground">Subjects by School Level</h2>
+              <p className="text-muted-foreground">
+                Set the master subject list for Primary and JHS. Schools automatically use the list matching their level.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {(['primary','jhs'] as const).map((lvl) => {
+                const items = levelSubjects.filter(s => s.level === lvl);
+                const value = lvl === 'primary' ? newPrimarySubject : newJhsSubject;
+                const setValue = lvl === 'primary' ? setNewPrimarySubject : setNewJhsSubject;
+                const heading = lvl === 'primary' ? 'Primary Subjects' : 'JHS Subjects';
+                return (
+                  <div key={lvl} className="rounded-xl border bg-card p-5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-foreground">{heading}</h3>
+                      <span className="ml-auto text-xs text-muted-foreground">{items.length} total</span>
+                    </div>
+                    <form
+                      onSubmit={(e) => { e.preventDefault(); addLevelSubject(lvl, value); }}
+                      className="flex gap-2 mb-4"
+                    >
+                      <Input
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        placeholder={`Add ${lvl} subject...`}
+                      />
+                      <Button type="submit" size="sm" className="gap-1">
+                        <Plus className="h-4 w-4" /> Add
+                      </Button>
+                    </form>
+                    <div className="flex flex-wrap gap-2">
+                      {items.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No subjects yet.</p>
+                      ) : items.map(s => (
+                        <span
+                          key={s.id}
+                          className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3 py-1 text-sm"
+                        >
+                          {s.name}
+                          <button
+                            type="button"
+                            onClick={() => deleteLevelSubject(s.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            aria-label={`Remove ${s.name}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
     </div>
