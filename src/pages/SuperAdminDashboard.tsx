@@ -508,6 +508,10 @@ export default function SuperAdminDashboard() {
               <Phone className="h-4 w-4" />
               Help Contact
             </TabsTrigger>
+            <TabsTrigger value="subjects" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Subjects
+            </TabsTrigger>
           </TabsList>
 
           {/* Schools Tab */}
