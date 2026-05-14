@@ -33,6 +33,7 @@ export default function ClearData() {
   const [selectedClass, setSelectedClass] = useState<ClassLevel | ''>('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const { subjects } = useSchoolSubjects();
 
   const handleClear = () => {
     if (!selectedClass || !selectedSubject) return;
@@ -114,7 +115,7 @@ export default function ClearData() {
                   <SelectValue placeholder="Choose a subject" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SUBJECTS.map(subject => (
+                  {subjects.map(subject => (
                     <SelectItem key={subject} value={subject}>
                       {subject}
                     </SelectItem>
