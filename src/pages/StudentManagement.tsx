@@ -66,6 +66,15 @@ export default function StudentManagement() {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
+  const [allowedClassIds, setAllowedClassIds] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    setTeacherId(sessionStorage.getItem('teacherId'));
+  }, []);
+
+  const isTeacher = !!teacherId && !isAdmin;
+  const canAccess = isAdmin || isTeacher;
 
   // Bulk upload state
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
@@ -91,6 +100,19 @@ export default function StudentManagement() {
     const fetchClasses = async () => {
       if (!selectedSchool) return;
 
+      // If teacher, fetch their assigned class IDs first
+      let assigned: Set<string> | null = null;
+      const tId = sessionStorage.getItem('teacherId');
+      if (tId && !isAdmin) {
+        const { data: assignments } = await supabase
+          .from('teacher_class_assignments')
+          .select('class_id')
+          .eq('teacher_id', tId)
+          .eq('school_id', selectedSchool.id);
+        assigned = new Set((assignments || []).map((a: any) => a.class_id));
+      }
+      setAllowedClassIds(assigned);
+
       const { data, error } = await supabase
         .from('classes')
         .select('id, name')
@@ -98,14 +120,15 @@ export default function StudentManagement() {
         .order('name');
       
       if (!error && data) {
-        setClasses(data);
-        if (data.length > 0 && !selectedClass) {
-          setSelectedClass(toClassLevel(data[0].name));
+        const filtered = assigned ? data.filter(c => assigned!.has(c.id)) : data;
+        setClasses(filtered);
+        if (filtered.length > 0 && !selectedClass) {
+          setSelectedClass(toClassLevel(filtered[0].name));
         }
       }
     };
     fetchClasses();
-  }, [selectedSchool?.id]);
+  }, [selectedSchool?.id, isAdmin]);
 
   const filteredStudents = students.filter(s => s.classLevel === selectedClass);
 
@@ -378,14 +401,14 @@ export default function StudentManagement() {
     setNewAttendance(student.attendanceDays?.toString() || '0');
   };
 
-  if (!isAdmin) {
+  if (!canAccess) {
     return (
       <MainLayout>
         <div className="container py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
             <p className="mt-2 text-muted-foreground">
-              Please login as admin to manage students.
+              Please login as admin or teacher to manage students.
             </p>
             <Button onClick={() => navigate('/login')} className="mt-4">
               Go to Login
