@@ -29,12 +29,12 @@ interface SchoolContextType {
 }
 
 const defaultSettings: SchoolSettings = {
-  schoolName: 'IBRAHIM MEMORIAL SCHOOL COMPLEX',
-  motto: 'Humble Beginners',
-  email: 'ibrahimmemorialfoundationschool@gmail.com',
+  schoolName: '',
+  motto: '',
+  email: '',
   academicYear: '2024/2025',
   term: 'First Term',
-  contacts: ['0557387992', '0545231646'],
+  contacts: [],
 };
 
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
@@ -121,7 +121,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         setSettings({
           schoolName: settingsData.school_name || selectedSchool.name,
           schoolLogo: settingsData.logo_url || selectedSchool.logoUrl || undefined,
-          motto: settingsData.motto || 'Humble Beginners',
+          motto: settingsData.motto || '',
           email: settingsData.email || '',
           academicYear: settingsData.academic_year || '2024/2025',
           term: settingsData.term || 'First Term',
