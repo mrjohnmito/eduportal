@@ -58,6 +58,7 @@ export type Database = {
           created_at: string
           id: string
           interest: string | null
+          promoted_to: string | null
           school_id: string | null
           student_id: string
           teacher_id: string
@@ -72,6 +73,7 @@ export type Database = {
           created_at?: string
           id?: string
           interest?: string | null
+          promoted_to?: string | null
           school_id?: string | null
           student_id: string
           teacher_id: string
@@ -86,6 +88,7 @@ export type Database = {
           created_at?: string
           id?: string
           interest?: string | null
+          promoted_to?: string | null
           school_id?: string | null
           student_id?: string
           teacher_id?: string

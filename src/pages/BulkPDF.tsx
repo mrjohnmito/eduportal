@@ -176,7 +176,22 @@ const BulkPDF: React.FC = () => {
         .select('id, name')
         .eq('school_id', selectedSchool.id)
         .order('name');
-      if (data) setClasses(data);
+      if (!data) return;
+      // If logged in as a teacher, restrict to assigned classes only
+      const teacherId = sessionStorage.getItem('teacherId') ||
+        (sessionStorage.getItem('teacher')
+          ? (() => { try { return JSON.parse(sessionStorage.getItem('teacher')!).id; } catch { return null; } })()
+          : null);
+      if (teacherId) {
+        const { data: assignments } = await supabase
+          .from('teacher_class_assignments')
+          .select('class_id')
+          .eq('teacher_id', teacherId);
+        const allowed = new Set((assignments || []).map(a => a.class_id));
+        setClasses(data.filter(c => allowed.has(c.id)));
+      } else {
+        setClasses(data);
+      }
     };
     fetchClasses();
   }, [selectedSchool]);
@@ -386,6 +401,7 @@ const BulkPDF: React.FC = () => {
         drawField('Conduct', report?.conduct || 'N/A', col2X, 0);
         drawField('Interest', report?.interest || 'N/A', col2X, 1);
         drawField('Next Term Begins', settings.nextTermBegins || 'TBA', col2X, 2);
+        drawField('Promoted To', report?.promoted_to || 'N/A', col2X, 3);
 
         // Grayscale photo in info card (small)
         const infoPhotoW = 14;
