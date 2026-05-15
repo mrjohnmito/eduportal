@@ -40,6 +40,7 @@ interface ClassTeacherReportData {
   interest: string;
   conduct: string;
   class_teacher_remark: string;
+  promoted_to?: string | null;
 }
 
 // Helper to convert class name to class_level format
@@ -63,6 +64,7 @@ export default function ClassTeacherReport() {
   const [interest, setInterest] = useState<string>('');
   const [conduct, setConduct] = useState<string>('');
   const [remark, setRemark] = useState<string>('');
+  const [promotedTo, setPromotedTo] = useState<string>('');
   const [existingReportId, setExistingReportId] = useState<string | null>(null);
 
   // Check if teacher is logged in via access code
@@ -132,12 +134,14 @@ export default function ClassTeacherReport() {
         setInterest(data.interest || '');
         setConduct(data.conduct || '');
         setRemark(data.class_teacher_remark || '');
+        setPromotedTo((data as any).promoted_to || '');
       } else {
         setExistingReportId(null);
         setAttendance('0');
         setInterest('');
         setConduct('');
         setRemark('');
+        setPromotedTo('');
       }
     } catch (error) {
       console.error('Error fetching existing report:', error);
@@ -176,6 +180,7 @@ export default function ClassTeacherReport() {
         interest: interest,
         conduct: conduct,
         class_teacher_remark: remark,
+        promoted_to: promotedTo || null,
         school_id: selectedSchool?.id,
       };
 
@@ -416,6 +421,20 @@ export default function ClassTeacherReport() {
                       placeholder="Enter additional remarks..."
                       rows={3}
                     />
+                  </div>
+
+                  {/* Promoted To */}
+                  <div className="space-y-2">
+                    <Label htmlFor="promotedTo">Promoted To (Next Class)</Label>
+                    <Input
+                      id="promotedTo"
+                      value={promotedTo}
+                      onChange={(e) => setPromotedTo(e.target.value)}
+                      placeholder="e.g. JHS 2, Class 5"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Appears on the report card under "Next Term Begins".
+                    </p>
                   </div>
 
                   <Button
