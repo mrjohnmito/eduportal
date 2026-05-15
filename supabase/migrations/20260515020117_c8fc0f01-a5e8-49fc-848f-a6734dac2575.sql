@@ -1,0 +1,1 @@
+ALTER TABLE public.class_teacher_reports ADD COLUMN IF NOT EXISTS promoted_to text;
