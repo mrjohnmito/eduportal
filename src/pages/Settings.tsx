@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -88,6 +89,7 @@ export default function Settings() {
   const [logo, setLogo] = useState('');
   const [totalSchoolDays, setTotalSchoolDays] = useState('64');
   const [nextTermBegins, setNextTermBegins] = useState('');
+  const [finalClass, setFinalClass] = useState('');
   
   // Interest and Conduct options
   const [interestOptions, setInterestOptions] = useState<string[]>([]);
@@ -104,6 +106,7 @@ export default function Settings() {
     setLogo(settings.schoolLogo || '');
     setTotalSchoolDays(settings.totalSchoolDays?.toString() || '64');
     setNextTermBegins(settings.nextTermBegins || '');
+    setFinalClass(settings.finalClass || '');
     setInterestOptions(settings.interestOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']);
     setConductOptions(settings.conductOptions || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair']);
   }, [settings]);
@@ -171,6 +174,7 @@ export default function Settings() {
       schoolLogo: logo || undefined,
       totalSchoolDays: totalSchoolDays ? parseInt(totalSchoolDays) : 64,
       nextTermBegins: nextTermBegins || undefined,
+      finalClass: finalClass || undefined,
       interestOptions,
       conductOptions,
     });
