@@ -210,6 +210,7 @@ export type Database = {
           conduct_options: string[] | null
           created_at: string
           email: string | null
+          final_class: string | null
           id: string
           interest_options: string[] | null
           logo_url: string | null
@@ -228,6 +229,7 @@ export type Database = {
           conduct_options?: string[] | null
           created_at?: string
           email?: string | null
+          final_class?: string | null
           id?: string
           interest_options?: string[] | null
           logo_url?: string | null
@@ -246,6 +248,7 @@ export type Database = {
           conduct_options?: string[] | null
           created_at?: string
           email?: string | null
+          final_class?: string | null
           id?: string
           interest_options?: string[] | null
           logo_url?: string | null
@@ -364,6 +367,100 @@ export type Database = {
           },
           {
             foreignKeyName: "scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_enrollments: {
+        Row: {
+          academic_year: string
+          class_level: string
+          created_at: string
+          id: string
+          school_id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year: string
+          class_level: string
+          created_at?: string
+          id?: string
+          school_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: string
+          class_level?: string
+          created_at?: string
+          id?: string
+          school_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_promotions: {
+        Row: {
+          action: string
+          created_at: string
+          from_academic_year: string
+          from_class: string
+          id: string
+          performed_at: string
+          performed_by: string | null
+          school_id: string
+          student_id: string
+          student_name: string
+          to_academic_year: string | null
+          to_class: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          from_academic_year: string
+          from_class: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          school_id: string
+          student_id: string
+          student_name: string
+          to_academic_year?: string | null
+          to_class?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          from_academic_year?: string
+          from_class?: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          school_id?: string
+          student_id?: string
+          student_name?: string
+          to_academic_year?: string | null
+          to_class?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_promotions_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
