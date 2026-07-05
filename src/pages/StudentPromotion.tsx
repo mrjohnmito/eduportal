@@ -129,18 +129,7 @@ export default function StudentPromotion() {
     [students, currentClass],
   );
 
-  // Students already promoted/repeated into the destination year
-  const alreadyDone = useMemo(() => {
-    const set = new Set<string>();
-    promotions.forEach(p => {
-      if ((p.action === 'promote' || p.action === 'repeat') && p.to_academic_year === destYear) {
-        set.add((p as any).student_id);
-      }
-    });
-    return set;
-  }, [promotions, destYear]);
-
-  // student_id isn't on PromotionRow interface; recompute with raw ids
+  // Students already promoted/repeated into the destination year (disabled to prevent duplicates)
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     const load = async () => {
