@@ -36,8 +36,6 @@ export default function SchoolSelection() {
         subscriptionExpiry: s.subscription_expiry || undefined,
         themeColor: s.theme_color || undefined,
         createdAt: s.created_at,
-        adminEmail: s.admin_email || undefined,
-        adminPasswordHash: s.admin_password_hash || undefined,
         isLocked: s.is_locked || false,
         activatedAt: (s as any).activated_at || undefined
       })) || []);

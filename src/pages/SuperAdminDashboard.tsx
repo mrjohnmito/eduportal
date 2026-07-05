@@ -144,13 +144,17 @@ export default function SuperAdminDashboard() {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
+      const { data: creds } = await supabase
+        .from('school_credentials')
+        .select('school_id, admin_email');
+      const credMap = new Map((creds || []).map((c: any) => [c.school_id, c.admin_email]));
       setSchools(
         data?.map((s) => ({
           id: s.id, name: s.name, logoUrl: s.logo_url || undefined,
           schoolCode: s.school_code, subscriptionStatus: s.subscription_status,
           subscriptionExpiry: s.subscription_expiry || undefined,
           themeColor: s.theme_color || undefined, createdAt: s.created_at,
-          adminEmail: s.admin_email || undefined, adminPasswordHash: s.admin_password_hash || undefined,
+          adminEmail: credMap.get(s.id) || undefined,
           isLocked: s.is_locked || false,
           ...( { schoolLevel: (s as any).school_level || 'jhs' } as any ),
         })) || []
@@ -350,17 +354,32 @@ export default function SuperAdminDashboard() {
       const schoolData = {
         name: formName, logo_url: formLogoUrl || null, school_code: formSchoolCode.toUpperCase(),
         subscription_status: formSubscriptionStatus, subscription_expiry: formSubscriptionExpiry || null,
-        theme_color: formThemeColor, admin_email: formAdminEmail.trim() || null, is_locked: formIsLocked,
-        admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : (editingSchool?.adminPasswordHash || null),
+        theme_color: formThemeColor, is_locked: formIsLocked,
         school_level: formSchoolLevel,
       };
       if (editingSchool) {
         const { error } = await supabase.from('schools').update(schoolData).eq('id', editingSchool.id);
         if (error) throw error;
+        // Update credentials in the private table (super-admin only)
+        const credUpdate: Record<string, string> = {};
+        if (formAdminEmail.trim()) credUpdate.admin_email = formAdminEmail.trim();
+        if (formAdminPassword) credUpdate.admin_password_hash = btoa(formAdminPassword);
+        if (Object.keys(credUpdate).length > 0) {
+          const { error: credErr } = await supabase
+            .from('school_credentials')
+            .upsert({ school_id: editingSchool.id, ...credUpdate }, { onConflict: 'school_id' });
+          if (credErr) throw credErr;
+        }
         toast({ title: 'School Updated', description: `${formName} has been updated successfully.` });
       } else {
-        const { error } = await supabase.from('schools').insert([schoolData]);
+        const { data: inserted, error } = await supabase.from('schools').insert([schoolData]).select('id').single();
         if (error) throw error;
+        const { error: credErr } = await supabase.from('school_credentials').insert([{
+          school_id: inserted.id,
+          admin_email: formAdminEmail.trim() || null,
+          admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : null,
+        }]);
+        if (credErr) throw credErr;
         toast({ title: 'School Added', description: `${formName} has been added successfully.` });
       }
       setDialogOpen(false); resetForm(); fetchSchools();

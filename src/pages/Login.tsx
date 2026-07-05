@@ -95,62 +95,31 @@ export default function Login() {
       const enteredEmail = adminEmail.trim().toLowerCase();
       const enteredPassword = adminPassword;
 
-      // First, check if credentials match the school's admin credentials
-      const { data: schoolData, error: schoolError } = await supabase
-        .from('schools')
-        .select('admin_email, admin_password_hash')
-        .eq('id', selectedSchool.id)
-        .single();
+      // Verify school admin credentials securely via edge function
+      // (credentials are stored in a private table, never exposed to the client)
+      const { data: verifyData } = await supabase.functions.invoke('verify-school-admin', {
+        body: { schoolId: selectedSchool.id, email: enteredEmail, password: enteredPassword },
+      });
 
-      if (schoolError) throw schoolError;
+      if (verifyData?.valid) {
+        sessionStorage.setItem('adminSession', JSON.stringify({
+          schoolId: selectedSchool.id,
+          email: adminEmail,
+          isAdmin: true,
+          timestamp: Date.now(),
+        }));
 
-      const schoolAdminEmail = schoolData?.admin_email?.trim().toLowerCase();
-
-      // If the email matches this school's admin email, the password MUST match
-      if (schoolAdminEmail && schoolAdminEmail === enteredEmail) {
-        if (!schoolData?.admin_password_hash) {
-          toast({
-            title: 'Login Failed',
-            description: 'No admin password is set for this school. Contact the Super Admin.',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        let storedPassword = '';
-        try {
-          storedPassword = atob(schoolData.admin_password_hash);
-        } catch {
-          storedPassword = '';
-        }
-
-        if (storedPassword === enteredPassword) {
-          sessionStorage.setItem('adminSession', JSON.stringify({
-            schoolId: selectedSchool.id,
-            email: adminEmail,
-            isAdmin: true,
-            timestamp: Date.now(),
-          }));
-
-          await login(adminEmail, adminPassword, true);
-
-          toast({
-            title: 'Welcome, Admin!',
-            description: 'You have successfully logged in.',
-          });
-          navigate('/dashboard');
-          return;
-        }
+        await login(adminEmail, adminPassword, true);
 
         toast({
-          title: 'Invalid Password',
-          description: 'The admin password is incorrect for this school.',
-          variant: 'destructive',
+          title: 'Welcome, Admin!',
+          description: 'You have successfully logged in.',
         });
+        navigate('/dashboard');
         return;
       }
 
-      // Email does not match this school's admin email — try Supabase Auth (e.g. super admin)
+      // Not a school admin — try Supabase Auth (e.g. super admin)
       const success = await login(adminEmail, adminPassword);
 
       if (success) {
