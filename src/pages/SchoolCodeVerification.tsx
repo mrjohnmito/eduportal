@@ -63,8 +63,6 @@ export default function SchoolCodeVerification() {
             subscriptionExpiry: data.subscription_expiry || undefined,
             themeColor: data.theme_color || undefined,
             createdAt: data.created_at,
-            adminEmail: data.admin_email || undefined,
-            adminPasswordHash: data.admin_password_hash || undefined,
             isLocked: data.is_locked || false,
           };
 
