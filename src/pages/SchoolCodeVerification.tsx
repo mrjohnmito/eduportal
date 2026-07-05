@@ -181,15 +181,13 @@ export default function SchoolCodeVerification() {
 
         // Mark school as activated globally (one-time, all devices skip code from now on)
         if (!selectedSchool.activatedAt) {
-          const { error: activateError } = await supabase
-            .from('schools')
-            .update({ activated_at: new Date().toISOString() } as any)
-            .eq('id', selectedSchool.id)
-            .is('activated_at', null);
-          if (activateError) {
+          const { data: activateData, error: activateError } = await supabase.functions.invoke('activate-school', {
+            body: { schoolId: selectedSchool.id, code: selectedSchool.schoolCode },
+          });
+          if (activateError || !activateData?.ok) {
             console.error('Failed to mark school activated:', activateError);
           } else {
-            setSelectedSchool({ ...selectedSchool, activatedAt: new Date().toISOString() });
+            setSelectedSchool({ ...selectedSchool, activatedAt: activateData.activatedAt });
           }
         }
 
