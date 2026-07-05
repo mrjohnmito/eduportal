@@ -208,7 +208,7 @@ export default function StudentPromotion() {
         const sourceStatus = action === 'promote' ? 'promoted' : action === 'repeat' ? 'repeated' : 'graduated';
         await supabase.from('student_enrollments').upsert({
           school_id: selectedSchool.id, student_id: student.id,
-          academic_year: currentYear, class_level: currentClass, status: sourceStatus,
+          academic_year: currentYear, class_level: toKey(currentClass), status: sourceStatus,
         }, { onConflict: 'school_id,student_id,academic_year' });
 
         // Destination enrollment + student class update
@@ -217,14 +217,14 @@ export default function StudentPromotion() {
           toClass = destClass;
           await supabase.from('student_enrollments').upsert({
             school_id: selectedSchool.id, student_id: student.id,
-            academic_year: destYear, class_level: destClass, status: 'active',
+            academic_year: destYear, class_level: toKey(destClass), status: 'active',
           }, { onConflict: 'school_id,student_id,academic_year' });
-          await supabase.from('students').update({ class_level: destClass }).eq('id', student.id);
+          await supabase.from('students').update({ class_level: toKey(destClass) }).eq('id', student.id);
         } else if (action === 'repeat') {
           toClass = currentClass;
           await supabase.from('student_enrollments').upsert({
             school_id: selectedSchool.id, student_id: student.id,
-            academic_year: destYear, class_level: currentClass, status: 'active',
+            academic_year: destYear, class_level: toKey(currentClass), status: 'active',
           }, { onConflict: 'school_id,student_id,academic_year' });
         } else {
           toClass = ALUMNI_CLASS;
