@@ -126,6 +126,8 @@ export default function StudentPromotion() {
 
   const isFinalClass = !!settings.finalClass && currentClass === settings.finalClass;
 
+  const classNameForKey = (key: string) => classes.find(c => toKey(c.name) === key)?.name || key;
+
   // Students eligible = in the selected current class
   const eligible = useMemo(
     () => students.filter(s => s.classLevel === toKey(currentClass)),
@@ -457,7 +459,7 @@ export default function StudentPromotion() {
                             />
                           </TableCell>
                           <TableCell className="font-medium">{s.name}</TableCell>
-                          <TableCell>{s.classLevel}</TableCell>
+                          <TableCell>{classNameForKey(s.classLevel)}</TableCell>
                           <TableCell>
                             {done
                               ? <Badge variant="outline">Already promoted for {destYear}</Badge>
