@@ -144,13 +144,17 @@ export default function SuperAdminDashboard() {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
+      const { data: creds } = await supabase
+        .from('school_credentials')
+        .select('school_id, admin_email');
+      const credMap = new Map((creds || []).map((c: any) => [c.school_id, c.admin_email]));
       setSchools(
         data?.map((s) => ({
           id: s.id, name: s.name, logoUrl: s.logo_url || undefined,
           schoolCode: s.school_code, subscriptionStatus: s.subscription_status,
           subscriptionExpiry: s.subscription_expiry || undefined,
           themeColor: s.theme_color || undefined, createdAt: s.created_at,
-          adminEmail: s.admin_email || undefined, adminPasswordHash: s.admin_password_hash || undefined,
+          adminEmail: credMap.get(s.id) || undefined,
           isLocked: s.is_locked || false,
           ...( { schoolLevel: (s as any).school_level || 'jhs' } as any ),
         })) || []
