@@ -17,7 +17,8 @@ import {
   Lock,
   Share2,
   Copy,
-  Check
+  Check,
+  ArrowUpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -151,8 +152,21 @@ export function QuickActions() {
     },
   ];
 
-  // Both admin and teachers see the same actions
-  const actions = (isAdmin || isTeacher) ? commonActions : [];
+  // Admin-only actions
+  const adminActions: ActionItem[] = [
+    {
+      to: '/promotion',
+      icon: ArrowUpCircle,
+      label: 'Student Promotion',
+      description: 'Promote, repeat or graduate students',
+      bgColor: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200',
+      iconBg: 'bg-indigo-500',
+    },
+  ];
+
+  const actions = isAdmin
+    ? [...commonActions, ...adminActions]
+    : (isTeacher ? commonActions : []);
 
   // Show skeleton while loading to prevent flash of empty content
   if (loading) {
