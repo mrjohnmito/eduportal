@@ -169,6 +169,41 @@ export type Database = {
         }
         Relationships: []
       }
+      school_credentials: {
+        Row: {
+          admin_email: string | null
+          admin_password_hash: string | null
+          created_at: string
+          id: string
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_email?: string | null
+          admin_password_hash?: string | null
+          created_at?: string
+          id?: string
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_email?: string | null
+          admin_password_hash?: string | null
+          created_at?: string
+          id?: string
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_credentials_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: true
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_settings: {
         Row: {
           academic_year: string | null
@@ -237,8 +272,6 @@ export type Database = {
       schools: {
         Row: {
           activated_at: string | null
-          admin_email: string | null
-          admin_password_hash: string | null
           created_at: string
           id: string
           is_locked: boolean
@@ -252,8 +285,6 @@ export type Database = {
         }
         Insert: {
           activated_at?: string | null
-          admin_email?: string | null
-          admin_password_hash?: string | null
           created_at?: string
           id?: string
           is_locked?: boolean
@@ -267,8 +298,6 @@ export type Database = {
         }
         Update: {
           activated_at?: string | null
-          admin_email?: string | null
-          admin_password_hash?: string | null
           created_at?: string
           id?: string
           is_locked?: boolean
