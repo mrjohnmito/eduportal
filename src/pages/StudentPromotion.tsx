@@ -53,6 +53,9 @@ const nextAcademicYear = (year: string): string => {
   return year;
 };
 
+// Students store class_level as a normalized key ("Basic 1" -> "basic1")
+const toKey = (name: string) => name.toLowerCase().replace(/\s+/g, '');
+
 const actionLabel: Record<PromoAction, string> = {
   promote: 'Promote', repeat: 'Repeat', graduate: 'Graduate',
 };
@@ -125,7 +128,7 @@ export default function StudentPromotion() {
 
   // Students eligible = in the selected current class
   const eligible = useMemo(
-    () => students.filter(s => s.classLevel === currentClass),
+    () => students.filter(s => s.classLevel === toKey(currentClass)),
     [students, currentClass],
   );
 
