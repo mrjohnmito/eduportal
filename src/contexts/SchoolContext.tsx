@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Student, SubjectScore, SchoolSettings, ClassLevel } from '@/types/school';
+import { Student, SubjectScore, SchoolSettings, ClassLevel, ALUMNI_CLASS } from '@/types/school';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
@@ -78,14 +78,17 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       
       if (studentsError) throw studentsError;
       
-      setStudents(studentsData?.map(s => ({
-        id: s.id,
-        name: s.name,
-        classLevel: s.class_level,
-        photo: s.photo_url || undefined,
-        attendanceDays: (s as any).attendance_days || 0,
-        schoolId: s.school_id,
-      })) || []);
+      setStudents((studentsData || [])
+        // Graduated students live in the Alumni bucket and are hidden from active views
+        .filter(s => s.class_level !== ALUMNI_CLASS)
+        .map(s => ({
+          id: s.id,
+          name: s.name,
+          classLevel: s.class_level,
+          photo: s.photo_url || undefined,
+          attendanceDays: (s as any).attendance_days || 0,
+          schoolId: s.school_id,
+        })));
 
       // Fetch scores filtered by school_id
       const { data: scoresData, error: scoresError } = await supabase
@@ -130,6 +133,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           interestOptions: (settingsData as any).interest_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
           conductOptions: (settingsData as any).conduct_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
           nextTermBegins: (settingsData as any).next_term_begins || undefined,
+          finalClass: (settingsData as any).final_class || undefined,
           schoolId: selectedSchool.id,
         });
       } else {
@@ -421,6 +425,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       interest_options: updates.interestOptions,
       conduct_options: updates.conductOptions,
       next_term_begins: updates.nextTermBegins,
+      final_class: updates.finalClass,
       school_id: selectedSchool.id,
     };
 

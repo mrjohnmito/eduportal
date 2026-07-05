@@ -61,6 +61,7 @@ export interface SchoolSettings {
   interestOptions?: string[];
   conductOptions?: string[];
   nextTermBegins?: string;
+  finalClass?: string;
   schoolId?: string;
 }
 
@@ -83,6 +84,9 @@ export const SUBJECTS = [
 ] as const;
 
 export type Subject = typeof SUBJECTS[number];
+
+/** Bucket class used to hold graduated students, hidden from active views. */
+export const ALUMNI_CLASS = 'Alumni';
 
 export const CLASS_LEVELS: { id: ClassLevel; name: string; color: string }[] = [
   { id: 'basic7', name: 'Basic 7', color: 'basic7' },

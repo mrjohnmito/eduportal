@@ -1,36 +1,63 @@
-# Plan
+# Student Promotion Module
 
-I'll proceed with these defaults (since you let me decide):
-- **Visual direction:** Modern Mesh — vibrant blue/orange/emerald gradient orbs on white, bold sans-serif. Replaces all space/shooting-star theming.
-- **Subjects scope:** Per school level (Primary vs JHS). Super admin maintains two global subject lists.
-- **School level field:** Added to schools table; super admin picks Primary, JHS, or Both when creating a school.
+An admin-only module to move students between classes/academic years while preserving full history, with audit trail, duplicate prevention, and exportable reports.
 
-## 1. Visual redesign (Modern Mesh)
-- Update `src/index.css` design tokens: new gradients (`--gradient-mesh`, `--gradient-primary`), new shadow tokens, brighter primary (#3b82f6), accents orange (#f97316) + emerald (#10b981).
-- Rewrite `src/pages/Index.tsx` (homepage) — animated mesh blobs, bold hero, feature bento grid. No shooting stars.
-- Rewrite `src/pages/SchoolSelection.tsx` — light mesh background, clean school cards.
-- Update `src/pages/SuperAdminLogin.tsx` and `src/pages/Login.tsx` — mesh-style backdrop instead of dark blobs.
-- Refresh `src/pages/Dashboard.tsx` and `src/pages/SuperAdminDashboard.tsx` headers/cards to the new tokens.
+## Key behaviours (from your choices)
+- **Graduation** → graduated students are moved to a hidden **"Alumni"** bucket and excluded from active class lists, dashboards, and counts (all records kept).
+- **Final-year rule** → a configurable **Final Year Class** in Settings; the *Graduate* action is only enabled when the selected current class matches it.
+- **Destination academic year** → auto-incremented (e.g. `2024/2025 → 2025/2026`) but editable.
+- **Reports** → both printable **PDF** and **Excel/CSV** export.
 
-## 2. Teacher sees only their assigned class(es)
-- `src/pages/Dashboard.tsx`: when `teacherSession` exists, fetch the teacher's `teacher_class_assignments` and filter the rendered class cards to only those classes.
-- All other dashboard widgets (students, subscription, etc.) hidden or scoped for teachers.
+## Data model (new tables)
 
-## 3. Super Admin Subjects by School Level
-- **Migration:**
-  - Add `school_level text` (`primary` | `jhs` | `both`) to `schools`.
-  - New table `level_subjects(id, level, name, created_at)` with RLS: public SELECT, super_admin INSERT/UPDATE/DELETE.
-- **Super Admin UI:** new "Subjects" tab in `SuperAdminDashboard.tsx` — two columns (Primary / JHS), add/remove subjects.
-- **School creation form:** add Primary/JHS/Both selector.
-- **ScoreEntry / ClassPortal:** replace hardcoded `SUBJECTS` constant with a hook `useSchoolSubjects()` that reads the school's level and pulls the matching `level_subjects`.
+Because students currently store only a single `class_level` text field (no history), we add two tables.
+
+```text
+student_enrollments   -> the historical record (one row per student per year+class)
+  school_id, student_id, academic_year, class_level,
+  status: active | promoted | repeated | graduated
+  UNIQUE (school_id, student_id, academic_year)
+
+student_promotions    -> audit trail (who/when/what)
+  school_id, student_id, student_name (snapshot),
+  action: promote | repeat | graduate,
+  from_academic_year, from_class,
+  to_academic_year, to_class (nullable for graduate = 'Alumni'),
+  performed_by (admin email from session), performed_at
+```
+
+- **Duplicate prevention**: partial unique index on `student_promotions (school_id, student_id, to_academic_year)` for `promote`/`repeat`, plus a pre-check in the UI so already-promoted students are shown disabled.
+- **RLS/grants**: follow the app's existing pattern — policies scoped by `school_id`, grants to `anon`/`authenticated`/`service_role` — since school admins operate via the anon key (consistent with current tables and the security memory).
+
+## Promotion logic (per student, on confirm)
+- **Promote**: close source enrollment (`from` year/class → `promoted`), create destination enrollment (`to` year/class → `active`), set `students.class_level = toClass`, write audit row.
+- **Repeat**: source → `repeated`, new enrollment for the *same* class in the destination year → `active`, `class_level` unchanged, audit row.
+- **Graduate** (only when current class = Final Year Class): source → `graduated`, `students.class_level = 'Alumni'`, audit row (`to_class = 'Alumni'`).
+- Runs sequentially with a live **progress bar**; per-row success/failure is tallied and reported.
+
+## Frontend
+
+**New page** `src/pages/StudentPromotion.tsx` (route `/promotion`, admin-only guard — teachers redirected):
+- Selectors: Current Academic Year (default from settings), Current Class, Destination Academic Year (auto-filled, editable), Destination Class.
+- Eligible list = students whose `class_level` = current class; table with per-row checkboxes + select-all, photo/name/class.
+- Already-promoted-for-destination-year students shown with a badge and disabled checkbox.
+- Action buttons: **Promote All**, **Promote Selected**, **Repeat Selected**, **Graduate Selected** (enabled only for final-year class).
+- **Confirmation dialog** (AlertDialog) summarising action, source/destination, and student count before executing.
+- Loading skeletons, progress bar during bulk run, success/error toasts.
+- **Promotion Report** section: filter history by academic year / class, **Print** (opens print view), **Export PDF** (jsPDF + autotable), **Export Excel** (XLSX). Reuses the app's existing PDF/spreadsheet tooling (installed if missing).
+
+**Settings** (`src/pages/Settings.tsx`): add a **Final Year Class** dropdown (persisted on `school_settings`, new `final_class` column).
+
+**Dashboard** (`src/components/dashboard/QuickActions.tsx`): add an admin-only **Student Promotion** quick-action card (GraduationCap icon), linking to `/promotion`.
+
+**Alumni hiding**: introduce an `ALUMNI_CLASS = 'Alumni'` constant and filter it out of active student lists/counts (SchoolContext consumers, StudentManagement, dashboard totals) so graduated students disappear from active views but remain queryable.
+
+**Routing**: register `/promotion` in `src/App.tsx`.
+
+## Styling
+Matches the existing Modern Mesh theme (gradient blob backgrounds, glassmorphic cards, framer-motion entrance/hover), using semantic design tokens — no hardcoded colors.
 
 ## Technical notes
-- Keep existing teacher access-code auth (sessionStorage) — no changes to auth flow.
-- Subject hook returns array of strings; falls back to current `SUBJECTS` constant if no rows yet (so existing schools keep working).
-- Homepage uses Tailwind semantic tokens only (no hardcoded colors in JSX).
-
-## Out of scope
-- No data migration of existing scores (subject names stay as-is).
-- No changes to PDF report layout.
-
-Shall I proceed?
+- Migration adds the two tables (with GRANTs + RLS + triggers) and the `school_settings.final_class` column.
+- Audit `performed_by` is captured from the admin `sessionStorage` session email (consistent with the current auth model).
+- All selector inputs validated before enabling actions; destination class/year required for promote/repeat.
