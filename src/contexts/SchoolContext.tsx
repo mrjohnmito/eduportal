@@ -133,6 +133,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           interestOptions: (settingsData as any).interest_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
           conductOptions: (settingsData as any).conduct_options || ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Fair'],
           nextTermBegins: (settingsData as any).next_term_begins || undefined,
+          finalClass: (settingsData as any).final_class || undefined,
           schoolId: selectedSchool.id,
         });
       } else {
@@ -424,6 +425,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       interest_options: updates.interestOptions,
       conduct_options: updates.conductOptions,
       next_term_begins: updates.nextTermBegins,
+      final_class: updates.finalClass,
       school_id: selectedSchool.id,
     };
 
