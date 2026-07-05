@@ -568,6 +568,24 @@ export default function Settings() {
                   </p>
                 </div>
 
+                {/* Final Year Class (for graduation) */}
+                <div className="space-y-2">
+                  <Label htmlFor="finalClass">Final Year Class</Label>
+                  <Select value={finalClass || undefined} onValueChange={setFinalClass}>
+                    <SelectTrigger id="finalClass">
+                      <SelectValue placeholder="Select the graduating class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map(c => (
+                        <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Students in this class can be graduated (moved to Alumni) from the Student Promotion page
+                  </p>
+                </div>
+
                 {/* Contact Numbers */}
                 <div className="space-y-2">
                   <Label htmlFor="contacts">Contact Numbers (comma separated)</Label>
