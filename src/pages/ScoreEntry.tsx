@@ -31,6 +31,7 @@ export default function ScoreEntry() {
     getScoresByClassAndSubject,
     addScore,
     updateScore,
+    refreshData,
   } = useSchool();
   const { selectedSchool } = useSelectedSchool();
 
@@ -38,6 +39,7 @@ export default function ScoreEntry() {
   const [loading, setLoading] = useState(true);
   const [scoreRows, setScoreRows] = useState<ScoreRow[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const decodedSubject = decodeURIComponent(subject || '');
 
@@ -143,6 +145,8 @@ export default function ScoreEntry() {
   }, [scoreRows]);
 
   const handleSave = async () => {
+    if (isSaving) return;
+
     if (hasErrors) {
       toast({
         title: 'Validation Error',
@@ -152,26 +156,44 @@ export default function ScoreEntry() {
       return;
     }
 
-    let saved = 0;
-    for (const row of scoreRows) {
-      if (row.score.id) {
-        updateScore(row.score.id, row.score);
-      } else if (
-        row.score.test1 !== null ||
-        row.score.groupWork !== null ||
-        row.score.test2 !== null ||
-        row.score.project !== null ||
-        row.score.examScore !== null
-      ) {
-        addScore(row.score);
-      }
-      saved++;
-    }
+    setIsSaving(true);
 
-    toast({
-      title: 'Scores Saved',
-      description: `Successfully saved scores for ${saved} students.`,
-    });
+    try {
+      let saved = 0;
+
+      for (const row of scoreRows) {
+        const hasEnteredScore =
+          row.score.test1 !== null ||
+          row.score.groupWork !== null ||
+          row.score.test2 !== null ||
+          row.score.project !== null ||
+          row.score.examScore !== null;
+
+        if (row.score.id) {
+          await updateScore(row.score.id, row.score);
+          saved++;
+        } else if (hasEnteredScore) {
+          await addScore(row.score);
+          saved++;
+        }
+      }
+
+      await refreshData();
+
+      toast({
+        title: 'Scores Saved',
+        description: `Successfully saved scores for ${saved} student${saved === 1 ? '' : 's'}.`,
+      });
+    } catch (error) {
+      console.error('Error saving scores:', error);
+      toast({
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'Could not save scores. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -382,11 +404,11 @@ export default function ScoreEntry() {
             <Button
               size="sm"
               onClick={handleSave}
-              disabled={hasErrors}
+                disabled={hasErrors || isSaving}
               className="gap-2 bg-green-500 hover:bg-green-600 text-white"
             >
-              <Save className="h-4 w-4" />
-              Save All
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {isSaving ? 'Saving...' : 'Save All'}
             </Button>
           </div>
 
