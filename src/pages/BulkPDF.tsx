@@ -355,16 +355,20 @@ const BulkPDF: React.FC = () => {
 
         // ===== STUDENT INFO CARD =====
         const cardH = 28;
+
+        // Adjust this value to push the entire card container down away from the top elements
+        y += 8; 
+
         // Shadow
         doc.setFillColor(220, 220, 220);
         doc.roundedRect(margin + 0.5, y + 0.5, contentW, cardH, 3, 3, 'F');
         // Card
         drawRoundedRect(doc, margin, y, contentW, cardH, 3, [248, 249, 250], [220, 220, 220]);
 
-        const cardY = y + 4;
+        const cardY = y + 5;
         const col1X = margin + 5;
         const col2X = margin + contentW / 2 + 5;
-        const lineH = 5;
+        const lineH = 5.5;
 
         doc.setFontSize(7.5);
 
