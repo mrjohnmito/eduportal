@@ -396,7 +396,11 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   };
 
   const getScoresByClassAndSubject = (classLevel: string, subject: string) => {
-    return scores.filter(s => s.classLevel === classLevel && s.subject === subject);
+    const normalizedSearchSubject = subject.trim().toLowerCase();
+    return scores.filter(s => 
+      s.classLevel === classLevel && 
+      (s.subject === subject || s.subject.toLowerCase() === normalizedSearchSubject)
+    );
   };
 
   const getStudentsByClass = (classLevel: string) => {
