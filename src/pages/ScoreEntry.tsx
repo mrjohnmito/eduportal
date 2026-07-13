@@ -77,7 +77,7 @@ export default function ScoreEntry() {
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [isDeletingStudent, setIsDeletingStudent] = useState(false);
 
-  const decodedSubject = decodeURIComponent(subject || '').trim();
+  const decodedSubject = decodeURIComponent(subject || '');
 
   // Fetch class info filtered by school_id
   useEffect(() => {
@@ -113,17 +113,10 @@ export default function ScoreEntry() {
     };
 
     fetchClass();
-  }, [classLevel, subject, navigate, selectedSchool]);
+  }, [classLevel, subject, navigate]);
 
   const students = classLevel ? getStudentsByClass(classLevel) : [];
   const existingScores = classLevel ? getScoresByClassAndSubject(classLevel, decodedSubject) : [];
-  
-  // Debug: Log if no existing scores found for debugging
-  useEffect(() => {
-    if (classLevel && decodedSubject && existingScores.length === 0) {
-      console.log('No existing scores found for:', { classLevel, decodedSubject });
-    }
-  }, [classLevel, decodedSubject, existingScores.length]);
 
   // Initialize score rows
   useEffect(() => {
