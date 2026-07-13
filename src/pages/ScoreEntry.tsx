@@ -366,10 +366,6 @@ export default function ScoreEntry() {
     }
   };
 
-  if (loading || !classInfo || !classLevel) {
-    // handlers hoisted below via closures; placeholder
-  }
-
   const openEdit = (student: Student) => {
     setEditingStudent(student);
     setEditName(student.name);
