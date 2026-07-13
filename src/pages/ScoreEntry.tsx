@@ -8,10 +8,36 @@ import { calculateScores, validateScore } from '@/lib/gradeUtils';
 import { CalculatedScore } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, Save, Users, Download, Loader2 } from 'lucide-react';
+import { ChevronLeft, Save, Users, Download, Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -32,6 +58,9 @@ export default function ScoreEntry() {
     addScore,
     updateScore,
     refreshData,
+    updateStudent,
+    deleteStudent,
+    isAdmin,
   } = useSchool();
   const { selectedSchool } = useSelectedSchool();
 
@@ -40,6 +69,13 @@ export default function ScoreEntry() {
   const [scoreRows, setScoreRows] = useState<ScoreRow[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [allClasses, setAllClasses] = useState<{ id: string; name: string }[]>([]);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editClass, setEditClass] = useState('');
+  const [isSavingStudent, setIsSavingStudent] = useState(false);
+  const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+  const [isDeletingStudent, setIsDeletingStudent] = useState(false);
 
   const decodedSubject = decodeURIComponent(subject || '');
 
@@ -72,6 +108,7 @@ export default function ScoreEntry() {
       }
 
       setClassInfo({ id: foundClass.id, name: foundClass.name });
+      setAllClasses(data.map(c => ({ id: c.id, name: c.name })));
       setLoading(false);
     };
 
