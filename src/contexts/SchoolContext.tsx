@@ -16,8 +16,8 @@ interface SchoolContextType {
   addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
-  addScore: (score: Omit<SubjectScore, 'id'>) => Promise<void>;
-  updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<void>;
+  addScore: (score: Omit<SubjectScore, 'id'>) => Promise<SubjectScore>;
+  updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<SubjectScore>;
   getScoresByClassAndSubject: (classLevel: string, subject: string) => SubjectScore[];
   getStudentsByClass: (classLevel: string) => Student[];
   clearSubjectData: (classLevel: string, subject: string) => Promise<void>;
@@ -147,6 +147,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      throw error;
     } finally {
       setDataLoading(false);
     }
@@ -313,7 +314,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     setScores(prev => prev.filter(s => s.studentId !== id));
   };
 
-  const addScore = async (score: Omit<SubjectScore, 'id'>) => {
+  const addScore = async (score: Omit<SubjectScore, 'id'>): Promise<SubjectScore> => {
     if (!selectedSchool) throw new Error('No school selected');
 
     const { data, error } = await supabase
@@ -337,23 +338,24 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
-    if (data) {
-      setScores(prev => [...prev, {
-        id: data.id,
-        studentId: data.student_id,
-        classLevel: data.class_level as ClassLevel,
-        subject: data.subject,
-        test1: Number(data.test1) || null,
-        groupWork: Number(data.group_work) || null,
-        test2: Number(data.test2) || null,
-        project: Number(data.project) || null,
-        examScore: Number(data.exam) || null,
-        schoolId: data.school_id,
-      }]);
-    }
+    const persistedScore: SubjectScore = {
+      id: data.id,
+      studentId: data.student_id,
+      classLevel: data.class_level as ClassLevel,
+      subject: data.subject,
+      test1: Number(data.test1) || null,
+      groupWork: Number(data.group_work) || null,
+      test2: Number(data.test2) || null,
+      project: Number(data.project) || null,
+      examScore: Number(data.exam) || null,
+      schoolId: data.school_id,
+    };
+
+    setScores(prev => [...prev, persistedScore]);
+    return persistedScore;
   };
 
-  const updateScore = async (id: string, updates: Partial<SubjectScore>) => {
+  const updateScore = async (id: string, updates: Partial<SubjectScore>): Promise<SubjectScore> => {
     const { error } = await supabase
       .from('scores')
       .update({
@@ -370,9 +372,27 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
+    const existingScore = scores.find(s => s.id === id);
+    const persistedScore: SubjectScore = {
+      ...(existingScore || {
+        id,
+        studentId: '',
+        subject: '',
+        classLevel: 'basic7' as ClassLevel,
+        test1: null,
+        groupWork: null,
+        test2: null,
+        project: null,
+        examScore: null,
+      }),
+      ...updates,
+    };
+
     setScores(prev =>
-      prev.map(s => (s.id === id ? { ...s, ...updates } : s))
+      prev.map(s => (s.id === id ? persistedScore : s))
     );
+
+    return persistedScore;
   };
 
   const getScoresByClassAndSubject = (classLevel: string, subject: string) => {

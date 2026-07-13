@@ -197,6 +197,7 @@ export default function ScoreEntry() {
 
     try {
       let saved = 0;
+      const failures: Array<{ studentName: string; message: string }> = [];
 
       for (const row of scoreRows) {
         const hasEnteredScore =
@@ -206,16 +207,47 @@ export default function ScoreEntry() {
           row.score.project !== null ||
           row.score.examScore !== null;
 
-        if (row.score.id) {
-          await updateScore(row.score.id, row.score);
-          saved++;
-        } else if (hasEnteredScore) {
-          await addScore(row.score);
-          saved++;
+        try {
+          if (row.score.id) {
+            const savedScore = await updateScore(row.score.id, row.score);
+            setScoreRows(prev => prev.map(currentRow =>
+              currentRow.student.id === row.student.id
+                ? { ...currentRow, score: { ...currentRow.score, ...savedScore } }
+                : currentRow
+            ));
+            saved++;
+          } else if (hasEnteredScore) {
+            const savedScore = await addScore(row.score);
+            setScoreRows(prev => prev.map(currentRow =>
+              currentRow.student.id === row.student.id
+                ? { ...currentRow, score: { ...currentRow.score, ...savedScore } }
+                : currentRow
+            ));
+            saved++;
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown save error';
+          console.error('Failed to save score row', {
+            studentId: row.student.id,
+            studentName: row.student.name,
+            classLevel,
+            subject: decodedSubject,
+            error,
+          });
+          failures.push({ studentName: row.student.name, message });
         }
       }
 
       await refreshData();
+
+      if (failures.length > 0) {
+        throw new Error(
+          failures
+            .slice(0, 3)
+            .map(failure => `${failure.studentName}: ${failure.message}`)
+            .join(' • ')
+        );
+      }
 
       toast({
         title: 'Scores Saved',
