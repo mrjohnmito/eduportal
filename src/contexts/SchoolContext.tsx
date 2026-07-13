@@ -317,19 +317,21 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   const addScore = async (score: Omit<SubjectScore, 'id'>): Promise<SubjectScore> => {
     if (!selectedSchool) throw new Error('No school selected');
 
+    const payload = {
+      student_id: score.studentId,
+      class_level: score.classLevel,
+      subject: score.subject,
+      test1: score.test1,
+      group_work: score.groupWork,
+      test2: score.test2,
+      project: score.project,
+      exam: score.examScore,
+      school_id: selectedSchool.id,
+    };
+
     const { data, error } = await supabase
       .from('scores')
-      .insert({
-        student_id: score.studentId,
-        class_level: score.classLevel,
-        subject: score.subject,
-        test1: score.test1,
-        group_work: score.groupWork,
-        test2: score.test2,
-        project: score.project,
-        exam: score.examScore,
-        school_id: selectedSchool.id,
-      })
+      .upsert(payload, { onConflict: 'student_id,class_level,subject' })
       .select()
       .single();
 
@@ -351,7 +353,22 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       schoolId: data.school_id,
     };
 
-    setScores(prev => [...prev, persistedScore]);
+    setScores(prev => {
+      const existingIndex = prev.findIndex(existing =>
+        existing.studentId === score.studentId &&
+        existing.classLevel === score.classLevel &&
+        existing.subject === score.subject
+      );
+
+      if (existingIndex >= 0) {
+        const nextScores = [...prev];
+        nextScores[existingIndex] = persistedScore;
+        return nextScores;
+      }
+
+      return [...prev, persistedScore];
+    });
+
     return persistedScore;
   };
 
