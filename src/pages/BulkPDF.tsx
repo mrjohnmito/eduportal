@@ -356,8 +356,8 @@ const BulkPDF: React.FC = () => {
         // ===== STUDENT INFO CARD =====
         const cardH = 28;
 
-        // Adjust this value to push the entire card container down away from the top elements
-        y += 8; 
+        // Push the student info card slightly lower so it stays clear of the photo box
+        y += 10;
 
         // Shadow
         doc.setFillColor(220, 220, 220);
