@@ -367,6 +367,58 @@ export default function ScoreEntry() {
   };
 
   if (loading || !classInfo || !classLevel) {
+    // handlers hoisted below via closures; placeholder
+  }
+
+  const openEdit = (student: Student) => {
+    setEditingStudent(student);
+    setEditName(student.name);
+    setEditClass(student.classLevel);
+  };
+
+  const handleUpdateStudent = async () => {
+    if (!editingStudent) return;
+    if (!editName.trim()) {
+      toast({ title: 'Name required', description: 'Please enter a student name.', variant: 'destructive' });
+      return;
+    }
+    setIsSavingStudent(true);
+    try {
+      await updateStudent(editingStudent.id, { name: editName.trim(), classLevel: editClass });
+      await refreshData();
+      toast({ title: 'Student Updated', description: `${editName.trim()} has been updated.` });
+      setEditingStudent(null);
+    } catch (error) {
+      toast({
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Could not update student.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingStudent(false);
+    }
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!deletingStudent) return;
+    setIsDeletingStudent(true);
+    try {
+      await deleteStudent(deletingStudent.id);
+      await refreshData();
+      toast({ title: 'Student Deleted', description: `${deletingStudent.name} has been removed.` });
+      setDeletingStudent(null);
+    } catch (error) {
+      toast({
+        title: 'Delete Failed',
+        description: error instanceof Error ? error.message : 'Could not delete student.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingStudent(false);
+    }
+  };
+
+  if (loading || !classInfo || !classLevel) {
     return (
       <MainLayout>
         <div className="container py-8 text-center text-muted-foreground">
