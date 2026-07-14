@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
+import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -11,8 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CLASS_LEVELS, ClassLevel } from '@/types/school';
-import { useSchoolSubjects } from '@/hooks/useSchoolSubjects';
+import { CLASS_LEVELS, ClassLevel, SUBJECTS } from '@/types/school';
+import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, Trash2, AlertTriangle } from 'lucide-react';
 import {
   AlertDialog,
@@ -25,15 +26,97 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+interface ClassOption {
+  id: string;
+  name: string;
+  classKey: string;
+}
+
 export default function ClearData() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { clearSubjectData, isAdmin } = useSchool();
+  const { selectedSchool } = useSelectedSchool();
 
   const [selectedClass, setSelectedClass] = useState<ClassLevel | ''>('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
-  const { subjects } = useSchoolSubjects();
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [subjects, setSubjects] = useState<string[]>([...SUBJECTS]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (!selectedSchool?.id) {
+        setClasses([]);
+        setLoadingClasses(false);
+        return;
+      }
+
+      setLoadingClasses(true);
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('school_id', selectedSchool.id)
+        .order('name');
+
+      if (!error && data) {
+        const formattedClasses = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          classKey: item.name.toLowerCase().replace(/\s/g, ''),
+        }));
+        setClasses(formattedClasses);
+      } else {
+        setClasses([]);
+      }
+      setLoadingClasses(false);
+    };
+
+    fetchClasses();
+  }, [selectedSchool?.id]);
+
+  useEffect(() => {
+    if (!selectedClass) {
+      setSelectedSubject('');
+      return;
+    }
+
+    const loadSubjectsForClass = async () => {
+      if (!selectedSchool?.id) {
+        setSubjects([...SUBJECTS]);
+        setSelectedSubject('');
+        return;
+      }
+
+      const selectedClassName = classes.find((c) => c.classKey === selectedClass)?.name;
+      if (!selectedClassName) {
+        setSubjects([...SUBJECTS]);
+        setSelectedSubject('');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('scores' as any)
+          .select('subject')
+          .eq('school_id', selectedSchool.id)
+          .eq('class_level', selectedClass);
+
+        if (error) throw error;
+
+        const uniqueSubjects = Array.from(new Set((data || []).map((item: any) => item.subject).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+        setSubjects(uniqueSubjects.length > 0 ? uniqueSubjects : [...SUBJECTS]);
+      } catch (error) {
+        console.error('Error loading subjects for class:', error);
+        setSubjects([...SUBJECTS]);
+      }
+
+      setSelectedSubject('');
+    };
+
+    loadSubjectsForClass();
+  }, [selectedClass, selectedSchool?.id, classes]);
 
   const handleClear = () => {
     if (!selectedClass || !selectedSubject) return;
@@ -41,7 +124,7 @@ export default function ClearData() {
     clearSubjectData(selectedClass, selectedSubject);
     toast({
       title: 'Data Cleared',
-      description: `All ${selectedSubject} scores for ${CLASS_LEVELS.find(c => c.id === selectedClass)?.name} have been deleted.`,
+      description: `All ${selectedSubject} scores for ${classes.find(c => c.classKey === selectedClass)?.name || selectedClass} have been deleted.`,
     });
     setShowConfirm(false);
     setSelectedClass('');
@@ -96,14 +179,18 @@ export default function ClearData() {
               <label className="text-sm font-medium">Select Class</label>
               <Select value={selectedClass} onValueChange={(v) => setSelectedClass(v as ClassLevel)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a class" />
+                  <SelectValue placeholder={loadingClasses ? 'Loading classes...' : 'Choose a class'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {CLASS_LEVELS.map(level => (
-                    <SelectItem key={level.id} value={level.id}>
-                      {level.name}
+                  {classes.length > 0 ? classes.map(classItem => (
+                    <SelectItem key={classItem.id} value={classItem.classKey}>
+                      {classItem.name}
                     </SelectItem>
-                  ))}
+                  )) : (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      {loadingClasses ? 'Loading classes...' : 'No classes found'}
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -112,7 +199,7 @@ export default function ClearData() {
               <label className="text-sm font-medium">Select Subject</label>
               <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a subject" />
+                  <SelectValue placeholder={selectedClass ? 'Choose a subject' : 'Select a class first'} />
                 </SelectTrigger>
                 <SelectContent>
                   {subjects.map(subject => (
@@ -143,7 +230,7 @@ export default function ClearData() {
               <AlertDialogTitle>Confirm Data Deletion</AlertDialogTitle>
               <AlertDialogDescription>
                 You are about to delete all <strong>{selectedSubject}</strong> scores for{' '}
-                <strong>{CLASS_LEVELS.find(c => c.id === selectedClass)?.name}</strong>.
+                <strong>{classes.find(c => c.classKey === selectedClass)?.name || selectedClass}</strong>.
                 <br /><br />
                 This action cannot be undone. Are you sure you want to proceed?
               </AlertDialogDescription>
