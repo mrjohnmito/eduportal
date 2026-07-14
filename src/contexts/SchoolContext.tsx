@@ -114,7 +114,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       
       if (studentsError) throw studentsError;
       
-      setStudents((studentsData || [])
+      const activeStudents = (studentsData || [])
         // Graduated students live in the Alumni bucket and are hidden from active views
         .filter(s => s.class_level !== ALUMNI_CLASS)
         .map(s => ({
@@ -124,13 +124,21 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           photo: s.photo_url || undefined,
           attendanceDays: (s as any).attendance_days || 0,
           schoolId: s.school_id,
-        })));
+        }));
 
-      // Fetch scores filtered by school_id
-      const { data: scoresData, error: scoresError } = await supabase
+      setStudents(activeStudents);
+
+      // Fetch scores for this school's students. Include legacy rows with a missing school_id
+      // so old saved marks do not stay hidden and cause duplicate-key errors on the next save.
+      const studentIds = activeStudents.map(student => student.id);
+      const scoresQuery = supabase
         .from('scores')
         .select('*')
-        .eq('school_id', selectedSchool.id);
+        .or(`school_id.eq.${selectedSchool.id},school_id.is.null`);
+
+      const { data: scoresData, error: scoresError } = studentIds.length > 0
+        ? await scoresQuery.in('student_id', studentIds)
+        : { data: [], error: null };
       
       if (scoresError) throw scoresError;
       
@@ -351,23 +359,21 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
       for (const score of scoresToSave) {
         const scorePayload = toScorePayload(score, selectedSchool.id);
-        const { data: existing, error: selectError } = await supabase
+        const { data: existingScores, error: selectError } = await supabase
           .from('scores')
           .select('*')
-          .eq('school_id', selectedSchool.id)
           .eq('student_id', score.studentId)
           .eq('class_level', score.classLevel)
-          .eq('subject', score.subject)
-          .maybeSingle();
+          .eq('subject', score.subject);
 
         if (selectError) throw selectError;
+        const existing = (existingScores || []).find((row: any) => row.school_id === selectedSchool.id) || existingScores?.[0];
 
         if (existing) {
           const { data: updated, error: updateError } = await supabase
             .from('scores')
             .update(scorePayload as any)
             .eq('id', existing.id)
-            .eq('school_id', selectedSchool.id)
             .select()
             .single();
 
@@ -389,23 +395,21 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
         if (!isConflictError(insertError)) throw insertError;
 
-        const { data: duplicate, error: duplicateSelectError } = await supabase
+        const { data: duplicateScores, error: duplicateSelectError } = await supabase
           .from('scores')
           .select('*')
-          .eq('school_id', selectedSchool.id)
           .eq('student_id', score.studentId)
           .eq('class_level', score.classLevel)
-          .eq('subject', score.subject)
-          .maybeSingle();
+          .eq('subject', score.subject);
 
         if (duplicateSelectError) throw duplicateSelectError;
+        const duplicate = (duplicateScores || []).find((row: any) => row.school_id === selectedSchool.id) || duplicateScores?.[0];
         if (!duplicate) throw insertError;
 
         const { data: updatedDuplicate, error: duplicateUpdateError } = await supabase
           .from('scores')
           .update(scorePayload as any)
           .eq('id', duplicate.id)
-          .eq('school_id', selectedSchool.id)
           .select()
           .single();
 
