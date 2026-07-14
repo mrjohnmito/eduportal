@@ -56,6 +56,25 @@ const mapScoreRow = (s: any): SubjectScore => ({
 const scoreIdentity = (score: Pick<SubjectScore, 'studentId' | 'classLevel' | 'subject'>) =>
   `${score.studentId}|${score.classLevel}|${score.subject}`;
 
+const toScorePayload = (score: Omit<SubjectScore, 'id'>, schoolId: string) => ({
+  student_id: score.studentId,
+  class_level: score.classLevel,
+  subject: score.subject,
+  test1: score.test1,
+  group_work: score.groupWork,
+  test2: score.test2,
+  project: score.project,
+  exam: score.examScore,
+  school_id: schoolId,
+});
+
+const isConflictError = (error: any) =>
+  error?.code === '23505' ||
+  error?.code === '42P10' ||
+  String(error?.message || '').toLowerCase().includes('duplicate key') ||
+  String(error?.message || '').toLowerCase().includes('unique constraint') ||
+  String(error?.message || '').toLowerCase().includes('no unique or exclusion constraint');
+
 export function SchoolProvider({ children }: { children: ReactNode }) {
   const { selectedSchool } = useSelectedSchool();
   const [students, setStudents] = useState<Student[]>([]);
@@ -325,17 +344,77 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     if (!selectedSchool) throw new Error('No school selected');
     if (scoresToSave.length === 0) return [];
 
-    const payload = scoresToSave.map(score => ({
-      student_id: score.studentId,
-      class_level: score.classLevel,
-      subject: score.subject,
-      test1: score.test1,
-      group_work: score.groupWork,
-      test2: score.test2,
-      project: score.project,
-      exam: score.examScore,
-      school_id: selectedSchool.id,
-    }));
+    const payload = scoresToSave.map(score => toScorePayload(score, selectedSchool.id));
+
+    const saveIndividually = async (): Promise<SubjectScore[]> => {
+      const saved: SubjectScore[] = [];
+
+      for (const score of scoresToSave) {
+        const scorePayload = toScorePayload(score, selectedSchool.id);
+        const { data: existing, error: selectError } = await supabase
+          .from('scores')
+          .select('*')
+          .eq('school_id', selectedSchool.id)
+          .eq('student_id', score.studentId)
+          .eq('class_level', score.classLevel)
+          .eq('subject', score.subject)
+          .maybeSingle();
+
+        if (selectError) throw selectError;
+
+        if (existing) {
+          const { data: updated, error: updateError } = await supabase
+            .from('scores')
+            .update(scorePayload as any)
+            .eq('id', existing.id)
+            .eq('school_id', selectedSchool.id)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+          saved.push(mapScoreRow(updated));
+          continue;
+        }
+
+        const { data: inserted, error: insertError } = await supabase
+          .from('scores')
+          .insert(scorePayload as any)
+          .select()
+          .single();
+
+        if (!insertError) {
+          saved.push(mapScoreRow(inserted));
+          continue;
+        }
+
+        if (!isConflictError(insertError)) throw insertError;
+
+        const { data: duplicate, error: duplicateSelectError } = await supabase
+          .from('scores')
+          .select('*')
+          .eq('school_id', selectedSchool.id)
+          .eq('student_id', score.studentId)
+          .eq('class_level', score.classLevel)
+          .eq('subject', score.subject)
+          .maybeSingle();
+
+        if (duplicateSelectError) throw duplicateSelectError;
+        if (!duplicate) throw insertError;
+
+        const { data: updatedDuplicate, error: duplicateUpdateError } = await supabase
+          .from('scores')
+          .update(scorePayload as any)
+          .eq('id', duplicate.id)
+          .eq('school_id', selectedSchool.id)
+          .select()
+          .single();
+
+        if (duplicateUpdateError) throw duplicateUpdateError;
+        saved.push(mapScoreRow(updatedDuplicate));
+      }
+
+      return saved;
+    };
 
     const { data, error } = await supabase
       .from('scores')
@@ -345,11 +424,27 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       .select();
 
     if (error) {
+      if (isConflictError(error)) {
+        const savedScores = await saveIndividually();
+        const savedKeys = new Set(savedScores.map(scoreIdentity));
+
+        setScores(prev => [
+          ...prev.filter(score => !savedKeys.has(scoreIdentity(score))),
+          ...savedScores,
+        ]);
+
+        return savedScores;
+      }
+
       console.error('Error saving scores:', error);
       throw error;
     }
 
     const savedScores = (data || []).map(mapScoreRow);
+    if (savedScores.length !== scoresToSave.length) {
+      throw new Error('Scores were saved, but the latest records could not be loaded. Please refresh and try again.');
+    }
+
     const savedKeys = new Set(savedScores.map(scoreIdentity));
 
     setScores(prev => [
