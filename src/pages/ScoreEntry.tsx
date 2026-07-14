@@ -55,8 +55,7 @@ export default function ScoreEntry() {
   const {
     getStudentsByClass,
     getScoresByClassAndSubject,
-    addScore,
-    updateScore,
+    upsertScores,
     refreshData,
     updateStudent,
     deleteStudent,
@@ -117,6 +116,10 @@ export default function ScoreEntry() {
 
   const students = classLevel ? getStudentsByClass(classLevel) : [];
   const existingScores = classLevel ? getScoresByClassAndSubject(classLevel, decodedSubject) : [];
+  const studentsKey = students.map(s => `${s.id}:${s.name}:${s.classLevel}`).join('|');
+  const existingScoresKey = existingScores
+    .map(s => `${s.id}:${s.studentId}:${s.test1 ?? ''}:${s.groupWork ?? ''}:${s.test2 ?? ''}:${s.project ?? ''}:${s.examScore ?? ''}`)
+    .join('|');
 
   // Initialize score rows
   useEffect(() => {
@@ -134,6 +137,7 @@ export default function ScoreEntry() {
         test2: null,
         project: null,
         examScore: null,
+        schoolId: selectedSchool?.id,
       };
       
       return {
@@ -144,7 +148,7 @@ export default function ScoreEntry() {
       };
     });
     setScoreRows(rows);
-  }, [students.length, existingScores.length, classLevel, decodedSubject]);
+  }, [studentsKey, existingScoresKey, classLevel, decodedSubject, selectedSchool?.id]);
 
   const handleScoreChange = useCallback((
     studentId: string,
@@ -196,9 +200,7 @@ export default function ScoreEntry() {
     setIsSaving(true);
 
     try {
-      let saved = 0;
-
-      for (const row of scoreRows) {
+      const rowsToSave = scoreRows.filter(row => {
         const hasEnteredScore =
           row.score.test1 !== null ||
           row.score.groupWork !== null ||
@@ -206,26 +208,54 @@ export default function ScoreEntry() {
           row.score.project !== null ||
           row.score.examScore !== null;
 
-        if (row.score.id) {
-          await updateScore(row.score.id, row.score);
-          saved++;
-        } else if (hasEnteredScore) {
-          await addScore(row.score);
-          saved++;
-        }
+        return row.score.id || hasEnteredScore;
+      });
+
+      if (rowsToSave.length === 0) {
+        toast({
+          title: 'No Scores Entered',
+          description: 'Enter at least one score before saving.',
+        });
+        return;
       }
+
+      const savedScores = await upsertScores(
+        rowsToSave.map(row => ({
+          ...row.score,
+          schoolId: selectedSchool?.id,
+        }))
+      );
+
+      const savedByStudent = new Map(savedScores.map(score => [score.studentId, score]));
+
+      setScoreRows(prev =>
+        prev.map(row => {
+          const savedScore = savedByStudent.get(row.student.id);
+          if (!savedScore) return row;
+
+          return {
+            ...row,
+            score: savedScore,
+            calculated: calculateScores(savedScore),
+            errors: {},
+          };
+        })
+      );
 
       await refreshData();
 
       toast({
         title: 'Scores Saved',
-        description: `Successfully saved scores for ${saved} student${saved === 1 ? '' : 's'}.`,
+        description: `Successfully saved scores for ${savedScores.length} student${savedScores.length === 1 ? '' : 's'}.`,
       });
     } catch (error) {
       console.error('Error saving scores:', error);
+      const message = error instanceof Error ? error.message : 'Could not save scores. Please try again.';
       toast({
         title: 'Save Failed',
-        description: error instanceof Error ? error.message : 'Could not save scores. Please try again.',
+        description: message.includes('duplicate key') || message.includes('23505')
+          ? 'This score already exists. Please reload the page and try saving again.'
+          : message,
         variant: 'destructive',
       });
     } finally {
