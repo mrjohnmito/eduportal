@@ -17,6 +17,7 @@ interface SchoolContextType {
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
   addScore: (score: Omit<SubjectScore, 'id'>) => Promise<void>;
+  upsertScores: (scores: Omit<SubjectScore, 'id'>[]) => Promise<SubjectScore[]>;
   updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<void>;
   getScoresByClassAndSubject: (classLevel: string, subject: string) => SubjectScore[];
   getStudentsByClass: (classLevel: string) => Student[];
@@ -38,6 +39,22 @@ const defaultSettings: SchoolSettings = {
 };
 
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
+
+const mapScoreRow = (s: any): SubjectScore => ({
+  id: s.id,
+  studentId: s.student_id,
+  classLevel: s.class_level as ClassLevel,
+  subject: s.subject,
+  test1: s.test1 === null || s.test1 === undefined ? null : Number(s.test1),
+  groupWork: s.group_work === null || s.group_work === undefined ? null : Number(s.group_work),
+  test2: s.test2 === null || s.test2 === undefined ? null : Number(s.test2),
+  project: s.project === null || s.project === undefined ? null : Number(s.project),
+  examScore: s.exam === null || s.exam === undefined ? null : Number(s.exam),
+  schoolId: s.school_id,
+});
+
+const scoreIdentity = (score: Pick<SubjectScore, 'studentId' | 'classLevel' | 'subject'>) =>
+  `${score.studentId}|${score.classLevel}|${score.subject}`;
 
 export function SchoolProvider({ children }: { children: ReactNode }) {
   const { selectedSchool } = useSelectedSchool();
@@ -99,16 +116,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       if (scoresError) throw scoresError;
       
       setScores(scoresData?.map(s => ({
-        id: s.id,
-        studentId: s.student_id,
-        classLevel: s.class_level as ClassLevel,
-        subject: s.subject,
-        test1: Number(s.test1) || null,
-        groupWork: Number(s.group_work) || null,
-        test2: Number(s.test2) || null,
-        project: Number(s.project) || null,
-        examScore: Number(s.exam) || null,
-        schoolId: s.school_id,
+        ...mapScoreRow(s),
       })) || []);
 
       // Fetch settings filtered by school_id
@@ -313,44 +321,47 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     setScores(prev => prev.filter(s => s.studentId !== id));
   };
 
-  const addScore = async (score: Omit<SubjectScore, 'id'>) => {
+  const upsertScores = async (scoresToSave: Omit<SubjectScore, 'id'>[]): Promise<SubjectScore[]> => {
     if (!selectedSchool) throw new Error('No school selected');
+    if (scoresToSave.length === 0) return [];
+
+    const payload = scoresToSave.map(score => ({
+      student_id: score.studentId,
+      class_level: score.classLevel,
+      subject: score.subject,
+      test1: score.test1,
+      group_work: score.groupWork,
+      test2: score.test2,
+      project: score.project,
+      exam: score.examScore,
+      school_id: selectedSchool.id,
+    }));
 
     const { data, error } = await supabase
       .from('scores')
-      .insert({
-        student_id: score.studentId,
-        class_level: score.classLevel,
-        subject: score.subject,
-        test1: score.test1,
-        group_work: score.groupWork,
-        test2: score.test2,
-        project: score.project,
-        exam: score.examScore,
-        school_id: selectedSchool.id,
+      .upsert(payload as any, {
+        onConflict: 'student_id,class_level,subject',
       })
-      .select()
-      .single();
+      .select();
 
     if (error) {
-      console.error('Error adding score:', error);
+      console.error('Error saving scores:', error);
       throw error;
     }
 
-    if (data) {
-      setScores(prev => [...prev, {
-        id: data.id,
-        studentId: data.student_id,
-        classLevel: data.class_level as ClassLevel,
-        subject: data.subject,
-        test1: Number(data.test1) || null,
-        groupWork: Number(data.group_work) || null,
-        test2: Number(data.test2) || null,
-        project: Number(data.project) || null,
-        examScore: Number(data.exam) || null,
-        schoolId: data.school_id,
-      }]);
-    }
+    const savedScores = (data || []).map(mapScoreRow);
+    const savedKeys = new Set(savedScores.map(scoreIdentity));
+
+    setScores(prev => [
+      ...prev.filter(score => !savedKeys.has(scoreIdentity(score))),
+      ...savedScores,
+    ]);
+
+    return savedScores;
+  };
+
+  const addScore = async (score: Omit<SubjectScore, 'id'>) => {
+    await upsertScores([score]);
   };
 
   const updateScore = async (id: string, updates: Partial<SubjectScore>) => {
@@ -363,7 +374,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         project: updates.project,
         exam: updates.examScore,
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('school_id', selectedSchool?.id || '');
 
     if (error) {
       console.error('Error updating score:', error);
@@ -520,6 +532,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         updateStudent,
         deleteStudent,
         addScore,
+        upsertScores,
         updateScore,
         getScoresByClassAndSubject,
         getStudentsByClass,
