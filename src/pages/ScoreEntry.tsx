@@ -9,7 +9,7 @@ import { CalculatedScore } from '@/types/school';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft, Save, Users, Download, Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, normalizeClassKey } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -99,7 +99,7 @@ export default function ScoreEntry() {
       }
 
       const foundClass = data.find(c => 
-        c.name.toLowerCase().replace(/\s/g, '') === classLevel
+        normalizeClassKey(c.name) === normalizeClassKey(classLevel)
       );
 
       if (!foundClass) {
@@ -135,7 +135,7 @@ export default function ScoreEntry() {
         id: '',
         studentId: student.id,
         subject: decodedSubject,
-        classLevel: classLevel as any,
+        classLevel: normalizeClassKey(classLevel) as any,
         test1: null,
         groupWork: null,
         test2: null,

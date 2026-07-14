@@ -1,4 +1,4 @@
-export type ClassLevel = 'basic7' | 'basic8' | 'basic9';
+export type ClassLevel = 'basic1' | 'basic2' | 'basic3' | 'basic4' | 'basic5' | 'basic6' | 'basic7' | 'basic8' | 'basic9';
 
 export interface School {
   id: string;

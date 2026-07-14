@@ -3,6 +3,7 @@ import { Student, SubjectScore, SchoolSettings, ClassLevel, ALUMNI_CLASS } from 
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
+import { normalizeClassKey } from '@/lib/utils';
 
 interface SchoolContextType {
   students: Student[];
@@ -84,7 +85,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         .map(s => ({
           id: s.id,
           name: s.name,
-          classLevel: s.class_level,
+          classLevel: normalizeClassKey(s.class_level) || s.class_level,
           photo: s.photo_url || undefined,
           attendanceDays: (s as any).attendance_days || 0,
           schoolId: s.school_id,
@@ -101,7 +102,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       setScores(scoresData?.map(s => ({
         id: s.id,
         studentId: s.student_id,
-        classLevel: s.class_level as ClassLevel,
+        classLevel: (normalizeClassKey(s.class_level) || s.class_level) as ClassLevel,
         subject: s.subject,
         test1: Number(s.test1) || null,
         groupWork: Number(s.group_work) || null,
@@ -252,7 +253,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       .from('students')
       .insert({
         name: student.name,
-        class_level: student.classLevel,
+        class_level: normalizeClassKey(student.classLevel) || student.classLevel,
         photo_url: student.photo || null,
         attendance_days: student.attendanceDays || 0,
         school_id: selectedSchool.id,
@@ -280,7 +281,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   const updateStudent = async (id: string, updates: Partial<Student>) => {
     const updateData: any = {};
     if (updates.name !== undefined) updateData.name = updates.name;
-    if (updates.classLevel !== undefined) updateData.class_level = updates.classLevel;
+    if (updates.classLevel !== undefined) updateData.class_level = normalizeClassKey(updates.classLevel) || updates.classLevel;
     if (updates.photo !== undefined) updateData.photo_url = updates.photo;
     if (updates.attendanceDays !== undefined) updateData.attendance_days = updates.attendanceDays;
 
@@ -319,7 +320,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
     const payload = {
       student_id: score.studentId,
-      class_level: score.classLevel,
+      class_level: normalizeClassKey(score.classLevel) || score.classLevel,
       subject: score.subject,
       test1: score.test1,
       group_work: score.groupWork,
@@ -343,7 +344,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     const persistedScore: SubjectScore = {
       id: data.id,
       studentId: data.student_id,
-      classLevel: data.class_level as ClassLevel,
+      classLevel: (normalizeClassKey(data.class_level) || data.class_level) as ClassLevel,
       subject: data.subject,
       test1: Number(data.test1) || null,
       groupWork: Number(data.group_work) || null,
@@ -414,14 +415,18 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
   const getScoresByClassAndSubject = (classLevel: string, subject: string) => {
     const normalizedSearchSubject = subject.trim().toLowerCase();
-    return scores.filter(s => 
-      s.classLevel === classLevel && 
-      (s.subject === subject || s.subject.toLowerCase() === normalizedSearchSubject)
-    );
+    const normalizedClass = normalizeClassKey(classLevel);
+
+    return scores.filter(s => {
+      const normalizedScoreClass = normalizeClassKey(s.classLevel);
+      return normalizedScoreClass === normalizedClass &&
+        (s.subject === subject || s.subject.toLowerCase() === normalizedSearchSubject);
+    });
   };
 
   const getStudentsByClass = (classLevel: string) => {
-    return students.filter(s => s.classLevel === classLevel);
+    const normalizedClass = normalizeClassKey(classLevel);
+    return students.filter(s => normalizeClassKey(s.classLevel) === normalizedClass);
   };
 
   const clearSubjectData = async (classLevel: string, subject: string) => {
@@ -430,7 +435,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase
       .from('scores')
       .delete()
-      .eq('class_level', classLevel)
+      .eq('class_level', normalizeClassKey(classLevel) || classLevel)
       .eq('subject', subject)
       .eq('school_id', selectedSchool.id);
 
