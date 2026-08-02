@@ -56,7 +56,7 @@ export default function SchoolSelection() {
   const isSubscriptionValid = (school: School): boolean => {
     if (!school.subscriptionStatus) return false;
     if (school.subscriptionExpiry) {
-      return new Date(school.subscriptionExpiry) >= new Date();
+      return new Date(`${school.subscriptionExpiry}T23:59:59`) >= new Date();
     }
     return true;
   };
