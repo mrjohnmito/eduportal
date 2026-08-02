@@ -215,12 +215,15 @@ const BulkPDF: React.FC = () => {
       }
 
       // Fetch class teacher reports
-      const { data: reports } = await supabase
-        .from('class_teacher_reports')
-        .select('*')
-        .eq('school_id', selectedSchool?.id)
-        .eq('term', settings.term)
-        .eq('academic_year', settings.academicYear);
+      const { data: reports } = await fetchAllRows<any>(() =>
+        supabase
+          .from('class_teacher_reports')
+          .select('*')
+          .eq('school_id', selectedSchool?.id)
+          .eq('term', settings.term)
+          .eq('academic_year', settings.academicYear)
+          .order('id')
+      );
 
       const reportMap = new Map<string, any>();
       reports?.forEach(r => reportMap.set(r.student_id, r));
