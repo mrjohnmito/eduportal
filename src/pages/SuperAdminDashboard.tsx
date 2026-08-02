@@ -335,6 +335,18 @@ export default function SuperAdminDashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Verify Super Admin session is still active before writing to schools
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: 'Session Expired',
+        description: 'Your Super Admin session has expired. Please log in again.',
+        variant: 'destructive',
+      });
+      navigate('/super-admin-login');
+      return;
+    }
+
     // Require admin credentials when creating a new school
     if (!editingSchool) {
       const emailTrimmed = formAdminEmail.trim();
@@ -384,7 +396,15 @@ export default function SuperAdminDashboard() {
       }
       setDialogOpen(false); resetForm(); fetchSchools();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Failed to save school.', variant: 'destructive' });
+      if (error.message?.includes('row-level security')) {
+        toast({
+          title: 'Access Denied',
+          description: 'Your Super Admin session may have expired. Please log in again.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: 'Error', description: error.message || 'Failed to save school.', variant: 'destructive' });
+      }
     } finally { setFormLoading(false); }
   };
 
