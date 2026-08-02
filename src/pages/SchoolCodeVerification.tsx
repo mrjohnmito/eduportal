@@ -167,7 +167,7 @@ export default function SchoolCodeVerification() {
 
         // Check subscription expiry
         if (selectedSchool.subscriptionExpiry) {
-          const expiryDate = new Date(selectedSchool.subscriptionExpiry);
+          const expiryDate = new Date(`${selectedSchool.subscriptionExpiry}T23:59:59`);
           if (expiryDate < new Date()) {
             toast({
               title: 'Subscription Expired',

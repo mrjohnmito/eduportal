@@ -21,7 +21,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { settings, login } = useSchool();
-  const { selectedSchool, clearSelectedSchool } = useSelectedSchool();
+  const { selectedSchool, setSelectedSchool, clearSelectedSchool } = useSelectedSchool();
 
   useDocumentTitle('Login');
 
@@ -41,14 +41,45 @@ export default function Login() {
     }
   }, [selectedSchool, navigate]);
 
+  // Always re-check the school's live subscription state on mount.
+  // The cached copy in sessionStorage can be stale (e.g. subscription
+  // expired or was deactivated after the school was first selected).
+  useEffect(() => {
+    const schoolId = selectedSchool?.id;
+    if (!schoolId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('schools')
+        .select('*')
+        .eq('id', schoolId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setSelectedSchool({
+        id: data.id,
+        name: data.name,
+        logoUrl: data.logo_url || undefined,
+        schoolCode: data.school_code,
+        subscriptionStatus: data.subscription_status,
+        subscriptionExpiry: data.subscription_expiry || undefined,
+        themeColor: data.theme_color || undefined,
+        createdAt: data.created_at,
+        isLocked: data.is_locked || false,
+        activatedAt: (data as any).activated_at || undefined,
+      });
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSchool?.id]);
+
   if (!selectedSchool) {
     return null;
   }
 
-  // Check subscription status
+  // Check subscription status (expiry date is inclusive: valid through end of that day)
   const isSubscriptionActive = selectedSchool.subscriptionStatus;
-  const isSubscriptionExpired = selectedSchool.subscriptionExpiry 
-    ? new Date(selectedSchool.subscriptionExpiry) < new Date() 
+  const isSubscriptionExpired = selectedSchool.subscriptionExpiry
+    ? new Date(`${selectedSchool.subscriptionExpiry}T23:59:59`) < new Date()
     : false;
   const canLogin = isSubscriptionActive && !isSubscriptionExpired;
 
