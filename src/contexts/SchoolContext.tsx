@@ -18,9 +18,9 @@ interface SchoolContextType {
   addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
-  addScore: (score: Omit<SubjectScore, 'id'>) => Promise<void>;
+  addScore: (score: Omit<SubjectScore, 'id'>) => Promise<SubjectScore>;
   upsertScores: (scores: Omit<SubjectScore, 'id'>[]) => Promise<SubjectScore[]>;
-  updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<void>;
+  updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<SubjectScore>;
   getScoresByClassAndSubject: (classLevel: string, subject: string) => SubjectScore[];
   getStudentsByClass: (classLevel: string) => Student[];
   clearSubjectData: (classLevel: string, subject: string) => Promise<void>;
