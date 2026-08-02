@@ -4,6 +4,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { calculateScores, calculatePositions, getPositionSuffix, calculateAggregate, getHeadteacherRemark, getClassTeacherRemark } from '@/lib/gradeUtils';
 import { SubjectScore, CalculatedScore, SUBJECTS } from '@/types/school';
 import { Button } from '@/components/ui/button';
