@@ -4,6 +4,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { calculateScores, calculatePositions, getPositionSuffix, calculateAggregate, getHeadteacherRemark, getClassTeacherRemark } from '@/lib/gradeUtils';
 import { SubjectScore, CalculatedScore, SUBJECTS } from '@/types/school';
 import { Button } from '@/components/ui/button';
@@ -215,12 +216,15 @@ const BulkPDF: React.FC = () => {
       }
 
       // Fetch class teacher reports
-      const { data: reports } = await supabase
-        .from('class_teacher_reports')
-        .select('*')
-        .eq('school_id', selectedSchool?.id)
-        .eq('term', settings.term)
-        .eq('academic_year', settings.academicYear);
+      const { data: reports } = await fetchAllRows<any>(() =>
+        supabase
+          .from('class_teacher_reports')
+          .select('*')
+          .eq('school_id', selectedSchool?.id)
+          .eq('term', settings.term)
+          .eq('academic_year', settings.academicYear)
+          .order('id')
+      );
 
       const reportMap = new Map<string, any>();
       reports?.forEach(r => reportMap.set(r.student_id, r));

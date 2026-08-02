@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { normalizeClassKey } from '@/lib/utils';
+import { fetchAllRows } from '@/lib/fetchAll';
 
 interface SchoolContextType {
   students: Student[];
@@ -17,9 +18,9 @@ interface SchoolContextType {
   addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
-  addScore: (score: Omit<SubjectScore, 'id'>) => Promise<void>;
+  addScore: (score: Omit<SubjectScore, 'id'>) => Promise<SubjectScore>;
   upsertScores: (scores: Omit<SubjectScore, 'id'>[]) => Promise<SubjectScore[]>;
-  updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<void>;
+  updateScore: (id: string, updates: Partial<SubjectScore>) => Promise<SubjectScore>;
   getScoresByClassAndSubject: (classLevel: string, subject: string) => SubjectScore[];
   getStudentsByClass: (classLevel: string) => Student[];
   clearSubjectData: (classLevel: string, subject: string) => Promise<void>;
@@ -109,11 +110,13 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
     try {
       // Fetch students filtered by school_id
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('students')
-        .select('*')
-        .eq('school_id', selectedSchool.id)
-        .order('name');
+      const { data: studentsData, error: studentsError } = await fetchAllRows<any>(() =>
+        supabase
+          .from('students')
+          .select('*')
+          .eq('school_id', selectedSchool.id)
+          .order('name')
+      );
       
       if (studentsError) throw studentsError;
       
@@ -134,14 +137,16 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       // Fetch scores for this school's students. Include legacy rows with a missing school_id
       // so old saved marks do not stay hidden and cause duplicate-key errors on the next save.
       const studentIds = activeStudents.map(student => student.id);
-      const scoresQuery = supabase
-        .from('scores')
-        .select('*')
-        .or(`school_id.eq.${selectedSchool.id},school_id.is.null`);
-
       const { data: scoresData, error: scoresError } = studentIds.length > 0
-        ? await scoresQuery.in('student_id', studentIds)
-        : { data: [], error: null };
+        ? await fetchAllRows<any>(() =>
+            supabase
+              .from('scores')
+              .select('*')
+              .or(`school_id.eq.${selectedSchool.id},school_id.is.null`)
+              .in('student_id', studentIds)
+              .order('id')
+          )
+        : { data: [] as any[], error: null };
       
       if (scoresError) throw scoresError;
       
