@@ -4,6 +4,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { ALUMNI_CLASS } from '@/types/school';
 import { Button } from '@/components/ui/button';
@@ -110,11 +111,13 @@ export default function StudentPromotion() {
 
   const fetchPromotions = async () => {
     if (!selectedSchool) return;
-    const { data } = await supabase
-      .from('student_promotions')
-      .select('*')
-      .eq('school_id', selectedSchool.id)
-      .order('performed_at', { ascending: false });
+    const { data } = await fetchAllRows<any>(() =>
+      supabase
+        .from('student_promotions')
+        .select('*')
+        .eq('school_id', selectedSchool.id)
+        .order('performed_at', { ascending: false })
+    );
     setPromotions((data as any) || []);
   };
 
@@ -139,12 +142,15 @@ export default function StudentPromotion() {
   useEffect(() => {
     const load = async () => {
       if (!selectedSchool || !destYear) { setDoneIds(new Set()); return; }
-      const { data } = await supabase
-        .from('student_promotions')
-        .select('student_id, action, to_academic_year')
-        .eq('school_id', selectedSchool.id)
-        .eq('to_academic_year', destYear)
-        .in('action', ['promote', 'repeat']);
+      const { data } = await fetchAllRows<any>(() =>
+        supabase
+          .from('student_promotions')
+          .select('student_id, action, to_academic_year')
+          .eq('school_id', selectedSchool.id)
+          .eq('to_academic_year', destYear)
+          .in('action', ['promote', 'repeat'])
+          .order('id')
+      );
       setDoneIds(new Set((data || []).map((d: any) => d.student_id)));
     };
     load();
