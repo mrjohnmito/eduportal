@@ -408,7 +408,22 @@ export default function SuperAdminDashboard() {
     } finally { setFormLoading(false); }
   };
 
+  const requireSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: 'Session Expired',
+        description: 'Your Super Admin session has expired. Please log in again.',
+        variant: 'destructive',
+      });
+      navigate('/super-admin-login');
+      return false;
+    }
+    return true;
+  };
+
   const toggleSubscription = async (school: School) => {
+    if (!(await requireSession())) return;
     try {
       const { error } = await supabase.from('schools').update({ subscription_status: !school.subscriptionStatus }).eq('id', school.id);
       if (error) throw error;
@@ -418,6 +433,7 @@ export default function SuperAdminDashboard() {
   };
 
   const toggleLock = async (school: School) => {
+    if (!(await requireSession())) return;
     try {
       const { error } = await supabase.from('schools').update({ is_locked: !school.isLocked }).eq('id', school.id);
       if (error) throw error;
@@ -428,6 +444,7 @@ export default function SuperAdminDashboard() {
 
   const deleteSchool = async (school: School) => {
     if (!confirm(`Are you sure you want to delete ${school.name}? This action cannot be undone.`)) return;
+    if (!(await requireSession())) return;
     try {
       const { error } = await supabase.from('schools').delete().eq('id', school.id);
       if (error) throw error;
