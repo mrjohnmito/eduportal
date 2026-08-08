@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SchoolProvider } from "@/contexts/SchoolContext";
 import { SelectedSchoolProvider } from "@/contexts/SelectedSchoolContext";
 import SchoolSelection from "./pages/SchoolSelection";
+import UnifiedLogin from "./pages/UnifiedLogin";
 import SchoolCodeVerification from "./pages/SchoolCodeVerification";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
@@ -35,7 +36,8 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               {/* Multi-school flow */}
-              <Route path="/" element={<SchoolSelection />} />
+              <Route path="/" element={<UnifiedLogin />} />
+              <Route path="/schools" element={<SchoolSelection />} />
               <Route path="/school-code" element={<SchoolCodeVerification />} />
               <Route path="/t/:shortId" element={<SchoolCodeVerification />} />
               <Route path="/super-admin-login" element={<SuperAdminLogin />} />
