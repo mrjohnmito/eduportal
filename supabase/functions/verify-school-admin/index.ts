@@ -3,7 +3,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { z } from 'npm:zod@3'
 
 const BodySchema = z.object({
-  schoolId: z.string().uuid(),
+  schoolId: z.string().uuid().optional(),
   email: z.string().email(),
   password: z.string().min(1).max(200),
 })
@@ -25,11 +25,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('school_credentials')
-      .select('admin_email, admin_password_hash')
-      .eq('school_id', schoolId)
-      .maybeSingle()
+      .select('school_id, admin_email, admin_password_hash')
+    query = schoolId
+      ? query.eq('school_id', schoolId)
+      : query.ilike('admin_email', email.trim())
+    const { data, error } = await query.maybeSingle()
 
     if (error || !data || !data.admin_email || !data.admin_password_hash) {
       return new Response(JSON.stringify({ valid: false }), {
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
       data.admin_email.trim().toLowerCase() === email.trim().toLowerCase() &&
       storedPassword === password
 
-    return new Response(JSON.stringify({ valid }), {
+    return new Response(JSON.stringify({ valid, schoolId: valid ? data.school_id : null }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch {
