@@ -1,0 +1,76 @@
+admin_messages | Anyone can mark messages read | UPDATE | roles=public | USING true | CHECK true
+admin_messages | Anyone can view admin messages | SELECT | roles=public | USING true | CHECK -
+admin_messages | Super admins can manage messages | ALL | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK has_role(auth.uid(), 'super_admin'::app_role)
+class_teacher_reports | Admins can delete reports in their school | DELETE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+class_teacher_reports | Authenticated users can insert reports in their school | INSERT | roles=authenticated | USING - | CHECK (school_id = get_user_school_id(auth.uid()))
+class_teacher_reports | Authenticated users can update reports in their school | UPDATE | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+class_teacher_reports | Authenticated users can view reports in their school | SELECT | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+class_teacher_reports | Public can delete reports | DELETE | roles=public | USING true | CHECK -
+class_teacher_reports | Public can insert reports | INSERT | roles=public | USING - | CHECK true
+class_teacher_reports | Public can update reports | UPDATE | roles=public | USING true | CHECK true
+class_teacher_reports | Public can view reports | SELECT | roles=public | USING true | CHECK -
+classes | Admins and super admins can delete classes | DELETE | roles=public | USING ((has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) OR has_role(auth.uid(), 'super_admin'::app_role)) | CHECK -
+classes | Admins and super admins can insert classes | INSERT | roles=public | USING - | CHECK ((has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) OR has_role(auth.uid(), 'super_admin'::app_role))
+classes | Admins and super admins can update classes | UPDATE | roles=public | USING ((has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) OR has_role(auth.uid(), 'super_admin'::app_role)) | CHECK -
+classes | Anyone can view classes by school | SELECT | roles=public | USING true | CHECK -
+classes | Authenticated users can view classes | SELECT | roles=public | USING ((school_id = get_user_school_id(auth.uid())) OR has_role(auth.uid(), 'super_admin'::app_role)) | CHECK -
+level_subjects | Anyone can view level subjects | SELECT | roles=public | USING true | CHECK -
+level_subjects | Super admins can delete level subjects | DELETE | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK -
+level_subjects | Super admins can insert level subjects | INSERT | roles=authenticated | USING - | CHECK has_role(auth.uid(), 'super_admin'::app_role)
+level_subjects | Super admins can update level subjects | UPDATE | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK -
+school_credentials | Super admins manage school credentials | ALL | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK has_role(auth.uid(), 'super_admin'::app_role)
+school_settings | Admins can insert their school settings | INSERT | roles=authenticated | USING - | CHECK (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid())))
+school_settings | Admins can update their school settings | UPDATE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+school_settings | Anyone can view school settings by school | SELECT | roles=public | USING true | CHECK -
+school_settings | Authenticated users can view their school settings | SELECT | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+school_settings | Public can insert school settings | INSERT | roles=public | USING - | CHECK true
+school_settings | Public can update school settings | UPDATE | roles=public | USING true | CHECK true
+schools | Anyone can view schools | SELECT | roles=public | USING true | CHECK -
+schools | Super admins can delete schools | DELETE | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK -
+schools | Super admins can insert schools | INSERT | roles=authenticated | USING - | CHECK has_role(auth.uid(), 'super_admin'::app_role)
+schools | Super admins can update schools | UPDATE | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK -
+scores | Admins can delete scores in their school | DELETE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+scores | Authenticated users can insert scores in their school | INSERT | roles=authenticated | USING - | CHECK (school_id = get_user_school_id(auth.uid()))
+scores | Authenticated users can update scores in their school | UPDATE | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+scores | Authenticated users can view scores in their school | SELECT | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+scores | Public can delete scores | DELETE | roles=public | USING true | CHECK -
+scores | Public can insert scores | INSERT | roles=public | USING - | CHECK true
+scores | Public can update scores | UPDATE | roles=public | USING true | CHECK true
+scores | Public can view scores | SELECT | roles=public | USING true | CHECK -
+student_enrollments | Public can delete enrollments | DELETE | roles=public | USING true | CHECK -
+student_enrollments | Public can insert enrollments | INSERT | roles=public | USING - | CHECK true
+student_enrollments | Public can update enrollments | UPDATE | roles=public | USING true | CHECK true
+student_enrollments | Public can view enrollments | SELECT | roles=public | USING true | CHECK -
+student_promotions | Public can delete promotions | DELETE | roles=public | USING true | CHECK -
+student_promotions | Public can insert promotions | INSERT | roles=public | USING - | CHECK true
+student_promotions | Public can view promotions | SELECT | roles=public | USING true | CHECK -
+students | Admins can delete students in their school | DELETE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+students | Admins can insert students in their school | INSERT | roles=authenticated | USING - | CHECK (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid())))
+students | Admins can update students in their school | UPDATE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+students | Anyone can view students by school | SELECT | roles=public | USING true | CHECK -
+students | Authenticated users can view students in their school | SELECT | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+students | Public can delete students | DELETE | roles=public | USING true | CHECK -
+students | Public can insert students | INSERT | roles=public | USING - | CHECK true
+students | Public can update students | UPDATE | roles=public | USING true | CHECK true
+super_admin_contact | Anyone can read super admin contact | SELECT | roles=public | USING true | CHECK -
+super_admin_contact | Super admins can insert contact | INSERT | roles=authenticated | USING - | CHECK has_role(auth.uid(), 'super_admin'::app_role)
+super_admin_contact | Super admins can update contact | UPDATE | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK -
+teacher_class_assignments | Admins can delete assignments in their school | DELETE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+teacher_class_assignments | Admins can insert assignments in their school | INSERT | roles=authenticated | USING - | CHECK (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid())))
+teacher_class_assignments | Admins can update assignments in their school | UPDATE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+teacher_class_assignments | Authenticated users can view assignments in their school | SELECT | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+teacher_class_assignments | Public can delete assignments | DELETE | roles=public | USING true | CHECK -
+teacher_class_assignments | Public can insert assignments | INSERT | roles=public | USING - | CHECK true
+teacher_class_assignments | Public can update assignments | UPDATE | roles=public | USING true | CHECK true
+teacher_class_assignments | Public can view assignments | SELECT | roles=public | USING true | CHECK -
+teachers | Admins can delete teachers in their school | DELETE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+teachers | Admins can insert teachers in their school | INSERT | roles=authenticated | USING - | CHECK (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid())))
+teachers | Admins can update teachers in their school | UPDATE | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+teachers | Anyone can view teachers for login | SELECT | roles=public | USING true | CHECK -
+teachers | Authenticated users can view teachers in their school | SELECT | roles=authenticated | USING (school_id = get_user_school_id(auth.uid())) | CHECK -
+teachers | Public can delete teachers | DELETE | roles=public | USING true | CHECK -
+teachers | Public can insert teachers | INSERT | roles=public | USING - | CHECK true
+teachers | Public can update teachers | UPDATE | roles=public | USING true | CHECK true
+user_roles | Admins can manage roles in their school | ALL | roles=authenticated | USING (has_role(auth.uid(), 'admin'::app_role) AND (school_id = get_user_school_id(auth.uid()))) | CHECK -
+user_roles | Authenticated users can view their own roles | SELECT | roles=authenticated | USING (auth.uid() = user_id) | CHECK -
+user_roles | Super admins can manage all roles | ALL | roles=authenticated | USING has_role(auth.uid(), 'super_admin'::app_role) | CHECK -
