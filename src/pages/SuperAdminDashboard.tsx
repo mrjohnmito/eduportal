@@ -399,7 +399,7 @@ export default function SuperAdminDashboard() {
         if (error) throw error;
         toast({ title: 'School Added', description: `${formName} has been added successfully.` });
       }
-      setDialogOpen(false); resetForm(); fetchSchools();
+      setDialogOpen(false); resetForm(); await fetchSchools();
     } catch (error: any) {
       if (error.message?.includes('row-level security')) {
         toast({
