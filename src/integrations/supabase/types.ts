@@ -654,6 +654,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_school_with_credentials: {
+        Args: {
+          credential_email: string
+          credential_password_hash: string
+          school_code: string
+          school_is_locked: boolean
+          school_level: string
+          school_logo_url: string | null
+          school_name: string
+          school_subscription_expiry: string | null
+          school_subscription_status: boolean
+          school_theme_color: string
+        }
+        Returns: string
+      }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {

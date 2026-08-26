@@ -384,14 +384,19 @@ export default function SuperAdminDashboard() {
         }
         toast({ title: 'School Updated', description: `${formName} has been updated successfully.` });
       } else {
-        const { data: inserted, error } = await supabase.from('schools').insert([schoolData]).select('id').single();
+        const { error } = await supabase.rpc('create_school_with_credentials', {
+          school_name: schoolData.name,
+          school_logo_url: schoolData.logo_url,
+          school_code: schoolData.school_code,
+          school_subscription_status: schoolData.subscription_status,
+          school_subscription_expiry: schoolData.subscription_expiry,
+          school_theme_color: schoolData.theme_color,
+          school_is_locked: schoolData.is_locked,
+          school_level: schoolData.school_level,
+          credential_email: formAdminEmail.trim(),
+          credential_password_hash: btoa(formAdminPassword),
+        });
         if (error) throw error;
-        const { error: credErr } = await supabase.from('school_credentials').insert([{
-          school_id: inserted.id,
-          admin_email: formAdminEmail.trim() || null,
-          admin_password_hash: formAdminPassword ? btoa(formAdminPassword) : null,
-        }]);
-        if (credErr) throw credErr;
         toast({ title: 'School Added', description: `${formName} has been added successfully.` });
       }
       setDialogOpen(false); resetForm(); fetchSchools();
