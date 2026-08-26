@@ -125,6 +125,12 @@ export default function SuperAdminDashboard() {
     fetchLevelSubjects();
   }, []);
 
+  useEffect(() => {
+    const refreshSchools = () => { fetchSchools(); };
+    window.addEventListener('focus', refreshSchools);
+    return () => window.removeEventListener('focus', refreshSchools);
+  }, []);
+
   const checkAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { navigate('/super-admin-login'); return; }
@@ -384,7 +390,7 @@ export default function SuperAdminDashboard() {
         }
         toast({ title: 'School Updated', description: `${formName} has been updated successfully.` });
       } else {
-        const { error } = await supabase.rpc('create_school_with_credentials', {
+        const { data: createdSchoolId, error } = await supabase.rpc('create_school_with_credentials', {
           school_name: schoolData.name,
           school_logo_url: schoolData.logo_url,
           school_code: schoolData.school_code,
@@ -397,6 +403,7 @@ export default function SuperAdminDashboard() {
           credential_password_hash: btoa(formAdminPassword),
         });
         if (error) throw error;
+        if (!createdSchoolId) throw new Error('School was created without an ID. Please refresh and try again.');
         toast({ title: 'School Added', description: `${formName} has been added successfully.` });
       }
       setDialogOpen(false); resetForm(); await fetchSchools();
