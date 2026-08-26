@@ -128,6 +128,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
           name: s.name,
           classLevel: normalizeClassKey(s.class_level) || s.class_level,
           photo: s.photo_url || undefined,
+          indexNumber: s.index_number || undefined,
           attendanceDays: (s as any).attendance_days || 0,
           schoolId: s.school_id,
         }));
@@ -210,20 +211,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     return !!data;
   };
 
-  // Check for school admin session in sessionStorage
   const checkSchoolAdminSession = (): boolean => {
-    try {
-      const adminSessionStr = sessionStorage.getItem('adminSession');
-      if (adminSessionStr) {
-        const adminSession = JSON.parse(adminSessionStr);
-        // Validate that the session is for the current school
-        if (adminSession.schoolId === selectedSchool?.id && adminSession.isAdmin) {
-          return true;
-        }
-      }
-    } catch {
-      // Invalid session data
-    }
     return false;
   };
 
@@ -294,6 +282,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         name: student.name,
         class_level: normalizeClassKey(student.classLevel) || student.classLevel,
         photo_url: student.photo || null,
+        index_number: student.indexNumber || null,
         attendance_days: student.attendanceDays || 0,
         school_id: selectedSchool.id,
       } as any)
@@ -311,6 +300,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         name: data.name,
         classLevel: data.class_level,
         photo: data.photo_url || undefined,
+        indexNumber: data.index_number || undefined,
         attendanceDays: (data as any).attendance_days || 0,
         schoolId: data.school_id,
       }]);
@@ -322,12 +312,16 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.classLevel !== undefined) updateData.class_level = normalizeClassKey(updates.classLevel) || updates.classLevel;
     if (updates.photo !== undefined) updateData.photo_url = updates.photo;
+    if (updates.indexNumber !== undefined) updateData.index_number = updates.indexNumber || null;
     if (updates.attendanceDays !== undefined) updateData.attendance_days = updates.attendanceDays;
+
+    if (!selectedSchool) throw new Error('No school selected');
 
     const { error } = await supabase
       .from('students')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .eq('school_id', selectedSchool.id);
 
     if (error) {
       console.error('Error updating student:', error);
@@ -340,10 +334,13 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteStudent = async (id: string) => {
+    if (!selectedSchool) throw new Error('No school selected');
+
     const { error } = await supabase
       .from('students')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('school_id', selectedSchool.id);
 
     if (error) {
       console.error('Error deleting student:', error);
@@ -636,9 +633,6 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // Clear school admin session
-    sessionStorage.removeItem('adminSession');
-    
     await supabase.auth.signOut();
     setIsAdmin(false);
     setUser(null);

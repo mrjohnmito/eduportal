@@ -322,10 +322,13 @@ export default function Settings() {
 
       // Update class assignments
       if (teacherId) {
-        await supabase
+        const { error: deleteAssignmentsError } = await supabase
           .from('teacher_class_assignments')
           .delete()
-          .eq('teacher_id', teacherId);
+          .eq('teacher_id', teacherId)
+          .eq('school_id', selectedSchool.id);
+
+        if (deleteAssignmentsError) throw deleteAssignmentsError;
 
         if (selectedClasses.length > 0 && selectedSchool) {
           const assignmentsToInsert = selectedClasses.map(classId => ({
@@ -334,9 +337,11 @@ export default function Settings() {
             school_id: selectedSchool.id,
           }));
 
-          await supabase
+          const { error: assignError } = await supabase
             .from('teacher_class_assignments')
             .insert(assignmentsToInsert);
+
+          if (assignError) throw assignError;
         }
       }
 

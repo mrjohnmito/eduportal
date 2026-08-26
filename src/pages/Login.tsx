@@ -133,14 +133,8 @@ export default function Login() {
       });
 
       if (verifyData?.valid) {
-        sessionStorage.setItem('adminSession', JSON.stringify({
-          schoolId: selectedSchool.id,
-          email: adminEmail,
-          isAdmin: true,
-          timestamp: Date.now(),
-        }));
-
-        await login(adminEmail, adminPassword, true);
+        const authenticated = await login(adminEmail, adminPassword);
+        if (!authenticated) throw new Error('Admin authentication failed');
 
         toast({
           title: 'Welcome, Admin!',
@@ -215,10 +209,15 @@ export default function Login() {
       if (error) throw error;
 
       if (teacher) {
-        // Store teacher as JSON object for ClassTeacherReport
-        sessionStorage.setItem('teacher', JSON.stringify(teacher));
-        sessionStorage.setItem('teacherId', teacher.id);
-        sessionStorage.setItem('teacherName', teacher.name);
+        const { data: authData, error: authError } = await supabase.functions.invoke('authenticate-teacher', {
+          body: { schoolId: selectedSchool.id, accessCode: teacherAccessCode },
+        });
+        if (authError || !authData?.valid || !authData.email) throw authError || new Error('Teacher authentication failed');
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: authData.email,
+          password: teacherAccessCode.trim(),
+        });
+        if (signInError) throw signInError;
 
         toast({
           title: `Welcome, ${teacher.name}!`,

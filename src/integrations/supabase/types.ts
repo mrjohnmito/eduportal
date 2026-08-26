@@ -474,6 +474,7 @@ export type Database = {
           class_level: string
           created_at: string
           id: string
+          index_number: string | null
           name: string
           photo_url: string | null
           school_id: string | null
@@ -484,6 +485,7 @@ export type Database = {
           class_level: string
           created_at?: string
           id?: string
+          index_number?: string | null
           name: string
           photo_url?: string | null
           school_id?: string | null
@@ -494,6 +496,7 @@ export type Database = {
           class_level?: string
           created_at?: string
           id?: string
+          index_number?: string | null
           name?: string
           photo_url?: string | null
           school_id?: string | null
@@ -582,6 +585,7 @@ export type Database = {
       teachers: {
         Row: {
           access_code: string
+          auth_user_id: string | null
           created_at: string
           id: string
           name: string
@@ -590,6 +594,7 @@ export type Database = {
         }
         Insert: {
           access_code: string
+          auth_user_id?: string | null
           created_at?: string
           id?: string
           name: string
@@ -598,6 +603,7 @@ export type Database = {
         }
         Update: {
           access_code?: string
+          auth_user_id?: string | null
           created_at?: string
           id?: string
           name?: string

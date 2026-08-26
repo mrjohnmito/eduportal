@@ -103,13 +103,8 @@ export default function UnifiedLogin() {
         const school = await enterSchool(verifyData.schoolId);
         if (!school) return;
 
-        sessionStorage.setItem('adminSession', JSON.stringify({
-          schoolId: school.id,
-          email: email.trim(),
-          isAdmin: true,
-          timestamp: Date.now(),
-        }));
-        await login(email.trim(), password, true);
+        const authenticated = await login(email.trim(), password);
+        if (!authenticated) throw new Error('Admin authentication failed');
         toast({ title: `Welcome, Admin!`, description: `Signed in to ${school.name}.` });
         navigate('/dashboard');
         return;
@@ -145,9 +140,15 @@ export default function UnifiedLogin() {
       const school = await enterSchool(teacher.school_id);
       if (!school) return;
 
-      sessionStorage.setItem('teacher', JSON.stringify({ id: teacher.id, name: teacher.name }));
-      sessionStorage.setItem('teacherId', teacher.id);
-      sessionStorage.setItem('teacherName', teacher.name);
+      const { data: authData, error: authError } = await supabase.functions.invoke('authenticate-teacher', {
+        body: { schoolId: teacher.school_id, accessCode: accessCode.trim() },
+      });
+      if (authError || !authData?.valid || !authData.email) throw authError || new Error('Teacher authentication failed');
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: authData.email,
+        password: accessCode.trim(),
+      });
+      if (signInError) throw signInError;
       toast({ title: `Welcome, ${teacher.name}!`, description: `Signed in to ${school.name}.` });
       navigate('/dashboard');
     } catch {

@@ -32,17 +32,15 @@ interface ActionItem {
 }
 
 export function QuickActions() {
-  const { isAdmin, loading } = useSchool();
+  const { isAdmin, user, loading } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const { toast } = useToast();
   const [isTeacher, setIsTeacher] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const teacherData = sessionStorage.getItem('teacher');
-    const teacherId = sessionStorage.getItem('teacherId');
-    setIsTeacher(!!teacherData || !!teacherId);
-  }, [isAdmin]);
+    setIsTeacher(!!user && !isAdmin);
+  }, [isAdmin, user]);
 
   const getTeacherPortalLink = () => {
     if (!selectedSchool) return '';

@@ -9,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, Calendar, AlertTriangle, Users, BookOpen, Activity } from 'lucide-react';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { motion } from 'framer-motion';
-import { hasValidSchoolAdminSession } from '@/lib/session';
 
 interface ClassItem {
   id: string;
@@ -29,24 +28,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (loading) return;
-    const tId = sessionStorage.getItem('teacherId');
+    const tId = user?.user_metadata?.teacher_id as string | undefined;
     setTeacherId(tId);
-    const schoolAdmin = hasValidSchoolAdminSession(selectedSchool?.id);
-    if (!user && !tId && !schoolAdmin) { navigate('/'); return; }
+    if (!user) { navigate('/'); return; }
     if (!selectedSchool) navigate('/');
   }, [user, loading, navigate, selectedSchool]);
 
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedSchool) return;
-      const tId = sessionStorage.getItem('teacherId');
-      const schoolAdmin = hasValidSchoolAdminSession(selectedSchool.id);
-      if (!user && !tId && !schoolAdmin) return;
+      const tId = user?.user_metadata?.teacher_id as string | undefined;
+      if (!user) return;
       setClassesLoading(true);
 
       // If a teacher is logged in, fetch their assigned class IDs first
       let assigned: Set<string> | null = null;
-      if (tId && !user && !schoolAdmin) {
+      if (tId && !isAdmin) {
         const { data: assignments } = await supabase
           .from('teacher_class_assignments')
           .select('class_id')
@@ -71,7 +68,7 @@ export default function Dashboard() {
     fetchClasses();
   }, [selectedSchool?.id, user?.id]);
 
-  const isTeacher = !!teacherId && !user && !hasValidSchoolAdminSession(selectedSchool?.id);
+  const isTeacher = !!teacherId && !isAdmin;
 
   const totalStudents = students?.length || 0;
 

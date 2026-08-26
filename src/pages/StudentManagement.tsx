@@ -58,6 +58,7 @@ export default function StudentManagement() {
     updateStudent,
     deleteStudent,
     isAdmin,
+    user,
   } = useSchool();
 
   const { selectedSchool } = useSelectedSchool();
@@ -70,8 +71,8 @@ export default function StudentManagement() {
   const [allowedClassIds, setAllowedClassIds] = useState<Set<string> | null>(null);
 
   useEffect(() => {
-    setTeacherId(sessionStorage.getItem('teacherId'));
-  }, []);
+    setTeacherId((user?.user_metadata?.teacher_id as string | undefined) || null);
+  }, [user]);
 
   const isTeacher = !!teacherId && !isAdmin;
   const canAccess = isAdmin || isTeacher;
@@ -102,7 +103,7 @@ export default function StudentManagement() {
 
       // If teacher, fetch their assigned class IDs first
       let assigned: Set<string> | null = null;
-      const tId = sessionStorage.getItem('teacherId');
+      const tId = user?.user_metadata?.teacher_id as string | undefined;
       if (tId && !isAdmin) {
         const { data: assignments } = await supabase
           .from('teacher_class_assignments')
@@ -128,7 +129,7 @@ export default function StudentManagement() {
       }
     };
     fetchClasses();
-  }, [selectedSchool?.id, isAdmin]);
+  }, [selectedSchool?.id, isAdmin, user]);
 
   const filteredStudents = students.filter(s => s.classLevel === selectedClass);
 
@@ -331,7 +332,7 @@ export default function StudentManagement() {
     }
   };
 
-  const handleAddStudent = () => {
+  const handleAddStudent = async () => {
     if (!newName.trim()) {
       toast({
         title: 'Error',
@@ -341,13 +342,22 @@ export default function StudentManagement() {
       return;
     }
 
-    addStudent({
-      name: newName.trim(),
-      classLevel: selectedClass,
-      indexNumber: newIndexNumber.trim() || undefined,
-      photo: newPhoto || undefined,
-      attendanceDays: newAttendance ? parseInt(newAttendance) : 0,
-    });
+    try {
+      await addStudent({
+        name: newName.trim(),
+        classLevel: selectedClass,
+        indexNumber: newIndexNumber.trim() || undefined,
+        photo: newPhoto || undefined,
+        attendanceDays: newAttendance ? parseInt(newAttendance) : 0,
+      });
+    } catch (error) {
+      toast({
+        title: 'Student Not Added',
+        description: error instanceof Error ? error.message : 'Could not save the student.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     toast({
       title: 'Student Added',
@@ -361,15 +371,24 @@ export default function StudentManagement() {
     setIsAddDialogOpen(false);
   };
 
-  const handleUpdateStudent = () => {
+  const handleUpdateStudent = async () => {
     if (!editingStudent) return;
 
-    updateStudent(editingStudent.id, {
-      name: newName.trim(),
-      indexNumber: newIndexNumber.trim() || undefined,
-      photo: newPhoto || editingStudent.photo,
-      attendanceDays: newAttendance ? parseInt(newAttendance) : editingStudent.attendanceDays,
-    });
+    try {
+      await updateStudent(editingStudent.id, {
+        name: newName.trim(),
+        indexNumber: newIndexNumber.trim() || undefined,
+        photo: newPhoto || editingStudent.photo,
+        attendanceDays: newAttendance ? parseInt(newAttendance) : editingStudent.attendanceDays,
+      });
+    } catch (error) {
+      toast({
+        title: 'Student Not Updated',
+        description: error instanceof Error ? error.message : 'Could not save the student changes.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     toast({
       title: 'Student Updated',
@@ -383,9 +402,18 @@ export default function StudentManagement() {
     setEditingStudent(null);
   };
 
-  const handleDeleteStudent = (student: Student) => {
+  const handleDeleteStudent = async (student: Student) => {
     if (confirm(`Are you sure you want to delete ${student.name}?`)) {
-      deleteStudent(student.id);
+      try {
+        await deleteStudent(student.id);
+      } catch (error) {
+        toast({
+          title: 'Student Not Deleted',
+          description: error instanceof Error ? error.message : 'Could not delete the student.',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
         title: 'Student Deleted',
         description: `${student.name} has been removed.`,
