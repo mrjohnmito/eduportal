@@ -1,36 +1,54 @@
-## Goal
-Fix Score Entry so saving marks is idempotent, immediately visible, and never causes duplicate-key conflicts during normal teacher/admin use.
+# Finance Module — School Fees & Daily Feeding Fees
 
-## Findings
-- The grid builds rows from context state using `students.length` and `existingScores.length` as effect dependencies.
-- After the first insert, the score can exist in the database but the local row may still have an empty `id`, so a second Save attempts another insert and hits the unique constraint: `scores_student_id_class_level_subject_key`.
-- `scores` currently does not include `academic_year` or `term` in the generated type/schema shown in code, even though reports use term/year elsewhere. I will confirm live schema availability during implementation and avoid unsafe schema assumptions.
+## What I found in the existing system
 
-## Implementation Plan
-1. **Make score saving idempotent**
-   - Replace insert-vs-update looping with a safe upsert path for each entered score.
-   - Conflict target will match the existing unique constraint: `student_id,class_level,subject`.
-   - Include `school_id` from the selected school in every saved score.
-   - Return the saved records from the backend so local state receives real database IDs immediately.
+Existing tables I will reuse (nothing duplicated, nothing recreated):
 
-2. **Refresh the grid immediately after save**
-   - Update `SchoolContext` with a dedicated `upsertScore` method, or update `addScore` to use upsert semantics safely.
-   - After save confirmation, refresh data and update Score Entry rows from the returned records so fields remain visible without requiring a page reload.
-   - Fix Score Entry row initialization dependencies so it reacts to actual student/score changes, not only array lengths.
+- `schools` — school identity, logo, code, level
+- `students` — name, class_level, photo, `school_id`
+- `student_enrollments` — academic_year, class_level, status per student
+- `classes` — per-school class list
+- `school_settings` — school name, logo, motto, email, phone1/phone2, current academic_year and term
+- `user_roles` + `app_role` enum (`admin`, `teacher`, `super_admin`)
+- Security functions `has_role(uuid, app_role)` and `get_user_school_id(uuid)`
 
-3. **Correct retrieval and matching filters**
-   - Ensure score fetches and local filters include: selected school, class, subject, and student.
-   - If the live `scores` table has `academic_year` and `term`, include those in save and retrieval filters.
-   - If those columns do not exist, keep the fix aligned with the current unique constraint and existing reports without adding risky schema changes unless needed.
+Important finding about logins: school admins are provisioned as real backend auth accounts when they sign in (with an `admin` role row carrying their `school_id`). Super admins are real accounts too. Teachers sign in by access code only and have no account — so they will simply have no finance access, which matches your requirement.
 
-4. **Improve error handling and success timing**
-   - Only show “Scores Saved” after every backend write succeeds and the grid state is updated/refreshed.
-   - Show clear failure messages for duplicate conflicts or backend errors instead of misleading success messages.
-   - Keep the existing saving spinner/disabled state to prevent double-click saves.
+This means every new finance table can be locked down to signed-in users only, scoped by `get_user_school_id(auth.uid())`. No "public/anyone" policies on any financial table, so a school can never see another school's money. `school_id` is never taken from the browser — it is enforced by the database policy itself. No existing policy is weakened.
 
-5. **Validation**
-   - Test the workflow in the running app: save a new mark, confirm it appears immediately, edit it, save again, and confirm no duplicate record or 409 conflict occurs.
-   - Use database reads where available to verify the saved record exists after first save and has been updated after editing.
+There is no `accountant` role today. I will add it to the existing role enum (additive, non-destructive) and grant it payment + read + receipt rights.
 
-## Expected Result
-Teachers/admins can save new marks, see them immediately in the Score Entry grid, edit and save the same marks repeatedly, and avoid duplicate-key conflicts in normal use.
+## New tables
+
+- `fee_types` — per-school list (Tuition, Examination, ICT, Development, Library, Sports, PTA, Admission, Other); seeded per school on first use
+- `fee_structures` — school, academic_year, term, class_level
+- `fee_structure_items` — structure, fee_type, amount (total computed)
+- `student_fee_accounts` — student, academic_year, term, class_level; stores charged total, discount total, paid total, status; unique per student/year/term
+- `student_fee_charges` — the individual fee lines copied onto a student's account when a structure is assigned
+- `fee_payments` — one row per payment, never overwritten; method, reference, received_by, remarks, `voided_at`/`void_reason`
+- `fee_receipts` — unique receipt number per payment (per-school sequence)
+- `feeding_fee_settings` — school, academic_year, term, class_level, daily_rate, feeding_days
+- `student_feeding_accounts` — per student/year/term, with an `is_excluded` flag for non-participants
+- `feeding_fee_payments` — separate from school fee payments, same structure
+- `fee_discounts` — student account, original amount, discount amount, reason, authorized_by, date
+- `fee_audit_logs` — actor, action, entity, before/after snapshot, timestamp
+
+Balances and statuses (UNPAID / PARTIALLY PAID / PAID / OVERPAID) are computed by database triggers from the charge and payment rows — never typed by a user. Payments are never deleted from the interface; a controlled void writes a reversal and an audit entry.
+
+## Build order
+
+1. Migration: tables, foreign keys, grants, RLS policies, balance triggers, audit triggers, `accountant` role.
+2. Fee Structure page — build structures per year/term/class with live total.
+3. Student Fees page — assign structures to enrolled students, per-student account view.
+4. Record Payment + printable A4 receipt (school logo, contacts, previous/new balance).
+5. Daily Feeding Fees — rate, days, per-class expected amount, exclusions, separate payments.
+6. Student Financial Profile section inside the existing student view.
+7. Fees Dashboard, Arrears, Class Fees Report, Daily Collection Report — with filters, print and export.
+
+## UI
+
+A new `Finance` area matching the current Modern Mesh look, reached from the dashboard, with sub-pages: Fees Dashboard, Fee Structure, Student Fees, Record Payment, Feeding Fees, Arrears, Receipts, Reports. Responsive, all amounts in GH₵. Teachers never see the Finance entry point.
+
+## Verification after each stage
+
+Students, scores, class teacher reports, promotion, bulk PDF and settings all continue to work untouched — no existing table, policy or page is modified except adding the Finance link to the dashboard.
