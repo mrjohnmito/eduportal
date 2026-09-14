@@ -1373,7 +1373,130 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      daily_collection_report: {
+        Row: {
+          academic_year: string | null
+          amount: number | null
+          class_level: string | null
+          payment_date: string | null
+          payment_id: string | null
+          payment_method: string | null
+          payment_type: string | null
+          receipt_number: string | null
+          received_by: string | null
+          reference_number: string | null
+          remarks: string | null
+          school_id: string | null
+          student_id: string | null
+          student_name: string | null
+          term: string | null
+        }
+        Relationships: []
+      }
+      financial_dashboard: {
+        Row: {
+          academic_year: string | null
+          outstanding_feeding_fees: number | null
+          outstanding_school_fees: number | null
+          school_id: string | null
+          students_with_arrears: number | null
+          term: string | null
+          today_feeding_fees_collected: number | null
+          today_school_fees_collected: number | null
+          today_total_collected: number | null
+          total_charged: number | null
+          total_collected: number | null
+          total_feeding_fees_charged: number | null
+          total_feeding_fees_collected: number | null
+          total_outstanding: number | null
+          total_school_fees_charged: number | null
+          total_school_fees_collected: number | null
+          voided_payment_amount: number | null
+          voided_payment_count: number | null
+        }
+        Relationships: []
+      }
+      payment_method_report: {
+        Row: {
+          academic_year: string | null
+          payment_count: number | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_type: string | null
+          school_id: string | null
+          term: string | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
+      student_arrears_report: {
+        Row: {
+          academic_year: string | null
+          class_level: string | null
+          feeding_excluded: boolean | null
+          feeding_fees_balance: number | null
+          feeding_fees_charged: number | null
+          feeding_fees_paid: number | null
+          feeding_fees_status: string | null
+          school_fees_balance: number | null
+          school_fees_charged: number | null
+          school_fees_discount: number | null
+          school_fees_due: number | null
+          school_fees_paid: number | null
+          school_fees_status: string | null
+          school_id: string | null
+          student_id: string | null
+          student_name: string | null
+          term: string | null
+          total_outstanding: number | null
+        }
+        Relationships: []
+      }
+      student_financial_statement: {
+        Row: {
+          academic_year: string | null
+          class_level: string | null
+          feeding_excluded: boolean | null
+          feeding_fees_balance: number | null
+          feeding_fees_charged: number | null
+          feeding_fees_paid: number | null
+          feeding_fees_status: string | null
+          school_fees_balance: number | null
+          school_fees_charged: number | null
+          school_fees_discount: number | null
+          school_fees_due: number | null
+          school_fees_paid: number | null
+          school_fees_status: string | null
+          school_id: string | null
+          student_id: string | null
+          student_name: string | null
+          term: string | null
+          total_outstanding: number | null
+        }
+        Relationships: []
+      }
+      voided_payments_detailed_report: {
+        Row: {
+          academic_year: string | null
+          amount: number | null
+          class_level: string | null
+          payment_date: string | null
+          payment_id: string | null
+          payment_method: string | null
+          payment_type: string | null
+          receipt_number: string | null
+          received_by: string | null
+          school_id: string | null
+          status: string | null
+          student_id: string | null
+          student_name: string | null
+          term: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_configure_finance: {
@@ -1393,6 +1516,38 @@ export type Database = {
         Returns: boolean
       }
       recalc_fee_account: { Args: { _account_id: string }; Returns: undefined }
+      record_feeding_fee_payment: {
+        Args: {
+          _account_id: string
+          _amount: number
+          _payment_date: string
+          _payment_method: string
+          _received_by?: string
+          _reference_number?: string
+          _remarks?: string
+        }
+        Returns: Json
+      }
+      record_school_fee_payment: {
+        Args: {
+          _account_id: string
+          _amount: number
+          _payment_date: string
+          _payment_method: string
+          _received_by?: string
+          _reference_number?: string
+          _remarks?: string
+        }
+        Returns: Json
+      }
+      void_feeding_fee_payment: {
+        Args: { _payment_id: string; _reason: string; _voided_by?: string }
+        Returns: Json
+      }
+      void_school_fee_payment: {
+        Args: { _payment_id: string; _reason: string; _voided_by?: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "teacher" | "super_admin" | "accountant"
