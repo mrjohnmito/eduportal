@@ -22,6 +22,8 @@ import TeacherManagement from "./pages/TeacherManagement";
 import ClassManagement from "./pages/ClassManagement";
 import ClassTeacherReport from "./pages/ClassTeacherReport";
 import StudentPromotion from "./pages/StudentPromotion";
+import FinancialDashboard from "./pages/FinancialDashboard";
+import VoidedPayments from "./pages/VoidedPayments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +59,8 @@ const App = () => (
               <Route path="/class-management" element={<ClassManagement />} />
               <Route path="/class-teacher-report" element={<ClassTeacherReport />} />
               <Route path="/promotion" element={<StudentPromotion />} />
+              <Route path="/finance" element={<FinancialDashboard />} />
+              <Route path="/finance/voided" element={<VoidedPayments />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

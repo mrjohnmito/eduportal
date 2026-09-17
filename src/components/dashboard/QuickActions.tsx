@@ -18,7 +18,8 @@ import {
   Share2,
   Copy,
   Check,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -152,6 +153,14 @@ export function QuickActions() {
 
   // Admin-only actions
   const adminActions: ActionItem[] = [
+    {
+      to: '/finance',
+      icon: Wallet,
+      label: 'Finance',
+      description: 'Fees, payments & collections',
+      bgColor: 'bg-amber-50 hover:bg-amber-100 border-amber-200',
+      iconBg: 'bg-amber-500',
+    },
     {
       to: '/promotion',
       icon: ArrowUpCircle,
