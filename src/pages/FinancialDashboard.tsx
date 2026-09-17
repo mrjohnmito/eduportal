@@ -7,6 +7,11 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useToast } from '@/hooks/use-toast';
 import { formatGHS, toNumber, todayISO } from '@/lib/currency';
+import {
+  loadDashboard as loadDashboardData,
+  loadArrears as loadArrearsData,
+  loadCollections as loadCollectionsData,
+} from '@/lib/financeData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,15 +110,9 @@ export default function FinancialDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const client = supabase as any;
-      const [d, a] = await Promise.all([
-        client.from('financial_dashboard').select('*'),
-        client.from('student_arrears_report').select('*').order('total_outstanding', { ascending: false }),
-      ]);
-      if (d.error) throw d.error;
-      if (a.error) throw a.error;
-      setRows(d.data || []);
-      setArrears(a.data || []);
+      const [d, a] = await Promise.all([loadDashboardData(), loadArrearsData()]);
+      setRows(d);
+      setArrears(a);
     } catch (e: any) {
       setError(e?.message || 'Could not load financial data.');
       toast({ title: 'Could not load financial data', description: e?.message, variant: 'destructive' });
@@ -124,19 +123,14 @@ export default function FinancialDashboard() {
 
   const loadCollections = async () => {
     try {
-      const client = supabase as any;
-      let cq = client.from('daily_collection_report').select('*')
-        .gte('payment_date', dateFrom).lte('payment_date', dateTo)
-        .order('payment_date', { ascending: false });
-      let mq = client.from('payment_method_report').select('*')
-        .gte('payment_date', dateFrom).lte('payment_date', dateTo);
-      if (year !== ALL) { cq = cq.eq('academic_year', year); mq = mq.eq('academic_year', year); }
-      if (term !== ALL) { cq = cq.eq('term', term); mq = mq.eq('term', term); }
-      const [c, m] = await Promise.all([cq, mq]);
-      if (c.error) throw c.error;
-      if (m.error) throw m.error;
-      setCollections(c.data || []);
-      setMethods(m.data || []);
+      const { collections: c, methods: m } = await loadCollectionsData(
+        dateFrom,
+        dateTo,
+        year !== ALL ? year : undefined,
+        term !== ALL ? term : undefined,
+      );
+      setCollections(c);
+      setMethods(m);
     } catch (e: any) {
       toast({ title: 'Could not load collections', description: e?.message, variant: 'destructive' });
     }

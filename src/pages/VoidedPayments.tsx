@@ -6,6 +6,7 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useToast } from '@/hooks/use-toast';
 import { formatGHS, toNumber } from '@/lib/currency';
+import { loadVoidedPayments } from '@/lib/financeData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -50,15 +51,11 @@ export default function VoidedPayments() {
     (async () => {
       setLoading(true);
       setError(null);
-      const { data, error } = await (supabase as any)
-        .from('voided_payments_detailed_report')
-        .select('*')
-        .order('voided_at', { ascending: false });
-      if (error) {
-        setError(error.message);
-        toast({ title: 'Could not load voided payments', description: error.message, variant: 'destructive' });
-      } else {
-        setRows(data || []);
+      try {
+        setRows(await loadVoidedPayments());
+      } catch (e: any) {
+        setError(e?.message || 'Could not load voided payments.');
+        toast({ title: 'Could not load voided payments', description: e?.message, variant: 'destructive' });
       }
       setLoading(false);
     })();
