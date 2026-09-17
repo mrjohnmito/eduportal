@@ -390,7 +390,7 @@ export default function SuperAdminDashboard() {
         }
         toast({ title: 'School Updated', description: `${formName} has been updated successfully.` });
       } else {
-        const { data: createdSchoolId, error } = await supabase.rpc('create_school_with_credentials', {
+        const { data: createdSchoolId, error } = await (supabase as any).rpc('create_school_with_credentials', {
           school_name: schoolData.name,
           school_logo_url: schoolData.logo_url,
           school_code: schoolData.school_code,

@@ -300,7 +300,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         name: data.name,
         classLevel: data.class_level,
         photo: data.photo_url || undefined,
-        indexNumber: data.index_number || undefined,
+        indexNumber: (data as any).index_number || undefined,
         attendanceDays: (data as any).attendance_days || 0,
         schoolId: data.school_id,
       }]);
