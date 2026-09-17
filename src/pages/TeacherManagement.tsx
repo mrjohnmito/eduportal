@@ -240,10 +240,13 @@ export default function TeacherManagement() {
       // Update class assignments
       if (teacherId) {
         // Delete existing assignments
-        await supabase
+        const { error: deleteAssignmentsError } = await supabase
           .from('teacher_class_assignments')
           .delete()
-          .eq('teacher_id', teacherId);
+          .eq('teacher_id', teacherId)
+          .eq('school_id', selectedSchool?.id || '');
+
+        if (deleteAssignmentsError) throw deleteAssignmentsError;
 
         // Insert new assignments with school_id
         if (selectedClasses.length > 0 && selectedSchool) {
@@ -257,9 +260,7 @@ export default function TeacherManagement() {
             .from('teacher_class_assignments')
             .insert(assignmentsToInsert);
 
-          if (assignError) {
-            console.error('Error saving assignments:', assignError);
-          }
+          if (assignError) throw assignError;
         }
       }
 
@@ -291,7 +292,8 @@ export default function TeacherManagement() {
       const { error } = await supabase
         .from('teachers')
         .delete()
-        .eq('id', deleteTeacher.id);
+        .eq('id', deleteTeacher.id)
+        .eq('school_id', selectedSchool?.id || '');
 
       if (error) throw error;
 

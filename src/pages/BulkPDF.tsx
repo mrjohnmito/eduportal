@@ -162,7 +162,7 @@ function drawRoundedRect(doc: jsPDF, x: number, y: number, w: number, h: number,
 
 const BulkPDF: React.FC = () => {
   const navigate = useNavigate();
-  const { students, scores, settings } = useSchool();
+  const { students, scores, settings, user } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [selectedClass, setSelectedClass] = useState('');
@@ -179,15 +179,13 @@ const BulkPDF: React.FC = () => {
         .order('name');
       if (!data) return;
       // If logged in as a teacher, restrict to assigned classes only
-      const teacherId = sessionStorage.getItem('teacherId') ||
-        (sessionStorage.getItem('teacher')
-          ? (() => { try { return JSON.parse(sessionStorage.getItem('teacher')!).id; } catch { return null; } })()
-          : null);
+      const teacherId = user?.user_metadata?.teacher_id as string | undefined;
       if (teacherId) {
         const { data: assignments } = await supabase
           .from('teacher_class_assignments')
           .select('class_id')
-          .eq('teacher_id', teacherId);
+          .eq('teacher_id', teacherId)
+          .eq('school_id', selectedSchool.id);
         const allowed = new Set((assignments || []).map(a => a.class_id));
         setClasses(data.filter(c => allowed.has(c.id)));
       } else {
@@ -195,7 +193,7 @@ const BulkPDF: React.FC = () => {
       }
     };
     fetchClasses();
-  }, [selectedSchool]);
+  }, [selectedSchool, user]);
 
   const generatePDF = async () => {
     if (!selectedClass) {

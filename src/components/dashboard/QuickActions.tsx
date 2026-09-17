@@ -33,17 +33,15 @@ interface ActionItem {
 }
 
 export function QuickActions() {
-  const { isAdmin, loading } = useSchool();
+  const { isAdmin, user, loading } = useSchool();
   const { selectedSchool } = useSelectedSchool();
   const { toast } = useToast();
   const [isTeacher, setIsTeacher] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const teacherData = sessionStorage.getItem('teacher');
-    const teacherId = sessionStorage.getItem('teacherId');
-    setIsTeacher(!!teacherData || !!teacherId);
-  }, [isAdmin]);
+    setIsTeacher(!!user && !isAdmin);
+  }, [isAdmin, user]);
 
   const getTeacherPortalLink = () => {
     if (!selectedSchool) return '';
@@ -155,6 +153,14 @@ export function QuickActions() {
 
   // Admin-only actions
   const adminActions: ActionItem[] = [
+    {
+      to: '/finance',
+      icon: Wallet,
+      label: 'Finance',
+      description: 'Fees, payments & collections',
+      bgColor: 'bg-amber-50 hover:bg-amber-100 border-amber-200',
+      iconBg: 'bg-amber-500',
+    },
     {
       to: '/promotion',
       icon: ArrowUpCircle,

@@ -19,6 +19,9 @@ export default function SchoolSelection() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   useEffect(() => {
     fetchSchools();
+    const refreshSchools = () => { fetchSchools(); };
+    window.addEventListener('focus', refreshSchools);
+    return () => window.removeEventListener('focus', refreshSchools);
   }, []);
   const fetchSchools = async () => {
     try {

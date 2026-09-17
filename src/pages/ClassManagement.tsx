@@ -271,7 +271,8 @@ export default function ClassManagement() {
       const { error } = await supabase
         .from('classes')
         .delete()
-        .eq('id', deleteClass.id);
+        .eq('id', deleteClass.id)
+        .eq('school_id', targetSchool?.id || selectedSchool?.id || '');
 
       if (error) throw error;
 

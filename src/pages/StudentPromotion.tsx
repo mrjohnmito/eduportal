@@ -88,8 +88,6 @@ export default function StudentPromotion() {
   // Route guard: admins only
   useEffect(() => {
     if (loading) return;
-    const teacherId = sessionStorage.getItem('teacherId');
-    if (teacherId && !isAdmin) { navigate('/dashboard'); return; }
     if (!isAdmin && !user) { navigate('/'); return; }
     if (!selectedSchool) navigate('/');
   }, [loading, isAdmin, user, selectedSchool, navigate]);
@@ -202,10 +200,7 @@ export default function StudentPromotion() {
     setProcessing(true);
     setProgress(0);
 
-    const performedBy = (() => {
-      try { return JSON.parse(sessionStorage.getItem('adminSession') || '{}')?.email || user?.email || 'Admin'; }
-      catch { return user?.email || 'Admin'; }
-    })();
+    const performedBy = user?.email || 'Admin';
 
     let ok = 0, fail = 0;
     for (let i = 0; i < ids.length; i++) {
@@ -214,29 +209,42 @@ export default function StudentPromotion() {
       try {
         // Source enrollment record (preserve history)
         const sourceStatus = action === 'promote' ? 'promoted' : action === 'repeat' ? 'repeated' : 'graduated';
-        await supabase.from('student_enrollments').upsert({
+        const { error: sourceEnrollmentError } = await supabase.from('student_enrollments').upsert({
           school_id: selectedSchool.id, student_id: student.id,
           academic_year: currentYear, class_level: toKey(currentClass), status: sourceStatus,
         }, { onConflict: 'school_id,student_id,academic_year' });
+        if (sourceEnrollmentError) throw sourceEnrollmentError;
 
         // Destination enrollment + student class update
         let toClass: string | null = null;
         if (action === 'promote') {
           toClass = destClass;
-          await supabase.from('student_enrollments').upsert({
+          const { error: destinationEnrollmentError } = await supabase.from('student_enrollments').upsert({
             school_id: selectedSchool.id, student_id: student.id,
             academic_year: destYear, class_level: toKey(destClass), status: 'active',
           }, { onConflict: 'school_id,student_id,academic_year' });
-          await supabase.from('students').update({ class_level: toKey(destClass) }).eq('id', student.id);
+          if (destinationEnrollmentError) throw destinationEnrollmentError;
+          const { error: studentUpdateError } = await supabase
+            .from('students')
+            .update({ class_level: toKey(destClass) })
+            .eq('id', student.id)
+            .eq('school_id', selectedSchool.id);
+          if (studentUpdateError) throw studentUpdateError;
         } else if (action === 'repeat') {
           toClass = currentClass;
-          await supabase.from('student_enrollments').upsert({
+          const { error: destinationEnrollmentError } = await supabase.from('student_enrollments').upsert({
             school_id: selectedSchool.id, student_id: student.id,
             academic_year: destYear, class_level: toKey(currentClass), status: 'active',
           }, { onConflict: 'school_id,student_id,academic_year' });
+          if (destinationEnrollmentError) throw destinationEnrollmentError;
         } else {
           toClass = ALUMNI_CLASS;
-          await supabase.from('students').update({ class_level: ALUMNI_CLASS }).eq('id', student.id);
+          const { error: studentUpdateError } = await supabase
+            .from('students')
+            .update({ class_level: ALUMNI_CLASS })
+            .eq('id', student.id)
+            .eq('school_id', selectedSchool.id);
+          if (studentUpdateError) throw studentUpdateError;
         }
 
         // Audit trail (unique index prevents duplicate promote/repeat per dest year)

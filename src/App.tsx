@@ -31,6 +31,8 @@ import ArrearsReport from "./pages/ArrearsReport";
 import ClassFeeReport from "./pages/ClassFeeReport";
 import DailyCollectionReport from "./pages/DailyCollectionReport";
 import Discounts from "./pages/Discounts";
+import FinancialDashboard from "./pages/FinancialDashboard";
+import VoidedPayments from "./pages/VoidedPayments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +78,8 @@ const App = () => (
               <Route path="/fees/class-report" element={<ClassFeeReport />} />
               <Route path="/fees/daily-collections" element={<DailyCollectionReport />} />
               <Route path="/fees/discounts" element={<Discounts />} />
+              <Route path="/financial" element={<FinancialDashboard />} />
+              <Route path="/finance/voided" element={<VoidedPayments />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

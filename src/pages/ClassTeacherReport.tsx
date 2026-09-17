@@ -49,7 +49,7 @@ const toClassLevel = (name: string) => name.toLowerCase().replace(/\s+/g, '');
 export default function ClassTeacherReport() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { settings, students } = useSchool();
+  const { settings, students, user } = useSchool();
   const { selectedSchool } = useSelectedSchool();
 
   const [loggedInTeacher, setLoggedInTeacher] = useState<{ id: string; name: string } | null>(null);
@@ -67,21 +67,17 @@ export default function ClassTeacherReport() {
   const [promotedTo, setPromotedTo] = useState<string>('');
   const [existingReportId, setExistingReportId] = useState<string | null>(null);
 
-  // Check if teacher is logged in via access code
   useEffect(() => {
-    const teacherData = sessionStorage.getItem('teacher');
-    if (teacherData) {
-      try {
-        const teacher = JSON.parse(teacherData);
-        setLoggedInTeacher(teacher);
-        fetchAssignedClasses(teacher.id);
-      } catch {
-        setLoading(false);
-      }
+    const teacherId = user?.user_metadata?.teacher_id as string | undefined;
+    const teacherName = user?.user_metadata?.teacher_name as string | undefined;
+    if (teacherId && teacherName) {
+      const teacher = { id: teacherId, name: teacherName };
+      setLoggedInTeacher(teacher);
+      fetchAssignedClasses(teacher.id);
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const fetchAssignedClasses = async (teacherId: string) => {
     try {
@@ -89,7 +85,8 @@ export default function ClassTeacherReport() {
       const { data: assignments, error: assignError } = await supabase
         .from('teacher_class_assignments')
         .select('class_id')
-        .eq('teacher_id', teacherId);
+        .eq('teacher_id', teacherId)
+        .eq('school_id', selectedSchool?.id || '');
 
       if (assignError) throw assignError;
 
