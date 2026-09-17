@@ -18,7 +18,8 @@ import {
   Share2,
   Copy,
   Check,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -161,6 +162,62 @@ export function QuickActions() {
       description: 'Promote, repeat or graduate students',
       bgColor: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200',
       iconBg: 'bg-indigo-500',
+    },
+    {
+      to: '/finance',
+      icon: Wallet,
+      label: 'Fees Dashboard',
+      description: 'Monitor school and feeding fees',
+      bgColor: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200',
+      iconBg: 'bg-emerald-600',
+    },
+    {
+      to: '/fees/structure',
+      icon: FileText,
+      label: 'Fee Structure',
+      description: 'Configure fee items and class charges',
+      bgColor: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200',
+      iconBg: 'bg-cyan-600',
+    },
+    {
+      to: '/fees/students',
+      icon: Users,
+      label: 'Student Fees',
+      description: 'Assign fee accounts and record payments',
+      bgColor: 'bg-orange-50 hover:bg-orange-100 border-orange-200',
+      iconBg: 'bg-orange-600',
+    },
+    {
+      to: '/fees/feeding',
+      icon: FileSpreadsheet,
+      label: 'Feeding Fees',
+      description: 'Set feeding rates and track feeding accounts',
+      bgColor: 'bg-violet-50 hover:bg-violet-100 border-violet-200',
+      iconBg: 'bg-violet-600',
+    },
+    {
+      to: '/fees/arrears',
+      icon: AlertCircle,
+      label: 'Arrears',
+      description: 'List students with outstanding balances',
+      bgColor: 'bg-rose-50 hover:bg-rose-100 border-rose-200',
+      iconBg: 'bg-rose-600',
+    },
+    {
+      to: '/fees/daily-collections',
+      icon: FileSpreadsheet,
+      label: 'Daily Collections',
+      description: 'Review payments by date and method',
+      bgColor: 'bg-sky-50 hover:bg-sky-100 border-sky-200',
+      iconBg: 'bg-sky-600',
+    },
+    {
+      to: '/fees/discounts',
+      icon: Check,
+      label: 'Discounts',
+      description: 'Apply waivers and track reasons',
+      bgColor: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200',
+      iconBg: 'bg-yellow-600',
     },
   ];
 

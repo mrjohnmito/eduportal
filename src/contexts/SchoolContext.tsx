@@ -598,6 +598,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     // If this is a school admin login (credentials from schools table)
     if (isSchoolAdmin) {
       setIsAdmin(true);
+      setAdminLoading(false);
       if (selectedSchool) {
         await fetchData();
       }

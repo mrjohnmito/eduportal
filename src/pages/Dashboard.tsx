@@ -16,6 +16,36 @@ interface ClassItem {
   name: string;
 }
 
+const formatClassName = (classLevel: string): string => {
+  const normalized = classLevel.trim();
+  if (!normalized) return 'Unknown Class';
+
+  const lower = normalized.toLowerCase();
+  const match = lower.match(/(basic|jhs|primary)?\s*(\d+)/i);
+
+  if (match) {
+    const prefix = match[1] ? match[1].toUpperCase() : 'Class';
+    return `${prefix} ${match[2]}`;
+  }
+
+  return normalized
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+};
+
+const buildFallbackClasses = (studentList: any[]): ClassItem[] => {
+  const uniqueKeys = Array.from(
+    new Set((studentList || []).map((student) => student?.classLevel).filter(Boolean))
+  );
+
+  return uniqueKeys
+    .map((classLevel) => ({
+      id: classLevel,
+      name: formatClassName(classLevel),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { settings, isAdmin, user, loading, subscriptionExpiry, subscriptionDaysRemaining, students } = useSchool();
@@ -61,15 +91,19 @@ export default function Dashboard() {
         .select('*')
         .eq('school_id', selectedSchool.id)
         .order('name');
-      if (error) { console.error('Error fetching classes:', error); setClasses([]); }
-      else {
-        const all = data || [];
-        setClasses(assigned ? all.filter(c => assigned!.has(c.id)) : all);
+
+      if (error) {
+        console.error('Error fetching classes:', error);
+        setClasses(buildFallbackClasses(students || []));
+      } else {
+        const all = data && data.length > 0 ? data : buildFallbackClasses(students || []);
+        const filtered = assigned ? all.filter(c => assigned!.has(c.id)) : all;
+        setClasses(filtered.length > 0 ? filtered : buildFallbackClasses(students || []));
       }
       setClassesLoading(false);
     };
     fetchClasses();
-  }, [selectedSchool?.id, user?.id]);
+  }, [selectedSchool?.id, user?.id, students]);
 
   const isTeacher = !!teacherId && !user && !hasValidSchoolAdminSession(selectedSchool?.id);
 

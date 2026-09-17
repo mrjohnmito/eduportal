@@ -22,6 +22,15 @@ import TeacherManagement from "./pages/TeacherManagement";
 import ClassManagement from "./pages/ClassManagement";
 import ClassTeacherReport from "./pages/ClassTeacherReport";
 import StudentPromotion from "./pages/StudentPromotion";
+import FinanceDashboard from "./pages/FinanceDashboard";
+import FeeStructure from "./pages/FeeStructure";
+import StudentFees from "./pages/StudentFees";
+import FeedingFees from "./pages/FeedingFees";
+import FeeReceipt from "./pages/FeeReceipt";
+import ArrearsReport from "./pages/ArrearsReport";
+import ClassFeeReport from "./pages/ClassFeeReport";
+import DailyCollectionReport from "./pages/DailyCollectionReport";
+import Discounts from "./pages/Discounts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +66,16 @@ const App = () => (
               <Route path="/class-management" element={<ClassManagement />} />
               <Route path="/class-teacher-report" element={<ClassTeacherReport />} />
               <Route path="/promotion" element={<StudentPromotion />} />
+              <Route path="/finance" element={<FinanceDashboard />} />
+              <Route path="/fees/dashboard" element={<FinanceDashboard />} />
+              <Route path="/fees/structure" element={<FeeStructure />} />
+              <Route path="/fees/students" element={<StudentFees />} />
+              <Route path="/fees/feeding" element={<FeedingFees />} />
+              <Route path="/fees/receipts" element={<FeeReceipt />} />
+              <Route path="/fees/arrears" element={<ArrearsReport />} />
+              <Route path="/fees/class-report" element={<ClassFeeReport />} />
+              <Route path="/fees/daily-collections" element={<DailyCollectionReport />} />
+              <Route path="/fees/discounts" element={<Discounts />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
