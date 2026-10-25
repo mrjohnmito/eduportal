@@ -5,6 +5,7 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchAllRows } from '@/lib/fetchAll';
+import { resolveStudentPhoto } from '@/lib/studentPhotos';
 import { calculateScores, calculatePositions, getPositionSuffix, calculateAggregate, getHeadteacherRemark, getClassTeacherRemark } from '@/lib/gradeUtils';
 import { SubjectScore, CalculatedScore, SUBJECTS } from '@/types/school';
 import { Button } from '@/components/ui/button';
@@ -282,7 +283,8 @@ const BulkPDF: React.FC = () => {
         let croppedColor: string | null = null;
         let croppedGray: string | null = null;
         if (student.photo) {
-          const rawPhoto = await loadImage(student.photo);
+          const signedPhoto = await resolveStudentPhoto(student.photo);
+          const rawPhoto = signedPhoto ? await loadImage(signedPhoto) : null;
           if (rawPhoto) {
             croppedColor = await preparePhotoForBox(rawPhoto, 30, 36, false, 1);
             croppedGray = await preparePhotoForBox(rawPhoto, 12, 15, true, 1);
