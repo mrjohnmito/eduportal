@@ -1499,8 +1499,16 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_student_class: {
+        Args: { _class_level: string; _school_id: string }
+        Returns: boolean
+      }
       can_configure_finance: {
         Args: { _school_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_manage_student_class: {
+        Args: { _class_level: string; _school_id: string }
         Returns: boolean
       }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
