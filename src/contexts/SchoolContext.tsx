@@ -15,7 +15,7 @@ interface SchoolContextType {
   loading: boolean;
   subscriptionExpiry: string | null;
   subscriptionDaysRemaining: number | null;
-  addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
+  addStudent: (student: Omit<Student, 'id'>, registrationId?: string) => Promise<Student>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
   addScore: (score: Omit<SubjectScore, 'id'>) => Promise<SubjectScore>;
@@ -273,38 +273,42 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     await fetchData();
   };
 
-  const addStudent = async (student: Omit<Student, 'id'>) => {
+  const addStudent = async (student: Omit<Student, 'id'>, registrationId?: string): Promise<Student> => {
     if (!selectedSchool) throw new Error('No school selected');
-
-    const { data, error } = await supabase
+    const id = registrationId || crypto.randomUUID();
+    const mapStudent = (row: any): Student => ({
+      id: row.id, name: row.name, classLevel: normalizeClassKey(row.class_level) || row.class_level,
+      photo: row.photo_url || undefined, indexNumber: row.index_number || undefined,
+      attendanceDays: row.attendance_days || 0, schoolId: row.school_id,
+    });
+    const readSaved = () => supabase.from('students').select('*').eq('id', id).eq('school_id', selectedSchool.id).maybeSingle();
+    if (registrationId) {
+      const existing = await readSaved();
+      if (existing.error) throw existing.error;
+      if (existing.data) {
+        const saved = mapStudent(existing.data);
+        setStudents(prev => [...prev.filter(s => s.id !== id), saved]);
+        return saved;
+      }
+    }
+    const result = await supabase
       .from('students')
       .insert({
+        id,
         name: student.name,
         class_level: normalizeClassKey(student.classLevel) || student.classLevel,
         photo_url: student.photo || null,
-        index_number: student.indexNumber || null,
         attendance_days: student.attendanceDays || 0,
         school_id: selectedSchool.id,
-      } as any)
+      })
       .select()
       .single();
-
-    if (error) {
-      console.error('Error adding student:', error);
-      throw error;
-    }
-
-    if (data) {
-      setStudents(prev => [...prev, {
-        id: data.id,
-        name: data.name,
-        classLevel: data.class_level,
-        photo: data.photo_url || undefined,
-        indexNumber: (data as any).index_number || undefined,
-        attendanceDays: (data as any).attendance_days || 0,
-        schoolId: data.school_id,
-      }]);
-    }
+    // A lost insert response is not proof that the insert failed.
+    const recovered = result.error ? await readSaved() : result;
+    if (!recovered.data) throw result.error || recovered.error || new Error('Could not confirm the saved student. Retry safely.');
+    const saved = mapStudent(recovered.data);
+    setStudents(prev => [...prev.filter(s => s.id !== id), saved]);
+    return saved;
   };
 
   const updateStudent = async (id: string, updates: Partial<Student>) => {
@@ -312,25 +316,28 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.classLevel !== undefined) updateData.class_level = normalizeClassKey(updates.classLevel) || updates.classLevel;
     if (updates.photo !== undefined) updateData.photo_url = updates.photo;
-    if (updates.indexNumber !== undefined) updateData.index_number = updates.indexNumber || null;
     if (updates.attendanceDays !== undefined) updateData.attendance_days = updates.attendanceDays;
 
     if (!selectedSchool) throw new Error('No school selected');
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('students')
       .update(updateData)
       .eq('id', id)
-      .eq('school_id', selectedSchool.id);
+      .eq('school_id', selectedSchool.id)
+      .select('*')
+      .single();
 
     if (error) {
       console.error('Error updating student:', error);
       throw error;
     }
 
-    setStudents(prev =>
-      prev.map(s => (s.id === id ? { ...s, ...updates } : s))
-    );
+    if (!data) throw new Error('The student update could not be confirmed.');
+    setStudents(prev => prev.map(s => s.id === id ? { ...s,
+      name: data.name, classLevel: normalizeClassKey(data.class_level) || data.class_level,
+      photo: data.photo_url || undefined, attendanceDays: data.attendance_days || 0,
+    } : s));
   };
 
   const deleteStudent = async (id: string) => {

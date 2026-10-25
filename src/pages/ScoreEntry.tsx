@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { StudentPhoto } from '@/components/StudentPhoto';
 import { useSchool } from '@/contexts/SchoolContext';
 import { useSelectedSchool } from '@/contexts/SelectedSchoolContext';
 import { SubjectScore, Student, GRADE_SCALE } from '@/types/school';
@@ -588,17 +589,7 @@ export default function ScoreEntry() {
                         {index + 1}
                       </td>
                       <td className="border-b border-r border-border px-2 py-2">
-                        {row.student.photo ? (
-                          <img
-                            src={row.student.photo}
-                            alt={row.student.name}
-                            className="h-7 w-7 rounded object-cover"
-                          />
-                        ) : (
-                          <div className="h-7 w-7 rounded bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-[10px] text-white font-medium">
-                            {row.student.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                          </div>
-                        )}
+                        <StudentPhoto photo={row.student.photo} name={row.student.name} className="h-7 w-7 rounded object-cover text-xs" />
                       </td>
                       <td className="border-b border-r border-border px-2 py-2 font-medium text-foreground">
                         {row.student.name.toUpperCase()}
