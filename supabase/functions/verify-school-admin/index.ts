@@ -71,7 +71,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ valid, schoolId: valid ? data.school_id : null }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch {
+  } catch (err) {
+    console.error('verify-school-admin failed:', err instanceof Error ? err.message : err)
     return new Response(JSON.stringify({ valid: false, error: 'Server error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
