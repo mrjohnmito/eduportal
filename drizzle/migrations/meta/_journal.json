@@ -8,6 +8,13 @@
       "when": 1792910367708,
       "tag": "0000_private_school_student_photographs",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793135937705,
+      "tag": "0001_add_create_school_with_credentials",
+      "breakpoints": true
     }
   ]
 }
