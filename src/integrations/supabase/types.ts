@@ -1511,6 +1511,21 @@ export type Database = {
         Args: { _class_level: string; _school_id: string }
         Returns: boolean
       }
+      create_school_with_credentials: {
+        Args: {
+          credential_email: string
+          credential_password_hash: string
+          school_code: string
+          school_is_locked: boolean
+          school_level: string
+          school_logo_url: string
+          school_name: string
+          school_subscription_expiry: string
+          school_subscription_status: boolean
+          school_theme_color: string
+        }
+        Returns: string
+      }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       has_finance_access: {
         Args: { _school_id: string; _user_id: string }
