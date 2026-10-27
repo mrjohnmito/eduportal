@@ -110,6 +110,15 @@ export default function UnifiedLogin() {
         return;
       }
 
+      if (verifyData?.error === 'weak_password') {
+        toast({
+          title: 'Password too weak',
+          description: 'This school\'s admin password is too simple to sign in with. Ask the super admin to edit the school and set a stronger password (8+ characters with letters, numbers and a symbol).',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       toast({ title: 'Login Failed', description: 'Invalid email or password.', variant: 'destructive' });
     } catch {
       toast({ title: 'Login Failed', description: 'An error occurred during login.', variant: 'destructive' });
