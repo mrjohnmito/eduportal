@@ -8,6 +8,14 @@ const BodySchema = z.object({
   password: z.string().min(1).max(200),
 })
 
+const isWeakPassword = (err: { message?: string; code?: string }) =>
+  err.code === 'weak_password' || /weak|easy to guess|pwned|leaked/i.test(err.message ?? '')
+
+const weakPasswordResponse = () =>
+  new Response(JSON.stringify({ valid: false, error: 'weak_password' }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -51,6 +59,7 @@ Deno.serve(async (req) => {
       const { data: created, error: createError } = await supabase.auth.admin.createUser({
         email: email.trim().toLowerCase(), password, email_confirm: true,
       })
+      if (createError && isWeakPassword(createError)) return weakPasswordResponse()
       if (createError && !createError.message.toLowerCase().includes('already')) throw createError
       authUserId = created.user?.id
       if (!authUserId) {
@@ -61,6 +70,7 @@ Deno.serve(async (req) => {
       if (!authUserId) throw new Error('Unable to provision admin account')
 
       const { error: passwordError } = await supabase.auth.admin.updateUserById(authUserId, { password })
+      if (passwordError && isWeakPassword(passwordError)) return weakPasswordResponse()
       if (passwordError) throw passwordError
       const { error: roleError } = await supabase.from('user_roles').upsert({
         user_id: authUserId, role: 'admin', school_id: data.school_id,
