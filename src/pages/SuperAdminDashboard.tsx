@@ -361,8 +361,15 @@ export default function SuperAdminDashboard() {
         toast({ title: 'Admin Email Required', description: 'Enter a valid admin email. This will be used to log into the school.', variant: 'destructive' });
         return;
       }
-      if (!formAdminPassword || formAdminPassword.length < 6) {
-        toast({ title: 'Admin Password Required', description: 'Enter a password (min 6 chars). This will be used to log into the school.', variant: 'destructive' });
+      if (!formAdminPassword) {
+        toast({ title: 'Admin Password Required', description: 'Enter a password. This will be used to log into the school.', variant: 'destructive' });
+        return;
+      }
+    }
+    if (formAdminPassword) {
+      const problem = adminPasswordProblem(formAdminPassword);
+      if (problem) {
+        toast({ title: 'Choose a stronger admin password', description: `${problem} Simple passwords like "king123" are blocked at sign-in.`, variant: 'destructive' });
         return;
       }
     }
